@@ -9,7 +9,7 @@
       "name": "Auth & Sesión",
       "item": [
         {
-          "name": "Login",
+          "name": "Login SuperAdmin",
           "request": {
             "method": "POST",
             "header": [
@@ -21,6 +21,40 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": "http://localhost:3000/auth/login"
+          }
+        },
+        {
+          "name": "Login Responsable La Paz",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"resp_lp\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": "http://localhost:3000/auth/login"
+          }
+        },
+        {
+          "name": "Login Facilitador Cochabamba",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"fac_cb\",\n  \"password\": \"password123\"\n}"
             },
             "url": "http://localhost:3000/auth/login"
           }

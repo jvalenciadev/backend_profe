@@ -11,6 +11,7 @@ export class AuthService {
   ) { }
 
   async validateUser(username: string, pass: string): Promise<any> {
+    console.log('Validating user:', username);
     const user = await this.prisma.user.findUnique({
       where: { username },
       include: {
@@ -24,7 +25,15 @@ export class AuthService {
       }
     });
 
-    if (user && await bcrypt.compare(pass, user.password)) {
+    if (!user) {
+      console.log('User not found in database:', username);
+      return null;
+    }
+
+    const isMatch = await bcrypt.compare(pass, user.password);
+    console.log('Password match:', isMatch);
+
+    if (user && isMatch) {
       // Return user without password
       const { password, ...result } = user;
       return result;

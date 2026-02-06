@@ -11,14 +11,29 @@ const collection = {
             name: "Auth & Sesión",
             item: [
                 {
-                    name: "Login",
+                    name: "Login SuperAdmin",
                     request: {
                         method: "POST",
                         header: [{ key: "Content-Type", value: "application/json" }],
-                        body: {
-                            mode: "raw",
-                            raw: JSON.stringify({ username: "admin", password: "password123" }, null, 2)
-                        },
+                        body: { mode: "raw", raw: JSON.stringify({ username: "admin", password: "password123" }, null, 2) },
+                        url: "http://localhost:3000/auth/login"
+                    }
+                },
+                {
+                    name: "Login Responsable La Paz",
+                    request: {
+                        method: "POST",
+                        header: [{ key: "Content-Type", value: "application/json" }],
+                        body: { mode: "raw", raw: JSON.stringify({ username: "resp_lp", password: "password123" }, null, 2) },
+                        url: "http://localhost:3000/auth/login"
+                    }
+                },
+                {
+                    name: "Login Facilitador Cochabamba",
+                    request: {
+                        method: "POST",
+                        header: [{ key: "Content-Type", value: "application/json" }],
+                        body: { mode: "raw", raw: JSON.stringify({ username: "fac_cb", password: "password123" }, null, 2) },
                         url: "http://localhost:3000/auth/login"
                     }
                 }
