@@ -12,7 +12,7 @@ export class DepartmentsService {
       data: {
         nombre: createDepartmentDto.nombre,
         abreviacion: createDepartmentDto.abreviacion,
-        createdBy: user?.id || null,
+        createdBy: user?.id ? BigInt(user.id) : null,
       },
     });
 
@@ -32,23 +32,20 @@ export class DepartmentsService {
     });
     if (!dep) throw new NotFoundException(`Department #${id} not found`);
 
-    // Serialize BigInt
-    return this.serialize(dep);
+    return dep;
   }
 
   async update(id: number, updateDepartmentDto: UpdateDepartmentDto, user: any) {
-    const old = await this.findOne(id);
-
     const dep = await this.prisma.departamento.update({
       where: { id: BigInt(id) },
       data: {
         ...updateDepartmentDto,
-        updatedBy: user?.id || null,
+        updatedBy: user?.id ? BigInt(user.id) : null,
       },
     });
 
-    await this.audit('UPDATE', 'departamento', dep.id, user, { old, new: dep });
-    return this.serialize(dep);
+    await this.audit('UPDATE', 'departamento', dep.id, user, { new: dep });
+    return dep;
   }
 
   async remove(id: number, user: any) {
@@ -58,33 +55,29 @@ export class DepartmentsService {
       data: {
         estado: 'ELIMINADO',
         deletedAt: new Date(),
-        deletedBy: user?.id || null
+        deletedBy: user?.id ? BigInt(user.id) : null
       }
     });
 
     await this.audit('DELETE', 'departamento', dep.id, user, null);
-    return this.serialize(dep);
+    return dep;
   }
 
   private async audit(action: string, resource: string, resourceId: bigint, user: any, details: any) {
-    await this.prisma.auditLog.create({
-      data: {
-        action,
-        resource,
-        resourceId: resourceId.toString(),
-        userId: user?.id ? BigInt(user.id) : null,
-        details: JSON.stringify(details),
-        ip: '127.0.0.1' // Mock, actual should come from request
-      }
-    });
-  }
-
-  private serialize(obj: any) {
-    // Helper to handle BigInt serialization for JSON
-    return JSON.parse(JSON.stringify(obj, (key, value) =>
-      typeof value === 'bigint'
-        ? value.toString()
-        : value
-    ));
+    try {
+      await this.prisma.auditLog.create({
+        data: {
+          action,
+          resource,
+          resourceId: resourceId.toString(),
+          userId: user?.id ? BigInt(user.id) : null,
+          details: JSON.stringify(details, (key, value) => typeof value === 'bigint' ? value.toString() : value),
+          ip: '127.0.0.1'
+        }
+      });
+    } catch (e) {
+      console.error('Audit failed:', e);
+    }
   }
 }
+

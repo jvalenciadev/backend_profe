@@ -1,7 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '@app/database';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class AuthService {
@@ -14,7 +14,13 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({
       where: { username },
       include: {
-        tenant: true
+        tenant: true,
+        roles: {
+          include: { role: true }
+        },
+        sedes: {
+          include: { sede: true }
+        }
       }
     });
 
@@ -27,20 +33,38 @@ export class AuthService {
   }
 
   async login(user: any) {
-    // Basic payload, needs refinement for roles/sedes
+    // Extract roles
+    const roles = user.roles?.map((ur: any) => ur.role.name) || [];
+    const sedesIds = user.sedes?.map((us: any) => us.sedeId.toString()) || [];
+
     const payload = {
       username: user.username,
       sub: user.id.toString(),
-      tenantId: user.tenantId ? user.tenantId.toString() : null
+      tenantId: user.tenantId ? user.tenantId.toString() : null,
+      roles: roles,
+      sedes: sedesIds
     };
 
     return {
       access_token: this.jwtService.sign(payload),
-      refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' })
+      refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' }), // Simple refresh for now
+      user: {
+        id: user.id.toString(),
+        username: user.username,
+        email: user.correo,
+        tenant: user.tenant,
+        roles: roles
+      }
     };
   }
 
   async validate(payload: any) {
-    return { userId: payload.sub, username: payload.username, tenantId: payload.tenantId };
+    return {
+      userId: payload.sub,
+      username: payload.username,
+      tenantId: payload.tenantId,
+      roles: payload.roles,
+      sedes: payload.sedes
+    };
   }
 }

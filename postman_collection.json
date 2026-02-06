@@ -1,64 +1,1616 @@
 {
-    "info": {
-        "name": "Ministerial System API",
-        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-    },
-    "item": [
+  "info": {
+    "name": "Profe Backend API (Full Monolith)",
+    "description": "Colección completa de todas las APIs CRUD del sistema Profe (Consolidado en Puerto 3000)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth & Sesión",
+      "item": [
         {
-            "name": "Auth",
-            "item": [
-                {
-                    "name": "Login",
-                    "request": {
-                        "method": "POST",
-                        "url": {
-                            "raw": "{{baseUrl}}/auth/login",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "auth",
-                                "login"
-                            ]
-                        },
-                        "body": {
-                            "mode": "raw",
-                            "raw": "{\"username\": \"admin\", \"password\": \"secret\"}",
-                            "options": {
-                                "raw": {
-                                    "language": "json"
-                                }
-                            }
-                        }
-                    }
-                }
-            ]
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": "http://localhost:3000/auth/login"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Territorial (Territorio y Sedes)",
+      "item": [
+        {
+          "name": "Departamentos",
+          "item": [
+            {
+              "name": "Listar Departamentos",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/departments"
+              }
+            },
+            {
+              "name": "Obtener único Departamentos",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/departments/1"
+              }
+            },
+            {
+              "name": "Crear Departamentos",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"LA PAZ\",\n  \"abreviacion\": \"LP\"\n}"
+                },
+                "url": "http://localhost:3000/departments"
+              }
+            },
+            {
+              "name": "Actualizar Departamentos",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"LA PAZ\",\n  \"abreviacion\": \"LP\"\n}"
+                },
+                "url": "http://localhost:3000/departments/1"
+              }
+            },
+            {
+              "name": "Eliminar Departamentos",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/departments/1"
+              }
+            }
+          ]
         },
         {
-            "name": "Territorial",
-            "item": [
-                {
-                    "name": "List Departments",
-                    "request": {
-                        "method": "GET",
-                        "url": {
-                            "raw": "{{baseUrl}}/departments",
-                            "host": [
-                                "{{baseUrl}}"
-                            ],
-                            "path": [
-                                "departments"
-                            ]
-                        }
-                    }
-                }
-            ]
-        }
-    ],
-    "variable": [
+          "name": "Sedes",
+          "item": [
+            {
+              "name": "Listar Sedes",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/sedes"
+              }
+            },
+            {
+              "name": "Obtener único Sedes",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/sedes/1"
+              }
+            },
+            {
+              "name": "Crear Sedes",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Sede Centro\",\n  \"departamentoId\": 1,\n  \"descripcion\": \"Ubicación central\",\n  \"horario\": \"08:00 - 18:00\",\n  \"turno\": \"Mañana\",\n  \"ubicacion\": \"Calle 123\",\n  \"contacto1\": 77777777\n}"
+                },
+                "url": "http://localhost:3000/sedes"
+              }
+            },
+            {
+              "name": "Actualizar Sedes",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Sede Centro\",\n  \"departamentoId\": 1,\n  \"descripcion\": \"Ubicación central\",\n  \"horario\": \"08:00 - 18:00\",\n  \"turno\": \"Mañana\",\n  \"ubicacion\": \"Calle 123\",\n  \"contacto1\": 77777777\n}"
+                },
+                "url": "http://localhost:3000/sedes/1"
+              }
+            },
+            {
+              "name": "Eliminar Sedes",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/sedes/1"
+              }
+            }
+          ]
+        },
         {
-            "key": "baseUrl",
-            "value": "http://localhost:3000"
+          "name": "Distritos",
+          "item": [
+            {
+              "name": "Listar Distritos",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/distritos"
+              }
+            },
+            {
+              "name": "Obtener único Distritos",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/distritos/1"
+              }
+            },
+            {
+              "name": "Crear Distritos",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Distrito 1\",\n  \"codigo\": 101,\n  \"departamentoId\": 1\n}"
+                },
+                "url": "http://localhost:3000/distritos"
+              }
+            },
+            {
+              "name": "Actualizar Distritos",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Distrito 1\",\n  \"codigo\": 101,\n  \"departamentoId\": 1\n}"
+                },
+                "url": "http://localhost:3000/distritos/1"
+              }
+            },
+            {
+              "name": "Eliminar Distritos",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/distritos/1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Provincias",
+          "item": [
+            {
+              "name": "Listar Provincias",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/provincias"
+              }
+            },
+            {
+              "name": "Obtener único Provincias",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/provincias/1"
+              }
+            },
+            {
+              "name": "Crear Provincias",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Cercado\",\n  \"departamentoId\": 1\n}"
+                },
+                "url": "http://localhost:3000/provincias"
+              }
+            },
+            {
+              "name": "Actualizar Provincias",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Cercado\",\n  \"departamentoId\": 1\n}"
+                },
+                "url": "http://localhost:3000/provincias/1"
+              }
+            },
+            {
+              "name": "Eliminar Provincias",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/provincias/1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Unidades Educativas",
+          "item": [
+            {
+              "name": "Listar Unidades Educativas",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/unidades-educativas"
+              }
+            },
+            {
+              "name": "Obtener único Unidades Educativas",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/unidades-educativas/1"
+              }
+            },
+            {
+              "name": "Crear Unidades Educativas",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"U.E. Bolivia\",\n  \"codigo\": 1001,\n  \"distritoId\": 1\n}"
+                },
+                "url": "http://localhost:3000/unidades-educativas"
+              }
+            },
+            {
+              "name": "Actualizar Unidades Educativas",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"U.E. Bolivia\",\n  \"codigo\": 1001,\n  \"distritoId\": 1\n}"
+                },
+                "url": "http://localhost:3000/unidades-educativas/1"
+              }
+            },
+            {
+              "name": "Eliminar Unidades Educativas",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/unidades-educativas/1"
+              }
+            }
+          ]
         }
-    ]
+      ]
+    },
+    {
+      "name": "Usuarios y Permisos",
+      "item": [
+        {
+          "name": "Usuarios",
+          "item": [
+            {
+              "name": "Listar Usuarios",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/users"
+              }
+            },
+            {
+              "name": "Obtener único Usuarios",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/users/1"
+              }
+            },
+            {
+              "name": "Crear Usuarios",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"docente1\",\n  \"nombre\": \"Juan\",\n  \"apellidos\": \"Perez\",\n  \"correo\": \"juan@profe.bo\",\n  \"password\": \"password123\",\n  \"tenantId\": 1\n}"
+                },
+                "url": "http://localhost:3000/users"
+              }
+            },
+            {
+              "name": "Actualizar Usuarios",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"docente1\",\n  \"nombre\": \"Juan\",\n  \"apellidos\": \"Perez\",\n  \"correo\": \"juan@profe.bo\",\n  \"password\": \"password123\",\n  \"tenantId\": 1\n}"
+                },
+                "url": "http://localhost:3000/users/1"
+              }
+            },
+            {
+              "name": "Eliminar Usuarios",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/users/1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Roles",
+          "item": [
+            {
+              "name": "Listar Roles",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/roles"
+              }
+            },
+            {
+              "name": "Obtener único Roles",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/roles/1"
+              }
+            },
+            {
+              "name": "Crear Roles",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"FACILITADOR\",\n  \"guardName\": \"web\"\n}"
+                },
+                "url": "http://localhost:3000/roles"
+              }
+            },
+            {
+              "name": "Actualizar Roles",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"FACILITADOR\",\n  \"guardName\": \"web\"\n}"
+                },
+                "url": "http://localhost:3000/roles/1"
+              }
+            },
+            {
+              "name": "Eliminar Roles",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/roles/1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Permisos",
+          "item": [
+            {
+              "name": "Listar Permisos",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/permissions"
+              }
+            },
+            {
+              "name": "Obtener único Permisos",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/permissions/1"
+              }
+            },
+            {
+              "name": "Crear Permisos",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"create_academic\",\n  \"guardName\": \"web\",\n  \"groupName\": \"Academic\"\n}"
+                },
+                "url": "http://localhost:3000/permissions"
+              }
+            },
+            {
+              "name": "Actualizar Permisos",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"create_academic\",\n  \"guardName\": \"web\",\n  \"groupName\": \"Academic\"\n}"
+                },
+                "url": "http://localhost:3000/permissions/1"
+              }
+            },
+            {
+              "name": "Eliminar Permisos",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/permissions/1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Personas (MAP)",
+          "item": [
+            {
+              "name": "Listar Personas (MAP)",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/personas"
+              }
+            },
+            {
+              "name": "Obtener único Personas (MAP)",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/personas/1"
+              }
+            },
+            {
+              "name": "Crear Personas (MAP)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"ci\": 1234567,\n  \"nombre1\": \"Juan\",\n  \"apellido1\": \"Perez\",\n  \"generoId\": 1,\n  \"areaId\": 1,\n  \"fechaNac\": \"1990-01-01T00:00:00Z\"\n}"
+                },
+                "url": "http://localhost:3000/personas"
+              }
+            },
+            {
+              "name": "Actualizar Personas (MAP)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"ci\": 1234567,\n  \"nombre1\": \"Juan\",\n  \"apellido1\": \"Perez\",\n  \"generoId\": 1,\n  \"areaId\": 1,\n  \"fechaNac\": \"1990-01-01T00:00:00Z\"\n}"
+                },
+                "url": "http://localhost:3000/personas/1"
+              }
+            },
+            {
+              "name": "Eliminar Personas (MAP)",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/personas/1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Areas de Trabajo",
+          "item": [
+            {
+              "name": "Listar Areas de Trabajo",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/areas"
+              }
+            },
+            {
+              "name": "Obtener único Areas de Trabajo",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/areas/1"
+              }
+            },
+            {
+              "name": "Crear Areas de Trabajo",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"SISTEMAS\"\n}"
+                },
+                "url": "http://localhost:3000/areas"
+              }
+            },
+            {
+              "name": "Actualizar Areas de Trabajo",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"SISTEMAS\"\n}"
+                },
+                "url": "http://localhost:3000/areas/1"
+              }
+            },
+            {
+              "name": "Eliminar Areas de Trabajo",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/areas/1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Géneros",
+          "item": [
+            {
+              "name": "Listar Géneros",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/generos"
+              }
+            },
+            {
+              "name": "Obtener único Géneros",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/generos/1"
+              }
+            },
+            {
+              "name": "Crear Géneros",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Masculino\"\n}"
+                },
+                "url": "http://localhost:3000/generos"
+              }
+            },
+            {
+              "name": "Actualizar Géneros",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Masculino\"\n}"
+                },
+                "url": "http://localhost:3000/generos/1"
+              }
+            },
+            {
+              "name": "Eliminar Géneros",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/generos/1"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Académico (Programas y Cursos)",
+      "item": [
+        {
+          "name": "Programas",
+          "item": [
+            {
+              "name": "Listar Programas",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/programas"
+              }
+            },
+            {
+              "name": "Obtener único Programas",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/programas/1"
+              }
+            },
+            {
+              "name": "Crear Programas",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Diplomado en IA\",\n  \"codigo\": \"IA001\",\n  \"cargaHoraria\": 200,\n  \"costo\": 1500,\n  \"duracionId\": 1,\n  \"versionId\": 1,\n  \"tipoId\": 1,\n  \"modalidadId\": 1,\n  \"contenido\": \"Contenido del programa\",\n  \"banner\": \"banner.jpg\",\n  \"afiche\": \"afiche.jpg\",\n  \"fechaIniIns\": \"2024-01-01T00:00:00Z\",\n  \"fechaFinIns\": \"2024-12-31T23:59:59Z\",\n  \"fechaIniClase\": \"2024-02-01T00:00:00Z\",\n  \"tenantId\": 1\n}"
+                },
+                "url": "http://localhost:3000/programas"
+              }
+            },
+            {
+              "name": "Actualizar Programas",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Diplomado en IA\",\n  \"codigo\": \"IA001\",\n  \"cargaHoraria\": 200,\n  \"costo\": 1500,\n  \"duracionId\": 1,\n  \"versionId\": 1,\n  \"tipoId\": 1,\n  \"modalidadId\": 1,\n  \"contenido\": \"Contenido del programa\",\n  \"banner\": \"banner.jpg\",\n  \"afiche\": \"afiche.jpg\",\n  \"fechaIniIns\": \"2024-01-01T00:00:00Z\",\n  \"fechaFinIns\": \"2024-12-31T23:59:59Z\",\n  \"fechaIniClase\": \"2024-02-01T00:00:00Z\",\n  \"tenantId\": 1\n}"
+                },
+                "url": "http://localhost:3000/programas/1"
+              }
+            },
+            {
+              "name": "Eliminar Programas",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/programas/1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Módulos",
+          "item": [
+            {
+              "name": "Listar Módulos",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/modulos"
+              }
+            },
+            {
+              "name": "Obtener único Módulos",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/modulos/1"
+              }
+            },
+            {
+              "name": "Crear Módulos",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Módulo 1\",\n  \"programaId\": 1,\n  \"descripcion\": \"Introducción\",\n  \"fechaInicio\": \"2024-03-01T00:00:00Z\",\n  \"fechaFin\": \"2023-04-01T00:00:00Z\"\n}"
+                },
+                "url": "http://localhost:3000/modulos"
+              }
+            },
+            {
+              "name": "Actualizar Módulos",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Módulo 1\",\n  \"programaId\": 1,\n  \"descripcion\": \"Introducción\",\n  \"fechaInicio\": \"2024-03-01T00:00:00Z\",\n  \"fechaFin\": \"2023-04-01T00:00:00Z\"\n}"
+                },
+                "url": "http://localhost:3000/modulos/1"
+              }
+            },
+            {
+              "name": "Eliminar Módulos",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/modulos/1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Duraciones",
+          "item": [
+            {
+              "name": "Listar Duraciones",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/duraciones"
+              }
+            },
+            {
+              "name": "Obtener único Duraciones",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/duraciones/1"
+              }
+            },
+            {
+              "name": "Crear Duraciones",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"4 Semanas\",\n  \"semana\": 4\n}"
+                },
+                "url": "http://localhost:3000/duraciones"
+              }
+            },
+            {
+              "name": "Actualizar Duraciones",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"4 Semanas\",\n  \"semana\": 4\n}"
+                },
+                "url": "http://localhost:3000/duraciones/1"
+              }
+            },
+            {
+              "name": "Eliminar Duraciones",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/duraciones/1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Versiones",
+          "item": [
+            {
+              "name": "Listar Versiones",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/versiones"
+              }
+            },
+            {
+              "name": "Obtener único Versiones",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/versiones/1"
+              }
+            },
+            {
+              "name": "Crear Versiones",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Versión 1\",\n  \"numero\": 1,\n  \"romano\": \"I\",\n  \"gestion\": \"2024\"\n}"
+                },
+                "url": "http://localhost:3000/versiones"
+              }
+            },
+            {
+              "name": "Actualizar Versiones",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Versión 1\",\n  \"numero\": 1,\n  \"romano\": \"I\",\n  \"gestion\": \"2024\"\n}"
+                },
+                "url": "http://localhost:3000/versiones/1"
+              }
+            },
+            {
+              "name": "Eliminar Versiones",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/versiones/1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tipos de Programa",
+          "item": [
+            {
+              "name": "Listar Tipos de Programa",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/tipos"
+              }
+            },
+            {
+              "name": "Obtener único Tipos de Programa",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/tipos/1"
+              }
+            },
+            {
+              "name": "Crear Tipos de Programa",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Diplomado\"\n}"
+                },
+                "url": "http://localhost:3000/tipos"
+              }
+            },
+            {
+              "name": "Actualizar Tipos de Programa",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Diplomado\"\n}"
+                },
+                "url": "http://localhost:3000/tipos/1"
+              }
+            },
+            {
+              "name": "Eliminar Tipos de Programa",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/tipos/1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Modalidades",
+          "item": [
+            {
+              "name": "Listar Modalidades",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/modalidades"
+              }
+            },
+            {
+              "name": "Obtener único Modalidades",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/modalidades/1"
+              }
+            },
+            {
+              "name": "Crear Modalidades",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Virtual\"\n}"
+                },
+                "url": "http://localhost:3000/modalidades"
+              }
+            },
+            {
+              "name": "Actualizar Modalidades",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Virtual\"\n}"
+                },
+                "url": "http://localhost:3000/modalidades/1"
+              }
+            },
+            {
+              "name": "Eliminar Modalidades",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/modalidades/1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Turnos",
+          "item": [
+            {
+              "name": "Listar Turnos",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/turnos"
+              }
+            },
+            {
+              "name": "Obtener único Turnos",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/turnos/1"
+              }
+            },
+            {
+              "name": "Crear Turnos",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Noche\",\n  \"descripcion\": \"19:00 - 21:00\"\n}"
+                },
+                "url": "http://localhost:3000/turnos"
+              }
+            },
+            {
+              "name": "Actualizar Turnos",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Noche\",\n  \"descripcion\": \"19:00 - 21:00\"\n}"
+                },
+                "url": "http://localhost:3000/turnos/1"
+              }
+            },
+            {
+              "name": "Eliminar Turnos",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/turnos/1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Estados de Inscripción",
+          "item": [
+            {
+              "name": "Listar Estados de Inscripción",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/estados-inscripcion"
+              }
+            },
+            {
+              "name": "Obtener único Estados de Inscripción",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/estados-inscripcion/1"
+              }
+            },
+            {
+              "name": "Crear Estados de Inscripción",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"INSCRITO\"\n}"
+                },
+                "url": "http://localhost:3000/estados-inscripcion"
+              }
+            },
+            {
+              "name": "Actualizar Estados de Inscripción",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"INSCRITO\"\n}"
+                },
+                "url": "http://localhost:3000/estados-inscripcion/1"
+              }
+            },
+            {
+              "name": "Eliminar Estados de Inscripción",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/estados-inscripcion/1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Inscripciones",
+          "item": [
+            {
+              "name": "Listar Inscripciones",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/inscripciones"
+              }
+            },
+            {
+              "name": "Obtener único Inscripciones",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/inscripciones/1"
+              }
+            },
+            {
+              "name": "Crear Inscripciones",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"programaId\": 1,\n  \"personaId\": 1,\n  \"sedeId\": 1,\n  \"turnoId\": 1,\n  \"estadoInscripcionId\": 1\n}"
+                },
+                "url": "http://localhost:3000/inscripciones"
+              }
+            },
+            {
+              "name": "Actualizar Inscripciones",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"programaId\": 1,\n  \"personaId\": 1,\n  \"sedeId\": 1,\n  \"turnoId\": 1,\n  \"estadoInscripcionId\": 1\n}"
+                },
+                "url": "http://localhost:3000/inscripciones/1"
+              }
+            },
+            {
+              "name": "Eliminar Inscripciones",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/inscripciones/1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bauchers",
+          "item": [
+            {
+              "name": "Listar Bauchers",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/bauchers"
+              }
+            },
+            {
+              "name": "Obtener único Bauchers",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/bauchers/1"
+              }
+            },
+            {
+              "name": "Crear Bauchers",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"inscripcionId\": 1,\n  \"monto\": 1500,\n  \"numeroDeposito\": \"DEP-123\",\n  \"fechaDeposito\": \"2024-01-15T00:00:00Z\"\n}"
+                },
+                "url": "http://localhost:3000/bauchers"
+              }
+            },
+            {
+              "name": "Actualizar Bauchers",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"inscripcionId\": 1,\n  \"monto\": 1500,\n  \"numeroDeposito\": \"DEP-123\",\n  \"fechaDeposito\": \"2024-01-15T00:00:00Z\"\n}"
+                },
+                "url": "http://localhost:3000/bauchers/1"
+              }
+            },
+            {
+              "name": "Eliminar Bauchers",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/bauchers/1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Calificaciones",
+          "item": [
+            {
+              "name": "Listar Calificaciones",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/calificaciones"
+              }
+            },
+            {
+              "name": "Obtener único Calificaciones",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/calificaciones/1"
+              }
+            },
+            {
+              "name": "Crear Calificaciones",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"inscripcionId\": 1,\n  \"moduloId\": 1,\n  \"nota\": 85\n}"
+                },
+                "url": "http://localhost:3000/calificaciones"
+              }
+            },
+            {
+              "name": "Actualizar Calificaciones",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"inscripcionId\": 1,\n  \"moduloId\": 1,\n  \"nota\": 85\n}"
+                },
+                "url": "http://localhost:3000/calificaciones/1"
+              }
+            },
+            {
+              "name": "Eliminar Calificaciones",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/calificaciones/1"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Eventos y Socialización",
+      "item": [
+        {
+          "name": "Eventos",
+          "item": [
+            {
+              "name": "Listar Eventos",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/eventos"
+              }
+            },
+            {
+              "name": "Obtener único Eventos",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/eventos/1"
+              }
+            },
+            {
+              "name": "Crear Eventos",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Congreso 2024\",\n  \"codigo\": \"CONG-24\",\n  \"descripcion\": \"Congreso Educativo\",\n  \"fecha\": \"2024-10-10T00:00:00Z\",\n  \"lugar\": \"La Paz\",\n  \"tipoId\": 1,\n  \"tenantId\": 1\n}"
+                },
+                "url": "http://localhost:3000/eventos"
+              }
+            },
+            {
+              "name": "Actualizar Eventos",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Congreso 2024\",\n  \"codigo\": \"CONG-24\",\n  \"descripcion\": \"Congreso Educativo\",\n  \"fecha\": \"2024-10-10T00:00:00Z\",\n  \"lugar\": \"La Paz\",\n  \"tipoId\": 1,\n  \"tenantId\": 1\n}"
+                },
+                "url": "http://localhost:3000/eventos/1"
+              }
+            },
+            {
+              "name": "Eliminar Eventos",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/eventos/1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tipos de Evento",
+          "item": [
+            {
+              "name": "Listar Tipos de Evento",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/tipos-evento"
+              }
+            },
+            {
+              "name": "Obtener único Tipos de Evento",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/tipos-evento/1"
+              }
+            },
+            {
+              "name": "Crear Tipos de Evento",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Seminario\"\n}"
+                },
+                "url": "http://localhost:3000/tipos-evento"
+              }
+            },
+            {
+              "name": "Actualizar Tipos de Evento",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"nombre\": \"Seminario\"\n}"
+                },
+                "url": "http://localhost:3000/tipos-evento/1"
+              }
+            },
+            {
+              "name": "Eliminar Tipos de Evento",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/tipos-evento/1"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Participantes Eventos",
+          "item": [
+            {
+              "name": "Listar Participantes Eventos",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/evento-persona"
+              }
+            },
+            {
+              "name": "Obtener único Participantes Eventos",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/evento-persona/1"
+              }
+            },
+            {
+              "name": "Crear Participantes Eventos",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventoId\": 1,\n  \"personaId\": 1\n}"
+                },
+                "url": "http://localhost:3000/evento-persona"
+              }
+            },
+            {
+              "name": "Actualizar Participantes Eventos",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventoId\": 1,\n  \"personaId\": 1\n}"
+                },
+                "url": "http://localhost:3000/evento-persona/1"
+              }
+            },
+            {
+              "name": "Eliminar Participantes Eventos",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/evento-persona/1"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auditoría",
+      "item": [
+        {
+          "name": "Logs de Auditoría",
+          "item": [
+            {
+              "name": "Listar Logs de Auditoría",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/audit-logs"
+              }
+            },
+            {
+              "name": "Obtener único Logs de Auditoría",
+              "request": {
+                "method": "GET",
+                "url": "http://localhost:3000/audit-logs/1"
+              }
+            },
+            {
+              "name": "Crear Logs de Auditoría",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}"
+                },
+                "url": "http://localhost:3000/audit-logs"
+              }
+            },
+            {
+              "name": "Actualizar Logs de Auditoría",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}"
+                },
+                "url": "http://localhost:3000/audit-logs/1"
+              }
+            },
+            {
+              "name": "Eliminar Logs de Auditoría",
+              "request": {
+                "method": "DELETE",
+                "url": "http://localhost:3000/audit-logs/1"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

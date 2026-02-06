@@ -1,12 +1,12 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Post, Body } from '@nestjs/common';
 import { JobsService } from './jobs.service';
 
-@Controller()
+@Controller('jobs')
 export class JobsController {
-  constructor(private readonly jobsService: JobsService) {}
+  constructor(private readonly jobsService: JobsService) { }
 
-  @Get()
-  getHello(): string {
-    return this.jobsService.getHello();
+  @Post('notify')
+  async notify(@Body() data: any) {
+    return this.jobsService.sendNotification(data);
   }
 }
