@@ -1,0 +1,948 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+// ============================================
+// 🌍 TERRITORIAL SERVICE (TENANTS) & COMMON ENUMS
+// ============================================
+
+enum Estado {
+    ACTIVO    @map("activo")
+    INACTIVO  @map("inactivo")
+    ELIMINADO @map("eliminado")
+    VISTA     @map("vista")
+}
+
+model Departamento {
+    id          BigInt @id @default(autoincrement()) @map("dep_id")
+    nombre      String @map("dep_nombre")
+    abreviacion String @map("dep_abreviacion")
+    estado      Estado @default(ACTIVO) @map("dep_estado")
+
+    // Audit
+    createdAt DateTime  @default(now()) @map("created_at")
+    updatedAt DateTime  @updatedAt @map("updated_at")
+    deletedAt DateTime? @map("deleted_at")
+    createdBy BigInt?   @map("created_by")
+    updatedBy BigInt?   @map("updated_by")
+    deletedBy BigInt?   @map("deleted_by")
+
+    // Relations
+    sedes     Sede[]
+    users     User[]
+    distritos Distrito[]
+    auditLogs AuditLog[]
+
+    // Functional Relations (Multi-tenant Root)
+    programas          Programa[]
+    eventos            Evento[]
+    inscripciones      ProgramaInscripcion[]
+    blogs              Blog[]
+    comunicados        Comunicado[]
+    eventoInscripcions EventoInscripcion[]
+
+    @@map("departamento")
+}
+
+model Sede {
+    id          BigInt  @id @default(autoincrement()) @map("sede_id")
+    imagen      String? @map("sede_imagen")
+    nombre      String  @map("sede_nombre")
+    nombreAbre  String? @map("sede_nombre_abre")
+    descripcion String  @map("sede_descripcion") @db.Text
+
+    // Responsables Data
+    imagenResp1 String? @map("sede_imagen_responsable1")
+    nombreResp1 String? @map("sede_nombre_responsable1")
+    cargoResp1  String? @map("sede_cargo_responsable1")
+    imagenResp2 String? @map("sede_imagen_responsable2")
+    nombreResp2 String? @map("sede_nombre_responsable2")
+    cargoResp2  String? @map("sede_cargo_responsable2")
+
+    contacto1 Int      @map("sede_contacto_1")
+    contacto2 Int?     @map("sede_contacto_2")
+    facebook  String?  @map("sede_facebook")
+    tiktok    String?  @map("sede_tiktok")
+    whatsapp  String?  @map("sede_grupo_whatsapp")
+    horario   String   @map("sede_horario")
+    turno     String   @map("sede_turno")
+    ubicacion String   @map("sede_ubicacion") @db.Text
+    latitud   Decimal? @map("sede_latitud") @db.Decimal(11, 8)
+    longitud  Decimal? @map("sede_longitud") @db.Decimal(11, 8)
+    estado    Estado   @default(ACTIVO) @map("sede_estado")
+
+    // Relations
+    departamentoId BigInt       @map("dep_id")
+    departamento   Departamento @relation(fields: [departamentoId], references: [id], onDelete: Cascade)
+
+    users         UserSede[]
+    programas     ProgramaSedeTurno[]
+    inscripciones ProgramaInscripcion[]
+    galerias      Galeria[]
+
+    // Audit
+    createdAt DateTime  @default(now()) @map("created_at")
+    updatedAt DateTime  @updatedAt @map("updated_at")
+    deletedAt DateTime? @map("deleted_at")
+    createdBy BigInt?   @map("created_by")
+    updatedBy BigInt?   @map("updated_by")
+    deletedBy BigInt?   @map("deleted_by")
+
+    @@map("sede")
+}
+
+model Distrito {
+    id     BigInt @id @default(autoincrement()) @map("dis_id")
+    codigo Int    @map("dis_codigo")
+    nombre String @map("dis_nombre")
+    estado Estado @default(ACTIVO) @map("dis_estado")
+
+    departamentoId BigInt       @map("dep_id")
+    departamento   Departamento @relation(fields: [departamentoId], references: [id], onDelete: Cascade)
+
+    unidadesEducativas UnidadEducativa[]
+
+    // Audit
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("distrito")
+}
+
+model Provincia {
+    id     BigInt @id @default(autoincrement()) @map("prov_id")
+    nombre String @map("prov_nombre")
+    estado Estado @default(ACTIVO) @map("prov_estado")
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("provincia")
+}
+
+// ============================================
+// 🔐 AUTH & USERS SERVICE
+// ============================================
+
+model User {
+    id              BigInt  @id @default(autoincrement())
+    imagen          String?
+    nombre          String
+    apellidos       String
+    genero          String? @default("No prefiero decirlo")
+    licenciatura    String?
+    direccion       String?
+    curriculum      String?
+    fechaNacimiento String? @map("fecha_nacimiento")
+    estadoCivil     String? @map("estado_civil")
+    facebook        String?
+    tiktok          String?
+    cargo           String?
+    celular         Int?
+
+    correo        String  @unique
+    username      String  @unique
+    password      String
+    rememberToken String? @map("remember_token")
+    estado        Estado  @default(ACTIVO)
+
+    // Tenant Context (Department Responsibility)
+    tenantId BigInt?       @map("tenant_id") // dep_id in logic
+    tenant   Departamento? @relation(fields: [tenantId], references: [id])
+
+    // Profile Mapping
+    personaId BigInt? @unique @map("per_id")
+    // persona     MapPersona? @relation(fields: [personaId], references: [id])
+
+    // Relations
+    sedes     UserSede[]
+    roles     UserRole[]
+    auditLogs AuditLog[]
+
+    // Audit
+    createdAt DateTime  @default(now()) @map("created_at")
+    updatedAt DateTime  @updatedAt @map("updated_at")
+    deletedAt DateTime? @map("deleted_at")
+    createdBy BigInt?   @map("created_by")
+    updatedBy BigInt?   @map("updated_by")
+    deletedBy BigInt?   @map("deleted_by")
+
+    // Legacy columns support (optional JSONs from SQL)
+    sedeIds String? @map("sede_ids") @db.Text
+    proIds  String? @map("pro_ids") @db.Text
+
+    @@map("admins")
+}
+
+model Role {
+    id        BigInt @id @default(autoincrement())
+    name      String @unique
+    guardName String @map("guard_name")
+
+    permissions RolePermission[]
+    users       UserRole[]
+
+    updatedAt DateTime @updatedAt @map("updated_at")
+    createdAt DateTime @default(now()) @map("created_at")
+
+    @@map("roles")
+}
+
+model Permission {
+    id        BigInt  @id @default(autoincrement())
+    name      String  @unique
+    guardName String  @map("guard_name")
+    groupName String? @map("group_name")
+
+    roles RolePermission[]
+
+    updatedAt DateTime @updatedAt @map("updated_at")
+    createdAt DateTime @default(now()) @map("created_at")
+
+    @@map("permissions")
+}
+
+model UserRole {
+    userId    BigInt @map("model_id")
+    roleId    BigInt @map("role_id")
+    modelType String @default("App\\User") @map("model_type")
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+    @@id([userId, roleId, modelType])
+    @@map("model_has_roles")
+}
+
+model RolePermission {
+    roleId       BigInt @map("role_id")
+    permissionId BigInt @map("permission_id")
+
+    role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+    permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+    @@id([roleId, permissionId])
+    @@map("role_has_permissions")
+}
+
+model UserSede {
+    userId BigInt @map("user_id")
+    sedeId BigInt @map("sede_id")
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    sede Sede @relation(fields: [sedeId], references: [id], onDelete: Cascade)
+
+    @@id([userId, sedeId])
+    @@map("user_has_sedes") // New table for N:M
+}
+
+// ============================================
+// 🎓 ACADEMIC / CORE SERVICE
+// ============================================
+
+model Programa {
+    id           BigInt  @id @default(autoincrement()) @map("pro_id")
+    codigo       String? @map("pro_codigo")
+    nombre       String  @map("pro_nombre")
+    nombreAbre   String? @map("pro_nombre_abre")
+    contenido    String  @map("pro_contenido") @db.Text
+    horario      String? @map("pro_horario")
+    cargaHoraria Int     @map("pro_carga_horaria")
+    costo        Int     @map("pro_costo")
+    banner       String  @map("pro_banner")
+    afiche       String  @map("pro_afiche")
+    convocatoria String? @map("pro_convocatoria")
+
+    fechaIniIns   DateTime @map("pro_fecha_inicio_inscripcion") @db.Date
+    fechaFinIns   DateTime @map("pro_fecha_fin_inscripcion") @db.Date
+    fechaIniClase DateTime @map("pro_fecha_inicio_clase") @db.Date
+
+    estadoInscripcion Boolean @default(true) @map("pro_estado_inscripcion")
+    estado            Estado  @default(ACTIVO) @map("pro_estado")
+
+    // Multi-tenant Reference
+    tenantId BigInt?       @map("tenant_id")
+    tenant   Departamento? @relation(fields: [tenantId], references: [id])
+
+    // Relations
+    duracionId BigInt           @map("pd_id")
+    duracion   ProgramaDuracion @relation(fields: [duracionId], references: [id])
+
+    versionId BigInt          @map("pv_id")
+    version   ProgramaVersion @relation(fields: [versionId], references: [id])
+
+    tipoId BigInt       @map("pro_tip_id")
+    tipo   ProgramaTipo @relation(fields: [tipoId], references: [id])
+
+    modalidadId BigInt            @map("pm_id")
+    modalidad   ProgramaModalidad @relation(fields: [modalidadId], references: [id])
+
+    sedesTurnos   ProgramaSedeTurno[]
+    modulos       ProgramaModulo[]
+    inscripciones ProgramaInscripcion[]
+    restriccion   ProgramaRestriccion?
+
+    // Audit
+    createdAt DateTime  @default(now()) @map("created_at")
+    updatedAt DateTime  @updatedAt @map("updated_at")
+    deletedAt DateTime? @map("deleted_at")
+    createdBy BigInt?   @map("created_by")
+    updatedBy BigInt?   @map("updated_by")
+    deletedBy BigInt?   @map("deleted_by")
+
+    @@map("programa")
+}
+
+model ProgramaDuracion {
+    id        BigInt     @id @default(autoincrement()) @map("pd_id")
+    nombre    String     @map("pd_nombre")
+    semana    Int        @map("pd_semana")
+    estado    Estado     @default(ACTIVO) @map("pd_estado")
+    programas Programa[]
+    createdAt DateTime   @default(now()) @map("created_at")
+    updatedAt DateTime   @updatedAt @map("updated_at")
+
+    @@map("programa_duracion")
+}
+
+model ProgramaVersion {
+    id        BigInt     @id @default(autoincrement()) @map("pv_id")
+    nombre    String     @map("pv_nombre")
+    romano    String?    @map("pv_romano")
+    numero    Int        @map("pv_numero")
+    gestion   String?    @map("pv_gestion")
+    estado    Estado     @default(ACTIVO) @map("pv_estado")
+    programas Programa[]
+    createdAt DateTime   @default(now()) @map("created_at")
+    updatedAt DateTime   @updatedAt @map("updated_at")
+
+    @@map("programa_version")
+}
+
+model ProgramaTipo {
+    id             BigInt                 @id @default(autoincrement()) @map("pro_tip_id")
+    nombre         String                 @map("pro_tip_nombre")
+    estado         Estado                 @default(ACTIVO) @map("pro_tip_estado")
+    programas      Programa[]
+    calificaciones ProgramaCalificacion[]
+    createdAt      DateTime               @default(now()) @map("created_at")
+    updatedAt      DateTime               @updatedAt @map("updated_at")
+
+    @@map("programa_tipo")
+}
+
+model ProgramaModalidad {
+    id             BigInt                     @id @default(autoincrement()) @map("pm_id")
+    nombre         String                     @map("pm_nombre")
+    estado         Estado                     @default(ACTIVO) @map("pm_estado")
+    programas      Programa[]
+    inscripciones  EventoInscripcion[] // Linking to event inscriptions v2
+    calificaciones CalificacionParticipante[]
+    createdAt      DateTime                   @default(now()) @map("created_at")
+    updatedAt      DateTime                   @updatedAt @map("updated_at")
+
+    @@map("programa_modalidad")
+}
+
+model ProgramaModulo {
+    id          BigInt   @id @default(autoincrement()) @map("pm_id")
+    codigo      String?  @map("pm_codigo")
+    nombre      String   @map("pm_nombre")
+    descripcion String   @map("pm_descripcion")
+    notaMinima  Int      @default(69) @map("pm_nota_minima")
+    fechaInicio DateTime @map("pm_fecha_inicio") @db.Date
+    fechaFin    DateTime @map("pm_fecha_fin") @db.Date
+    estado      Estado   @default(ACTIVO) @map("pm_estado")
+
+    programaId BigInt   @map("pro_id")
+    programa   Programa @relation(fields: [programaId], references: [id], onDelete: Cascade)
+
+    calificaciones CalificacionParticipante[]
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("programa_modulo")
+}
+
+model ProgramaSedeTurno {
+    id         BigInt @id @default(autoincrement()) @map("psp_id")
+    sedeId     BigInt @map("sede_id")
+    programaId BigInt @map("pro_id")
+    turnoIds   String @map("pro_tur_ids") // JSON
+    cupo       Int    @map("pro_cupo")
+    cupoPre    Int    @map("pro_cupo_preinscrito")
+    estado     Estado @default(ACTIVO) @map("pst_estado")
+
+    sede     Sede     @relation(fields: [sedeId], references: [id], onDelete: Cascade)
+    programa Programa @relation(fields: [programaId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@unique([sedeId, programaId])
+    @@map("programa_sede_turno")
+}
+
+model ProgramaTurno {
+    id          BigInt  @id @default(autoincrement()) @map("pro_tur_id")
+    nombre      String  @map("pro_tur_nombre")
+    descripcion String? @map("pro_tur_descripcion") @db.Text
+    estado      Estado  @default(ACTIVO) @map("pro_tur_estado")
+
+    inscripciones ProgramaInscripcion[]
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("programa_turno")
+}
+
+model ProgramaInscripcion {
+    id              BigInt   @id @default(autoincrement()) @map("pi_id")
+    docDigital      String?  @map("pi_doc_digital")
+    certificacion   Boolean? @map("pi_certificacion")
+    entregoCert     Boolean? @map("pi_entrego_cert")
+    folio           BigInt?
+    partida         BigInt?
+    carton          BigInt?
+    licenciatura    String?  @map("pi_licenciatura")
+    unidadEducativa String?  @map("pi_unidad_educativa")
+    nivel           String?  @map("pi_nivel")
+    subsistema      String?  @map("pi_subsistema")
+    materia         String?  @map("pi_materia")
+    observacion     String?  @map("pi_observacion")
+    estado          Estado   @default(ACTIVO) @map("pi_estado")
+
+    // Relations
+    programaId BigInt   @map("pro_id")
+    programa   Programa @relation(fields: [programaId], references: [id], onDelete: Cascade)
+
+    turnoId BigInt        @map("pro_tur_id")
+    turno   ProgramaTurno @relation(fields: [turnoId], references: [id], onDelete: Cascade)
+
+    sedeId BigInt @map("sede_id")
+    sede   Sede   @relation(fields: [sedeId], references: [id], onDelete: Cascade)
+
+    estadoInscripcionId BigInt                    @map("pie_id")
+    estadoInscripcion   ProgramaInscripcionEstado @relation(fields: [estadoInscripcionId], references: [id], onDelete: Cascade)
+
+    personaId BigInt @map("per_id")
+    // MapPersona relation should be here if we normalize fully. For now keeping ID.
+
+    // Children
+    bouchers       ProgramaBaucher[]
+    calificaciones CalificacionParticipante[]
+    actas          ActaConclusion[]
+
+    // Tenant / Audit
+    tenantId BigInt?       @map("tenant_id")
+    tenant   Departamento? @relation(fields: [tenantId], references: [id])
+
+    createdAt DateTime  @default(now()) @map("created_at")
+    updatedAt DateTime  @updatedAt @map("updated_at")
+    deletedAt DateTime? @map("deleted_at")
+    createdBy BigInt?   @map("created_by")
+    updatedBy BigInt?   @map("updated_by")
+    deletedBy BigInt?   @map("deleted_by")
+
+    @@map("programa_inscripcion")
+}
+
+model ProgramaInscripcionEstado {
+    id            BigInt                @id @default(autoincrement()) @map("pie_id")
+    nombre        String                @map("pie_nombre")
+    estado        Estado                @default(ACTIVO) @map("pie_estado")
+    inscripciones ProgramaInscripcion[]
+    createdAt     DateTime              @default(now()) @map("created_at")
+    updatedAt     DateTime              @updatedAt @map("updated_at")
+
+    @@map("programa_inscripcion_estado")
+}
+
+model ProgramaBaucher {
+    id          BigInt    @id @default(autoincrement()) @map("pro_bau_id")
+    imagen      String    @map("pro_bau_imagen")
+    nroDeposito BigInt?   @map("pro_bau_nro_deposito")
+    monto       Int       @map("pro_bau_monto")
+    fecha       DateTime  @map("pro_bau_fecha") @db.Date
+    tipoPago    String    @default("Baucher") @map("pro_bau_tipo_pago")
+    confirmado  Boolean?  @map("pro_bau_confirmado")
+    fechaConf   DateTime? @map("pro_bau_fecha_conf")
+
+    inscripcionId BigInt              @map("pi_id")
+    inscripcion   ProgramaInscripcion @relation(fields: [inscripcionId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("programa_baucher")
+}
+
+model ProgramaRestriccion {
+    id          BigInt  @id @default(autoincrement()) @map("pr_id")
+    descripcion String  @map("res_descripcion") @db.Text
+    generoIds   String? @map("gen_ids") // JSON
+    subIds      String? @map("sub_ids")
+    nivIds      String? @map("niv_ids")
+    espIds      String? @map("esp_ids")
+    catIds      String? @map("cat_ids")
+    carIds      String? @map("car_ids")
+    estado      Estado  @default(ACTIVO) @map("pr_estado")
+
+    programaId BigInt   @unique @map("pro_id")
+    programa   Programa @relation(fields: [programaId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("programa_restriccion")
+}
+
+model CalificacionParticipante {
+    id      BigInt @id @default(autoincrement()) @map("cp_id")
+    puntaje Int    @map("cp_puntaje")
+    estado  String @default("aprobado") @map("cp_estado")
+
+    inscripcionId BigInt              @map("pi_id")
+    inscripcion   ProgramaInscripcion @relation(fields: [inscripcionId], references: [id], onDelete: Cascade)
+
+    moduloId BigInt         @map("pm_id")
+    modulo   ProgramaModulo @relation(fields: [moduloId], references: [id], onDelete: Cascade)
+
+    tipoCalifId BigInt               @map("pc_id")
+    tipoCalif   ProgramaCalificacion @relation(fields: [tipoCalifId], references: [id], onDelete: Cascade)
+
+    createdAt           DateTime           @default(now()) @map("created_at")
+    updatedAt           DateTime           @updatedAt @map("updated_at")
+    programaModalidad   ProgramaModalidad? @relation(fields: [programaModalidadId], references: [id])
+    programaModalidadId BigInt?
+
+    @@map("calificacion_participante")
+}
+
+model ProgramaCalificacion {
+    id     BigInt @id @default(autoincrement()) @map("pc_id")
+    estado Estado @default(ACTIVO) @map("pc_estado")
+
+    programaTipoId BigInt       @map("pro_tip_id")
+    programaTipo   ProgramaTipo @relation(fields: [programaTipoId], references: [id], onDelete: Cascade)
+
+    tipoId BigInt                   @map("ptc_id")
+    tipo   ProgramaTipoCalificacion @relation(fields: [tipoId], references: [id], onDelete: Cascade)
+
+    calificaciones CalificacionParticipante[]
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("programa_calificacion")
+}
+
+model ProgramaTipoCalificacion {
+    id     BigInt @id @default(autoincrement()) @map("ptc_id")
+    nombre String @map("ptc_nombre")
+    nota   Int    @map("ptc_nota")
+    estado Estado @default(ACTIVO) @map("ptc_estado")
+
+    calificaciones ProgramaCalificacion[]
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("programa_tipo_calificacion")
+}
+
+model ActaConclusion {
+    id            BigInt    @id @default(autoincrement()) @map("ac_id")
+    titulo        String    @map("ac_titulo")
+    descripcion   String    @map("ac_descripcion") @db.Text
+    url           String?   @map("ac_url")
+    mejor         Boolean?  @map("ac_mejor")
+    nota          Int?      @map("ac_nota")
+    documento     String?   @map("ac_documento")
+    depositoNum   BigInt?   @map("ac_deposito_num")
+    depositoFecha DateTime? @map("ac_deposito_fecha") @db.Date
+    depositoMonto Int?      @map("ac_deposito_monto")
+    foto          Boolean?  @map("ac_foto")
+
+    inscripcionId BigInt              @map("pi_id")
+    inscripcion   ProgramaInscripcion @relation(fields: [inscripcionId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("acta_conclusion")
+}
+
+// ============================================
+// 🎫 EVENT SERVICE
+// ============================================
+
+model Evento {
+    id          BigInt   @id @default(autoincrement()) @map("eve_id")
+    nombre      String   @map("eve_nombre")
+    codigo      String?  @map("eve_codigo")
+    descripcion String   @map("eve_descripcion") @db.Text
+    banner      String   @map("eve_banner")
+    afiche      String   @map("eve_afiche")
+    modulosIds  String   @map("pm_ids") // JSON
+    fecha       DateTime @map("eve_fecha") @db.Date
+    inscripcion Boolean  @default(true) @map("eve_inscripcion")
+    asistencia  Boolean? @map("eve_asistencia")
+
+    lugar         String @map("eve_lugar")
+    totalInscrito BigInt @map("eve_total_inscrito")
+    estado        Estado @default(ACTIVO) @map("eve_estado")
+
+    tipoId BigInt     @map("et_id")
+    tipo   TipoEvento @relation(fields: [tipoId], references: [id], onDelete: Cascade)
+
+    // Tenant Reference
+    tenantId BigInt?       @map("tenant_id")
+    tenant   Departamento? @relation(fields: [tenantId], references: [id])
+
+    cuestionarios EventoCuestionario[]
+    inscripciones EventoInscripcion[]
+    restriccion   EventoRestriccion?
+
+    createdAt DateTime  @default(now()) @map("created_at")
+    updatedAt DateTime  @updatedAt @map("updated_at")
+    deletedAt DateTime? @map("deleted_at")
+    createdBy BigInt?   @map("created_by")
+    updatedBy BigInt?   @map("updated_by")
+    deletedBy BigInt?   @map("deleted_by")
+
+    @@map("evento")
+}
+
+model TipoEvento {
+    id        BigInt   @id @default(autoincrement()) @map("et_id")
+    nombre    String   @map("et_nombre")
+    estado    Estado   @default(ACTIVO) @map("et_estado")
+    eventos   Evento[]
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("tipo_evento")
+}
+
+model EventoInscripcion {
+    id         BigInt  @id @default(autoincrement()) @map("eve_ins_id")
+    asistencia Boolean @default(false) @map("eve_ins_asistencia")
+    estado     Estado  @default(ACTIVO) @map("eve_ins_estado")
+
+    nroDeposito    String?   @map("eve_nro_deposito")
+    fechaDeposito  DateTime? @map("eve_fecha_deposito") @db.Date
+    imagenDeposito String?   @map("eve_imagen_deposito")
+
+    // Relations
+    eventoPersonId BigInt        @map("eve_per_id")
+    eventoPerson   EventoPersona @relation(fields: [eventoPersonId], references: [id], onDelete: Cascade)
+
+    eventoId BigInt @map("eve_id")
+    evento   Evento @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+
+    departamentoId BigInt       @map("dep_id") // Sede or Dept? Original SQL says dep_id
+    departamento   Departamento @relation(fields: [departamentoId], references: [id], onDelete: Cascade)
+
+    modalidadId BigInt            @map("pm_id")
+    modalidad   ProgramaModalidad @relation(fields: [modalidadId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("evento_inscripcion_v2")
+}
+
+model EventoPersona {
+    id          BigInt   @id @default(autoincrement()) @map("eve_per_id")
+    ci          BigInt   @map("eve_per_ci")
+    complemento String   @map("eve_per_complemento")
+    expedido    String   @map("eve_per_expedido")
+    nombre1     String   @map("eve_per_nombre_1")
+    nombre2     String   @map("eve_per_nombre_2")
+    apellido1   String   @map("eve_per_apellido_1")
+    apellido2   String   @map("eve_per_apellido_2")
+    fechaNac    DateTime @map("eve_per_fecha_nacimiento") @db.Date
+    correo      String   @map("eve_per_correo")
+    celular     String   @map("eve_per_celular")
+
+    generoId BigInt @map("gen_id")
+    genero   Genero @relation(fields: [generoId], references: [id], onDelete: Cascade)
+
+    inscripciones EventoInscripcion[]
+    respuestas    EventoRespuesta[]
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("evento_personas")
+}
+
+model Genero {
+    id     BigInt @id @default(autoincrement()) @map("gen_id")
+    nombre String @map("gen_nombre")
+    estado Estado @default(ACTIVO) @map("gen_estado")
+
+    eventosPersonas EventoPersona[]
+    mapPersonas     MapPersona[]
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("genero")
+}
+
+model EventoRestriccion {
+    id          BigInt  @id @default(autoincrement()) @map("er_id")
+    descripcion String  @map("er_descripcion") @db.Text
+    genIds      String? @map("gen_ids")
+    subIds      String? @map("sub_ids")
+    nivIds      String? @map("niv_ids")
+    espIds      String? @map("esp_ids")
+
+    estado Estado @default(ACTIVO) @map("pr_estado")
+
+    eventoId BigInt @unique @map("eve_id")
+    evento   Evento @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("evento_restriccion")
+}
+
+model EventoCuestionario {
+    id          BigInt   @id @default(autoincrement()) @map("eve_cue_id")
+    titulo      String   @map("eve_cue_titulo")
+    descripcion String   @map("eve_cue_descripcion") @db.Text
+    fechaIni    DateTime @map("eve_cue_fecha_ini")
+    fechaFin    DateTime @map("eve_cue_fecha_fin")
+    ptsMax      Int?     @map("eve_cue_pts_max")
+    estado      Estado   @default(ACTIVO) @map("eve_cue_estado")
+
+    eventoId BigInt @map("eve_id")
+    evento   Evento @relation(fields: [eventoId], references: [id], onDelete: Cascade)
+
+    preguntas EventoPregunta[]
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("evento_cuestionario")
+}
+
+model EventoPregunta {
+    id          BigInt  @id @default(autoincrement()) @map("eve_pre_id")
+    texto       String  @map("eve_pre_texto")
+    tipo        String  @map("eve_pre_tipo") // multiple_choice, etc
+    obligatorio Boolean @default(true) @map("eve_pre_obligatorio")
+    estado      Estado  @default(ACTIVO) @map("eve_pre_estado")
+
+    cuestionarioId BigInt             @map("eve_cue_id")
+    cuestionario   EventoCuestionario @relation(fields: [cuestionarioId], references: [id], onDelete: Cascade)
+
+    opciones   EventoOpcion[]
+    respuestas EventoRespuesta[]
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("evento_pregunta")
+}
+
+model EventoOpcion {
+    id         BigInt  @id @default(autoincrement()) @map("eve_opc_id")
+    texto      String  @map("eve_opc_texto")
+    esCorrecta Boolean @default(false) @map("eve_opc_es_correcta")
+    estado     Estado  @default(ACTIVO) @map("eve_opc_estado")
+
+    preguntaId BigInt         @map("eve_pre_id")
+    pregunta   EventoPregunta @relation(fields: [preguntaId], references: [id], onDelete: Cascade)
+
+    respuestas EventoRespuesta[]
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("evento_opciones")
+}
+
+model EventoRespuesta {
+    id    BigInt @id @default(autoincrement()) @map("eve_res_id")
+    texto String @map("eve_res_texto")
+
+    preguntaId BigInt         @map("eve_pre_id")
+    pregunta   EventoPregunta @relation(fields: [preguntaId], references: [id], onDelete: Cascade)
+
+    opcionId BigInt       @map("eve_opc_id")
+    opcion   EventoOpcion @relation(fields: [opcionId], references: [id], onDelete: Cascade)
+
+    personaId BigInt        @map("eve_per_id")
+    persona   EventoPersona @relation(fields: [personaId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("evento_respuestas")
+}
+
+// ============================================
+// 📍 MAPS / REFERENCE TABLES
+// ============================================
+
+model MapPersona {
+    id          BigInt   @id @default(autoincrement()) @map("per_id")
+    rda         BigInt?  @map("per_rda")
+    ci          BigInt   @map("per_ci")
+    complemento String?  @map("per_complemento")
+    nombre1     String?  @map("per_nombre1")
+    nombre2     String?  @map("per_nombre2")
+    apellido1   String?  @map("per_apellido1")
+    apellido2   String?  @map("per_apellido2")
+    fechaNac    DateTime @map("per_fecha_nacimiento") @db.Date
+    celular     Int      @default(0) @map("per_celular")
+    correo      String   @default("sincorreo") @map("per_correo")
+    estado      Estado   @default(ACTIVO) @map("per_estado")
+
+    unidadEducativaId Int? @map("uni_edu_id")
+
+    generoId BigInt @map("gen_id")
+    genero   Genero @relation(fields: [generoId], references: [id], onDelete: Cascade)
+
+    areaId BigInt      @map("area_id")
+    area   AreaTrabajo @relation(fields: [areaId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("map_persona")
+}
+
+model AreaTrabajo {
+    id        BigInt       @id @default(autoincrement()) @map("area_id")
+    nombre    String       @map("area_nombre")
+    estado    Estado       @default(ACTIVO) @map("area_estado")
+    personas  MapPersona[]
+    createdAt DateTime     @default(now()) @map("created_at")
+    updatedAt DateTime     @updatedAt @map("updated_at")
+
+    @@map("area_trabajo")
+}
+
+model UnidadEducativa {
+    id     BigInt @id @default(autoincrement()) @map("uni_edu_id")
+    codigo BigInt @map("uni_edu_codigo")
+    nombre String @map("uni_edu_nombre")
+    estado Estado @default(ACTIVO) @map("uni_edu_estado")
+
+    distritoId BigInt?   @map("dis_id")
+    distrito   Distrito? @relation(fields: [distritoId], references: [id])
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("unidad_educativa")
+}
+
+model Blog {
+    id          BigInt    @id @default(autoincrement()) @map("blog_id")
+    imagen      String    @map("blog_imagen")
+    titulo      String    @map("blog_titulo")
+    descripcion String?   @map("blog_descripcion") @db.Text
+    fecha       DateTime? @map("blog_fecha") @db.Date
+    estado      Estado    @default(ACTIVO) @map("blog_estado")
+
+    tenantId BigInt?       @map("tenant_id")
+    tenant   Departamento? @relation(fields: [tenantId], references: [id])
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("blog")
+}
+
+model Comunicado {
+    id          BigInt @id @default(autoincrement()) @map("comun_id")
+    imagen      String @map("comun_imagen")
+    nombre      String @map("comun_nombre")
+    descripcion String @map("comun_descripcion") @db.Text
+    importancia String @default("normal") @map("comun_importancia")
+    estado      Estado @default(ACTIVO) @map("comun_estado")
+
+    tenantId BigInt?       @map("tenant_id")
+    tenant   Departamento? @relation(fields: [tenantId], references: [id])
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("comunicado")
+}
+
+model Galeria {
+    id     BigInt @id @default(autoincrement()) @map("galeria_id")
+    imagen String @map("galeria_imagen")
+    estado Estado @default(ACTIVO) @map("galeria_estado")
+
+    sedeId     BigInt? @map("sede_id")
+    sede       Sede?   @relation(fields: [sedeId], references: [id])
+    programaId BigInt? @map("pro_id")
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("galeria")
+}
+
+model Video {
+    id     BigInt @id @default(autoincrement()) @map("video_id")
+    iframe String @map("video_iframe") @db.Text
+    tipo   String @default("YOUTUBE") @map("video_tipo")
+
+    tenantId BigInt? @map("tenant_id")
+
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+
+    @@map("video")
+}
+
+// ============================================
+// 🕵️ AUDIT SERVICE
+// ============================================
+
+model AuditLog {
+    id         BigInt   @id @default(autoincrement())
+    action     String // CREATE, UPDATE, DELETE, LOGIN, FIRMA
+    resource   String // table name
+    resourceId String? // affected ID
+    userId     BigInt?
+    user       User?    @relation(fields: [userId], references: [id])
+    details    Json? // old values, new values
+    ip         String?
+    userAgent  String?
+    timestamp  DateTime @default(now())
+
+    tenantId BigInt?
+    tenant   Departamento? @relation(fields: [tenantId], references: [id])
+
+    @@map("audit_logs")
+}
+
+// Additional simple models to prevent errors if referenced
+model Profe {
+    id        BigInt   @id @default(autoincrement()) @map("profe_id")
+    nombre    String   @map("profe_nombre")
+    estado    Estado   @default(ACTIVO) @map("profe_estado")
+    createdAt DateTime @default(now()) @map("created_at")
+    updatedAt DateTime @updatedAt @map("updated_at")
+    // Simplified for brevity, assume single record
+
+    @@map("profe")
+}
