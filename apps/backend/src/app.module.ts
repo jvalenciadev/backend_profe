@@ -11,19 +11,35 @@ import { AcademicModule } from '../../academic/src/academic.module';
 import { AuditModule } from '../../audit/src/audit.module';
 import { JobsModule } from '../../jobs/src/jobs.module';
 import { DatabaseModule } from '@app/database';
+import { APP_GUARD } from '@nestjs/core';
+import { CaslModule, ApiKeyGuard, MailModule } from '@app/common';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     DatabaseModule,
+    CaslModule, // Added global CASL module
+    MailModule, // Added global Mail module
     AuthModule,
     TerritorialModule,
     UsersModule,
     AcademicModule,
     AuditModule,
     JobsModule,
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'uploads'),
+      serveRoot: '/uploads',
+    }),
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: ApiKeyGuard,
+    },
+  ],
 })
 export class AppModule { }

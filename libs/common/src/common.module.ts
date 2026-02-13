@@ -1,9 +1,10 @@
 import { Module } from '@nestjs/common';
 import { CommonService } from './common.service';
-import { CaslAbilityFactory } from './casl/casl-ability.factory';
+import { DatabaseModule } from '@app/database';
 
 @Module({
-  providers: [CommonService, CaslAbilityFactory],
-  exports: [CommonService, CaslAbilityFactory],
+  imports: [DatabaseModule],
+  providers: [CommonService],
+  exports: [CommonService, DatabaseModule],
 })
 export class CommonModule { }

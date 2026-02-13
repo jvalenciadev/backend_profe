@@ -1,0 +1,29 @@
+﻿Environment variables loaded from .env
+Prisma schema loaded from libs\database\prisma\schema.prisma
+node.exe : Error: 
+En C:\Program 
+Files\nodejs\npx.ps1: 29 
+Carácter: 3
++   & $NODE_EXE $NPX_CLI_JS 
+$args
++   
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo           
+   : NotSpecified: (Error:   
+  :String) [], RemoteExcep   
+ tion
+    + FullyQualifiedErrorId  
+   : NativeCommandError
+ 
+EPERM: operation not 
+permitted, rename 'C:\Users\P
+ROFE-JP\Desktop\PROYECTO\prof
+e\backend\node_modules\.prism
+a\client\query_engine-windows
+.dll.node.tmp23856' -> 'C:\Us
+ers\PROFE-JP\Desktop\PROYECTO
+\profe\backend\node_modules\.
+prisma\client\query_engine-wi
+ndows.dll.node'
+
+

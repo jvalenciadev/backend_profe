@@ -7,7 +7,7 @@ export class AuditService {
 
   async getLogs(tenantId?: string) {
     const where: any = {};
-    if (tenantId) where.tenantId = BigInt(tenantId);
+    if (tenantId) where.tenantId = tenantId;
 
     const logs = await this.prisma.auditLog.findMany({
       where,

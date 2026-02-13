@@ -7,7 +7,8 @@ import {
   SedesController, SedesService,
   DistritosController, DistritosService,
   ProvinciasController, ProvinciasService,
-  UnidadEducativaController, UnidadEducativaService
+  UnidadEducativaController, UnidadEducativaService,
+  GaleriasController, GaleriasService
 } from './territorial-crud.controllers';
 
 @Module({
@@ -17,14 +18,16 @@ import {
     SedesController,
     DistritosController,
     ProvinciasController,
-    UnidadEducativaController
+    UnidadEducativaController,
+    GaleriasController
   ],
   providers: [
     TerritorialService,
     SedesService,
     DistritosService,
     ProvinciasService,
-    UnidadEducativaService
+    UnidadEducativaService,
+    GaleriasService
   ],
 })
 export class TerritorialModule { }

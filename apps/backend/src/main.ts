@@ -8,9 +8,18 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.useGlobalFilters(new AllExceptionsFilter());
+
   // Basic configurations
   app.enableCors();
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
+
+  // Force UTF-8 encoding for all API responses, excluding static files
+  app.use((req, res, next) => {
+    if (!req.url.startsWith('/uploads')) {
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    }
+    next();
+  });
 
   // Support for BigInt serialization
   setupBigIntSerialization();

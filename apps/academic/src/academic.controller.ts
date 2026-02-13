@@ -1,29 +1,28 @@
-import { Controller, Get, Post, Body, Query, Req } from '@nestjs/common';
+import { Controller, Post, Body, Req, UseGuards, HttpCode, HttpStatus, Param } from '@nestjs/common';
 import { AcademicService } from './academic.service';
+import { JwtAuthGuard } from '@app/common';
 
-@Controller('academic')
+@Controller('academic-ops')
 export class AcademicController {
   constructor(private readonly academicService: AcademicService) { }
 
-  @Post('programas')
-  createPrograma(@Body() data: any, @Req() req: any) {
-    const user = req.user || { id: 1 };
-    return this.academicService.createPrograma(data, user);
+  /**
+   * Crear versión operativa desde un Maestro (Programa)
+   */
+  @Post('versionalizar/:id')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.CREATED)
+  versionalizar(@Param('id') id: string, @Body() data: any, @Req() req: any) {
+    return this.academicService.crearVersionDesdeMaster(id, data, req.user);
   }
 
-  @Get('programas')
-  findAllProgramas(@Query('tenantId') tenantId: string) {
-    return this.academicService.findAllProgramas(tenantId);
-  }
-
-  @Post('modulos')
-  createModulo(@Body() data: any) {
-    return this.academicService.createModulo(data);
-  }
-
+  /**
+   * Inscribir participante
+   */
   @Post('inscripciones')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.CREATED)
   inscribir(@Body() data: any, @Req() req: any) {
-    const user = req.user || { id: 1 };
-    return this.academicService.inscribir(data, user);
+    return this.academicService.inscribir(data, req.user);
   }
 }

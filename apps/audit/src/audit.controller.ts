@@ -1,11 +1,11 @@
 import { Controller, Get, Query, Param } from '@nestjs/common';
 import { AuditService } from './audit.service';
 
-@Controller('audit')
+@Controller('audit-logs')
 export class AuditController {
   constructor(private readonly auditService: AuditService) { }
 
-  @Get('logs')
+  @Get()
   findAll(@Query('tenantId') tenantId: string) {
     return this.auditService.getLogs(tenantId);
   }

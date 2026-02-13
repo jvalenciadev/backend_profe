@@ -7,18 +7,64 @@ async function main() {
     console.log('🚀 Iniciando Seeder Masivo (Versión JS)...');
 
     try {
-        const hashedPassword = await bcrypt.hash('secret123', 10);
+        const hashedPassword = await bcrypt.hash('secret123', 12);
 
-        // --- 1. ROLES ---
-        const rolesNames = ['SUPER_ADMIN', 'RESPONSABLE_DEPARTAMENTO', 'FACILITADOR', 'AUDITOR'];
+        // --- 1. ROLES Y PERMISOS ---
+        console.log('🛡️ Configurando Roles y Permisos...');
+
+        const rolesList = [
+            { name: 'SUPER_ADMIN', desc: 'Control total del sistema' },
+            { name: 'RESPONSABLE_DEPARTAMENTAL', desc: 'Gestión por departamento' },
+            { name: 'FACILITADOR', desc: 'Gestión académica' },
+            { name: 'ESTUDIANTE', desc: 'Acceso a cursos' },
+            { name: 'AUDITOR_EXTERNO', desc: 'Solo lectura' }
+        ];
+
         const roles = {};
-        for (const name of rolesNames) {
-            roles[name] = await prisma.role.upsert({
-                where: { name },
+        for (const r of rolesList) {
+            roles[r.name] = await prisma.role.upsert({
+                where: { name: r.name },
                 update: {},
-                create: { name, guardName: 'web' },
+                create: { name: r.name, guardName: 'web' },
             });
         }
+
+        // Definir permisos básicos
+        const permissionsData = [
+            { name: 'manage_all', action: 'manage', subject: 'all' },
+            { name: 'view_dashboard', action: 'read', subject: 'Dashboard' },
+            { name: 'manage_users', action: 'manage', subject: 'User' },
+            { name: 'manage_programs', action: 'manage', subject: 'Programa' },
+            { name: 'view_reports', action: 'read', subject: 'Report' },
+        ];
+
+        const perms = {};
+        for (const p of permissionsData) {
+            perms[p.name] = await prisma.permission.upsert({
+                where: { name: p.name },
+                update: {},
+                create: { name: p.name, action: p.action, subject: p.subject, guardName: 'web' }
+            });
+        }
+
+        // Asignar permisos a roles
+        // SUPER_ADMIN -> Todo
+        await prisma.rolePermission.createMany({
+            data: [
+                { roleId: roles['SUPER_ADMIN'].id, permissionId: perms['manage_all'].id }
+            ],
+            skipDuplicates: true
+        });
+
+        // RESPONSABLE -> Usuarios y Programas
+        await prisma.rolePermission.createMany({
+            data: [
+                { roleId: roles['RESPONSABLE_DEPARTAMENTAL'].id, permissionId: perms['view_dashboard'].id },
+                { roleId: roles['RESPONSABLE_DEPARTAMENTAL'].id, permissionId: perms['manage_users'].id },
+                { roleId: roles['RESPONSABLE_DEPARTAMENTAL'].id, permissionId: perms['manage_programs'].id }
+            ],
+            skipDuplicates: true
+        });
 
         // --- 2. DEPARTAMENTOS ---
         const depsData = [
@@ -73,9 +119,9 @@ async function main() {
             });
 
             await prisma.userRole.upsert({
-                where: { userId_roleId_modelType: { userId: respUser.id, roleId: roles['RESPONSABLE_DEPARTAMENTO'].id, modelType: 'App\\User' } },
+                where: { userId_roleId_modelType: { userId: respUser.id, roleId: roles['RESPONSABLE_DEPARTAMENTAL'].id, modelType: 'App\\User' } },
                 update: {},
-                create: { userId: respUser.id, roleId: roles['RESPONSABLE_DEPARTAMENTO'].id, modelType: 'App\\User' },
+                create: { userId: respUser.id, roleId: roles['RESPONSABLE_DEPARTAMENTAL'].id, modelType: 'App\\User' },
             });
 
             // Facilitador

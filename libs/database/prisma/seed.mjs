@@ -10,7 +10,7 @@ async function main() {
         const hashedPassword = await bcrypt.hash('secret123', 10);
 
         // --- 1. ROLES ---
-        const rolesNames = ['SUPER_ADMIN', 'RESPONSABLE_DEPARTAMENTO', 'FACILITADOR', 'AUDITOR'];
+        const rolesNames = ['ADMINISTRADOR_SISTEMA', 'RESPONSABLE_DEPARTAMENTAL', 'FACILITADOR', 'AUDITOR'];
         const roles = {};
         for (const name of rolesNames) {
             roles[name] = await prisma.role.upsert({
@@ -73,9 +73,9 @@ async function main() {
             });
 
             await prisma.userRole.upsert({
-                where: { userId_roleId_modelType: { userId: respUser.id, roleId: roles['RESPONSABLE_DEPARTAMENTO'].id, modelType: 'App\\User' } },
+                where: { userId_roleId_modelType: { userId: respUser.id, roleId: roles['RESPONSABLE_DEPARTAMENTAL'].id, modelType: 'App\\User' } },
                 update: {},
-                create: { userId: respUser.id, roleId: roles['RESPONSABLE_DEPARTAMENTO'].id, modelType: 'App\\User' },
+                create: { userId: respUser.id, roleId: roles['RESPONSABLE_DEPARTAMENTAL'].id, modelType: 'App\\User' },
             });
 
             // Facilitador
@@ -121,9 +121,9 @@ async function main() {
         });
 
         await prisma.userRole.upsert({
-            where: { userId_roleId_modelType: { userId: superAdmin.id, roleId: roles['SUPER_ADMIN'].id, modelType: 'App\\User' } },
+            where: { userId_roleId_modelType: { userId: superAdmin.id, roleId: roles['ADMINISTRADOR_SISTEMA'].id, modelType: 'App\\User' } },
             update: {},
-            create: { userId: superAdmin.id, roleId: roles['SUPER_ADMIN'].id, modelType: 'App\\User' },
+            create: { userId: superAdmin.id, roleId: roles['ADMINISTRADOR_SISTEMA'].id, modelType: 'App\\User' },
         });
 
         console.log('✅ Seeder completado con éxito.');

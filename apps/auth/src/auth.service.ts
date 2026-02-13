@@ -2,18 +2,80 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '@app/database';
 import * as bcrypt from 'bcryptjs';
+import { CaslAbilityFactory, MailService } from '@app/common';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
-    private jwtService: JwtService
+    private jwtService: JwtService,
+    private abilityFactory: CaslAbilityFactory,
+    private mailService: MailService
   ) { }
 
+  async forgotPassword(email: string) {
+    const user = await this.prisma.user.findUnique({ where: { correo: email } });
+    if (!user) {
+      // Por seguridad, no decimos si el correo existe o no
+      return { message: 'Si el correo est\u00E1 registrado, recibir\u00E1 un enlace de recuperaci\u00F3n.' };
+    }
+
+    // Generar un token numérico de 6 dígitos
+    const token = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date();
+    expires.setHours(expires.getHours() + 1); // Expira en 1 hora
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        resetPasswordToken: token,
+        resetPasswordExpires: expires
+      }
+    });
+
+    await this.mailService.sendPasswordResetEmail(user.correo, token, user.nombre);
+
+    return { message: 'Si el correo est\u00E1 registrado, recibir\u00E1 un enlace de recuperaci\u00F3n.' };
+  }
+
+  async resetPassword(token: string, newPass: string) {
+    const cleanToken = String(token).trim();
+    const user = await this.prisma.user.findFirst({
+      where: {
+        resetPasswordToken: cleanToken,
+        resetPasswordExpires: { gt: new Date() }
+      }
+    });
+
+    if (!user) {
+      console.warn(`[AuthService] Password reset failed: Invalid or expired token provided: ${token}`);
+      throw new UnauthorizedException('Token inv\u00E1lido o expirado');
+    }
+
+    console.log(`[AuthService] User found for reset: ${user.username}. Hashing new password.`);
+    const hashedPassword = await bcrypt.hash(newPass, 12);
+
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        resetPasswordToken: null,
+        resetPasswordExpires: null
+      }
+    });
+
+    console.log(`[AuthService] Password reset successful for user: ${user.username}`);
+    return { message: 'Contrase\u00F1a actualizada exitosamente' };
+  }
+
   async validateUser(username: string, pass: string): Promise<any> {
-    console.log('Validating user:', username);
-    const user = await this.prisma.user.findUnique({
-      where: { username },
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { username },
+          { correo: username }
+        ]
+      },
       include: {
         tenant: true,
         roles: {
@@ -26,12 +88,10 @@ export class AuthService {
     });
 
     if (!user) {
-      console.log('User not found in database:', username);
       return null;
     }
 
     const isMatch = await bcrypt.compare(pass, user.password);
-    console.log('Password match:', isMatch);
 
     if (user && isMatch) {
       // Return user without password
@@ -42,7 +102,6 @@ export class AuthService {
   }
 
   async login(user: any) {
-    // Extract roles
     const roles = user.roles?.map((ur: any) => ur.role.name) || [];
     const sedesIds = user.sedes?.map((us: any) => us.sedeId.toString()) || [];
 
@@ -54,22 +113,83 @@ export class AuthService {
       sedes: sedesIds
     };
 
+    // Generar habilidades de CASL
+    const ability = await this.abilityFactory.createForUser(user);
+
     return {
       access_token: this.jwtService.sign(payload),
-      refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' }), // Simple refresh for now
+      refresh_token: this.jwtService.sign(payload, { expiresIn: '7d' }),
       user: {
         id: user.id.toString(),
         username: user.username,
         email: user.correo,
+        nombre: user.nombre,
+        apellidos: user.apellidos,
+        imagen: user.imagen,
+        cargo: user.cargo,
+        celular: user.celular,
+        genero: user.genero,
+        licenciatura: user.licenciatura,
+        direccion: user.direccion,
+        curriculum: user.curriculum,
+        fechaNacimiento: user.fechaNacimiento,
+        estadoCivil: user.estadoCivil,
+        facebook: user.facebook,
+        tiktok: user.tiktok,
         tenant: user.tenant,
-        roles: roles
+        tenantId: user.tenantId,
+        roles: roles,
+        permissions: ability.rules,
+        estado: user.estado,
+        sedes: user.sedes
       }
+    };
+  }
+
+  async getProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        tenant: true,
+        roles: { include: { role: true } },
+        sedes: { include: { sede: true } }
+      }
+    });
+
+    if (!user) throw new UnauthorizedException('Usuario no encontrado');
+
+    const ability = await this.abilityFactory.createForUser(user);
+    const roles = user.roles?.map((ur: any) => ur.role.name) || [];
+
+    return {
+      id: user.id,
+      username: user.username,
+      email: user.correo,
+      nombre: user.nombre,
+      apellidos: user.apellidos,
+      imagen: user.imagen,
+      cargo: user.cargo,
+      celular: user.celular,
+      genero: user.genero,
+      licenciatura: user.licenciatura,
+      direccion: user.direccion,
+      curriculum: user.curriculum,
+      fechaNacimiento: user.fechaNacimiento,
+      estadoCivil: user.estadoCivil,
+      facebook: user.facebook,
+      tiktok: user.tiktok,
+      tenantId: user.tenantId,
+      tenant: user.tenant,
+      roles: roles,
+      permissions: ability.rules,
+      estado: user.estado,
+      sedes: user.sedes
     };
   }
 
   async validate(payload: any) {
     return {
-      userId: payload.sub,
+      id: payload.sub,
       username: payload.username,
       tenantId: payload.tenantId,
       roles: payload.roles,

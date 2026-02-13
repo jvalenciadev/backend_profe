@@ -5,7 +5,7 @@ import { GenericCrudService, PrismaService } from '@app/database';
 // Sede
 @Injectable()
 export class SedesService extends GenericCrudService<any> {
-    constructor(prisma: PrismaService) { super(prisma, 'sede'); }
+    constructor(prisma: PrismaService) { super(prisma, 'sede', true, true); }
 }
 @Controller('sedes')
 export class SedesController extends CrudControllerFactory('sedes') {
@@ -15,7 +15,7 @@ export class SedesController extends CrudControllerFactory('sedes') {
 // Distrito
 @Injectable()
 export class DistritosService extends GenericCrudService<any> {
-    constructor(prisma: PrismaService) { super(prisma, 'distrito'); }
+    constructor(prisma: PrismaService) { super(prisma, 'distrito', true, true); }
 }
 @Controller('distritos')
 export class DistritosController extends CrudControllerFactory('distritos') {
@@ -25,7 +25,7 @@ export class DistritosController extends CrudControllerFactory('distritos') {
 // Provincia
 @Injectable()
 export class ProvinciasService extends GenericCrudService<any> {
-    constructor(prisma: PrismaService) { super(prisma, 'provincia'); }
+    constructor(prisma: PrismaService) { super(prisma, 'provincia', true, true); }
 }
 @Controller('provincias')
 export class ProvinciasController extends CrudControllerFactory('provincias') {
@@ -35,9 +35,19 @@ export class ProvinciasController extends CrudControllerFactory('provincias') {
 // UnidadEducativa
 @Injectable()
 export class UnidadEducativaService extends GenericCrudService<any> {
-    constructor(prisma: PrismaService) { super(prisma, 'unidadEducativa'); }
+    constructor(prisma: PrismaService) { super(prisma, 'unidadEducativa', true, true); }
 }
 @Controller('unidades-educativas')
 export class UnidadEducativaController extends CrudControllerFactory('unidades-educativas') {
     constructor(public service: UnidadEducativaService) { super(service); }
+}
+
+// Galerias (Creative addition)
+@Injectable()
+export class GaleriasService extends GenericCrudService<any> {
+    constructor(prisma: PrismaService) { super(prisma, 'galeria', true, true); }
+}
+@Controller('galerias')
+export class GaleriasController extends CrudControllerFactory('galerias') {
+    constructor(public service: GaleriasService) { super(service); }
 }

@@ -1,40 +1,78 @@
-import { Controller, Get, Post, Body, Put, Param, Delete, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Post, Body, Put, Param, Delete, UseGuards, Req, ParseUUIDPipe, HttpCode, HttpStatus, Patch } from '@nestjs/common';
 import { DepartmentsService } from './departments.service';
 import { CreateDepartmentDto } from './dto/create-department.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
-// import { JwtAuthGuard } from '@app/common/guards/jwt-auth.guard'; // To be implemented
+import { JwtAuthGuard } from '@app/common';
 
+/**
+ * Controlador de Departamentos
+ * - GET (listar): Público
+ * - POST, PUT, DELETE: Requieren autenticación
+ */
 @Controller('departments')
 export class DepartmentsController {
   constructor(private readonly departmentsService: DepartmentsService) { }
 
+  /**
+   * Crear departamento - REQUIERE AUTENTICACIÓN
+   */
   @Post()
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.CREATED)
   create(@Body() createDepartmentDto: CreateDepartmentDto, @Req() req: any) {
-    // Mock user for now if no Auth Guard active
-    const user = req.user || { id: 1, username: 'admin' };
-    return this.departmentsService.create(createDepartmentDto, user);
+    return this.departmentsService.create(createDepartmentDto, req.user);
   }
 
+  /**
+   * Listar todos los departamentos - PÚBLICO
+   */
   @Get()
+  @HttpCode(HttpStatus.OK)
   findAll() {
     return this.departmentsService.findAll();
   }
 
+  /**
+   * Obtener un departamento por ID - PÚBLICO
+   */
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.departmentsService.findOne(+id);
+  @HttpCode(HttpStatus.OK)
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.departmentsService.findOne(id);
   }
 
+  /**
+   * Actualizar departamento - REQUIERE AUTENTICACIÓN
+   */
   @Put(':id')
-  update(@Param('id') id: string, @Body() updateDepartmentDto: UpdateDepartmentDto, @Req() req: any) {
-    const user = req.user || { id: 1, username: 'admin' };
-    return this.departmentsService.update(+id, updateDepartmentDto, user);
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  updatePut(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateDepartmentDto: UpdateDepartmentDto,
+    @Req() req: any
+  ) {
+    return this.departmentsService.update(id, updateDepartmentDto, req.user);
   }
 
+  @Patch(':id')
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  updatePatch(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateDepartmentDto: UpdateDepartmentDto,
+    @Req() req: any
+  ) {
+    return this.departmentsService.update(id, updateDepartmentDto, req.user);
+  }
+
+  /**
+   * Eliminar departamento (soft delete) - REQUIERE AUTENTICACIÓN
+   */
   @Delete(':id')
-  remove(@Param('id') id: string, @Req() req: any) {
-    const user = req.user || { id: 1, username: 'admin' };
-    return this.departmentsService.remove(+id, user);
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
+  remove(@Param('id', ParseUUIDPipe) id: string, @Req() req: any) {
+    return this.departmentsService.remove(id, req.user);
   }
 }

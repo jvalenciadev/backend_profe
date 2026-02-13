@@ -1,1650 +1,2330 @@
-{
-  "info": {
-    "name": "Profe Backend API (Full Monolith)",
-    "description": "Colección completa de todas las APIs CRUD del sistema Profe (Consolidado en Puerto 3000)",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-  },
-  "item": [
-    {
-      "name": "Auth & Sesión",
-      "item": [
-        {
-          "name": "Login SuperAdmin",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"password123\"\n}"
-            },
-            "url": "http://localhost:3000/auth/login"
+  {
+    "info": {
+      "name": "Profe Backend API (Full Monolith)",
+      "description": "Colección completa de todas las APIs CRUD del sistema Profe con Seguridad X-SECRET",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "Auth & Sesión",
+        "item": [
+          {
+            "name": "Login SuperAdmin (Global)",
+            "request": {
+              "method": "POST",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-SECRET",
+                  "value": "profe_secret_2026"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"secret123\"\n}"
+              },
+              "url": "http://localhost:3000/auth/login"
+            }
+          },
+          {
+            "name": "Login Responsable La Paz (Tenant LP)",
+            "request": {
+              "method": "POST",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-SECRET",
+                  "value": "profe_secret_2026"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"username\": \"resp_lp\",\n  \"password\": \"secret123\"\n}"
+              },
+              "url": "http://localhost:3000/auth/login"
+            }
+          },
+          {
+            "name": "Get Profile & Permissions",
+            "request": {
+              "method": "GET",
+              "header": [
+                {
+                  "key": "Authorization",
+                  "value": "Bearer {{token}}"
+                },
+                {
+                  "key": "X-SECRET",
+                  "value": "profe_secret_2026"
+                }
+              ],
+              "url": "http://localhost:3000/auth/profile"
+            }
+          },
+          {
+            "name": "Forgot Password",
+            "request": {
+              "method": "POST",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"email\": \"admin@profe.bo\"\n}"
+              },
+              "url": "http://localhost:3000/auth/forgot-password"
+            }
+          },
+          {
+            "name": "Reset Password",
+            "request": {
+              "method": "POST",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"token\": \"123456\",\n  \"password\": \"newPassword123\"\n}"
+              },
+              "url": "http://localhost:3000/auth/reset-password"
+            }
           }
-        },
-        {
-          "name": "Login Responsable La Paz",
-          "request": {
-            "method": "POST",
-            "header": [
+        ]
+      },
+      {
+        "name": "Territorial (Territorio y Sedes)",
+        "item": [
+          {
+            "name": "Departamentos",
+            "item": [
               {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"username\": \"resp_lp\",\n  \"password\": \"password123\"\n}"
-            },
-            "url": "http://localhost:3000/auth/login"
-          }
-        },
-        {
-          "name": "Login Facilitador Cochabamba",
-          "request": {
-            "method": "POST",
-            "header": [
+                "name": "Listar Departamentos",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/departments"
+                }
+              },
               {
-                "key": "Content-Type",
-                "value": "application/json"
+                "name": "Obtener único Departamentos",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/departments/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Crear Departamentos",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"LA PAZ\",\n  \"abreviacion\": \"LP\"\n}"
+                  },
+                  "url": "http://localhost:3000/departments"
+                }
+              },
+              {
+                "name": "Actualizar Departamentos",
+                "request": {
+                  "method": "PUT",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"LA PAZ\",\n  \"abreviacion\": \"LP\"\n}"
+                  },
+                  "url": "http://localhost:3000/departments/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Eliminar Departamentos",
+                "request": {
+                  "method": "DELETE",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/departments/550e8400-e29b-41d4-a716-446655440000"
+                }
               }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"username\": \"fac_cb\",\n  \"password\": \"password123\"\n}"
-            },
-            "url": "http://localhost:3000/auth/login"
+            ]
+          },
+          {
+            "name": "Sedes",
+            "item": [
+              {
+                "name": "Listar Sedes",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/sedes"
+                }
+              },
+              {
+                "name": "Obtener único Sedes",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/sedes/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Crear Sedes",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"Sede Centro\",\n  \"departamentoId\": \"uuid-dep\",\n  \"descripcion\": \"Ubicación central\",\n  \"horario\": \"08:00 - 18:00\",\n  \"turno\": \"Mañana\",\n  \"ubicacion\": \"Calle 123\",\n  \"contacto1\": 77777777\n}"
+                  },
+                  "url": "http://localhost:3000/sedes"
+                }
+              },
+              {
+                "name": "Actualizar Sedes",
+                "request": {
+                  "method": "PUT",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"Sede Centro\",\n  \"departamentoId\": \"uuid-dep\",\n  \"descripcion\": \"Ubicación central\",\n  \"horario\": \"08:00 - 18:00\",\n  \"turno\": \"Mañana\",\n  \"ubicacion\": \"Calle 123\",\n  \"contacto1\": 77777777\n}"
+                  },
+                  "url": "http://localhost:3000/sedes/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Eliminar Sedes",
+                "request": {
+                  "method": "DELETE",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/sedes/550e8400-e29b-41d4-a716-446655440000"
+                }
+              }
+            ]
+          },
+          {
+            "name": "Distritos",
+            "item": [
+              {
+                "name": "Listar Distritos",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/distritos"
+                }
+              },
+              {
+                "name": "Obtener único Distritos",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/distritos/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Crear Distritos",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"Distrito 1\",\n  \"codigo\": 101,\n  \"departamentoId\": \"uuid-dep\"\n}"
+                  },
+                  "url": "http://localhost:3000/distritos"
+                }
+              },
+              {
+                "name": "Actualizar Distritos",
+                "request": {
+                  "method": "PUT",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"Distrito 1\",\n  \"codigo\": 101,\n  \"departamentoId\": \"uuid-dep\"\n}"
+                  },
+                  "url": "http://localhost:3000/distritos/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Eliminar Distritos",
+                "request": {
+                  "method": "DELETE",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/distritos/550e8400-e29b-41d4-a716-446655440000"
+                }
+              }
+            ]
+          },
+          {
+            "name": "Unidades Educativas",
+            "item": [
+              {
+                "name": "Listar Unidades Educativas",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/unidades-educativas"
+                }
+              },
+              {
+                "name": "Obtener único Unidades Educativas",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/unidades-educativas/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Crear Unidades Educativas",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"U.E. Bolivia\",\n  \"codigo\": 1001,\n  \"distritoId\": \"uuid-dis\"\n}"
+                  },
+                  "url": "http://localhost:3000/unidades-educativas"
+                }
+              },
+              {
+                "name": "Actualizar Unidades Educativas",
+                "request": {
+                  "method": "PUT",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"U.E. Bolivia\",\n  \"codigo\": 1001,\n  \"distritoId\": \"uuid-dis\"\n}"
+                  },
+                  "url": "http://localhost:3000/unidades-educativas/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Eliminar Unidades Educativas",
+                "request": {
+                  "method": "DELETE",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/unidades-educativas/550e8400-e29b-41d4-a716-446655440000"
+                }
+              }
+            ]
+          },
+          {
+            "name": "Galerías",
+            "item": [
+              {
+                "name": "Listar Galerías",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/galerias"
+                }
+              },
+              {
+                "name": "Obtener único Galerías",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/galerias/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Crear Galerías",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"titulo\": \"Fotos Sede Central\",\n  \"descripcion\": \"Inauguración\",\n  \"imagen\": \"foto1.jpg\",\n  \"sedeId\": \"uuid-sede\"\n}"
+                  },
+                  "url": "http://localhost:3000/galerias"
+                }
+              },
+              {
+                "name": "Actualizar Galerías",
+                "request": {
+                  "method": "PUT",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"titulo\": \"Fotos Sede Central\",\n  \"descripcion\": \"Inauguración\",\n  \"imagen\": \"foto1.jpg\",\n  \"sedeId\": \"uuid-sede\"\n}"
+                  },
+                  "url": "http://localhost:3000/galerias/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Eliminar Galerías",
+                "request": {
+                  "method": "DELETE",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/galerias/550e8400-e29b-41d4-a716-446655440000"
+                }
+              }
+            ]
           }
-        }
-      ]
-    },
-    {
-      "name": "Territorial (Territorio y Sedes)",
-      "item": [
-        {
-          "name": "Departamentos",
-          "item": [
-            {
-              "name": "Listar Departamentos",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/departments"
+        ]
+      },
+      {
+        "name": "Usuarios y Permisos",
+        "item": [
+          {
+            "name": "Usuarios",
+            "item": [
+              {
+                "name": "Listar Usuarios",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/users"
+                }
+              },
+              {
+                "name": "Obtener único Usuarios",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/users/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Crear Usuarios",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"username\": \"docente1\",\n  \"nombre\": \"Juan\",\n  \"apellidos\": \"Perez\",\n  \"correo\": \"juan@profe.bo\",\n  \"password\": \"password123\",\n  \"tenantId\": \"uuid-dep\"\n}"
+                  },
+                  "url": "http://localhost:3000/users"
+                }
+              },
+              {
+                "name": "Actualizar Usuarios",
+                "request": {
+                  "method": "PUT",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"username\": \"docente1\",\n  \"nombre\": \"Juan\",\n  \"apellidos\": \"Perez\",\n  \"correo\": \"juan@profe.bo\",\n  \"password\": \"password123\",\n  \"tenantId\": \"uuid-dep\"\n}"
+                  },
+                  "url": "http://localhost:3000/users/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Eliminar Usuarios",
+                "request": {
+                  "method": "DELETE",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/users/550e8400-e29b-41d4-a716-446655440000"
+                }
               }
-            },
-            {
-              "name": "Obtener único Departamentos",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/departments/1"
-              }
-            },
-            {
-              "name": "Crear Departamentos",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"LA PAZ\",\n  \"abreviacion\": \"LP\"\n}"
+            ]
+          },
+          {
+            "name": "Update My Profile",
+            "request": {
+              "method": "PATCH",
+              "header": [
+                {
+                  "key": "Authorization",
+                  "value": "Bearer {{token}}"
                 },
-                "url": "http://localhost:3000/departments"
-              }
-            },
-            {
-              "name": "Actualizar Departamentos",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"LA PAZ\",\n  \"abreviacion\": \"LP\"\n}"
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
                 },
-                "url": "http://localhost:3000/departments/1"
+                {
+                  "key": "X-SECRET",
+                  "value": "profe_secret_2026"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"nombre\": \"Mi Nombre Editado\",\n  \"apellidos\": \"Mis Apellidos Editados\"\n}"
+              },
+              "url": "http://localhost:3000/users/profile"
+            }
+          },
+          {
+            "name": "Roles",
+            "item": [
+              {
+                "name": "Listar Roles",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/roles"
+                }
+              },
+              {
+                "name": "Obtener único Roles",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/roles/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Crear Roles",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"name\": \"FACILITADOR\",\n  \"guardName\": \"web\"\n}"
+                  },
+                  "url": "http://localhost:3000/roles"
+                }
+              },
+              {
+                "name": "Actualizar Roles",
+                "request": {
+                  "method": "PUT",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"name\": \"FACILITADOR\",\n  \"guardName\": \"web\"\n}"
+                  },
+                  "url": "http://localhost:3000/roles/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Eliminar Roles",
+                "request": {
+                  "method": "DELETE",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/roles/550e8400-e29b-41d4-a716-446655440000"
+                }
               }
-            },
-            {
-              "name": "Eliminar Departamentos",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/departments/1"
+            ]
+          },
+          {
+            "name": "Permisos",
+            "item": [
+              {
+                "name": "Listar Permisos",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/permissions"
+                }
+              },
+              {
+                "name": "Obtener único Permisos",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/permissions/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Crear Permisos",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"name\": \"create_academic\",\n  \"action\": \"create\",\n  \"subject\": \"Academic\",\n  \"conditions\": {}\n}"
+                  },
+                  "url": "http://localhost:3000/permissions"
+                }
+              },
+              {
+                "name": "Actualizar Permisos",
+                "request": {
+                  "method": "PUT",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"name\": \"create_academic\",\n  \"action\": \"create\",\n  \"subject\": \"Academic\",\n  \"conditions\": {}\n}"
+                  },
+                  "url": "http://localhost:3000/permissions/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Eliminar Permisos",
+                "request": {
+                  "method": "DELETE",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/permissions/550e8400-e29b-41d4-a716-446655440000"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Académico (Programas y Cursos)",
+        "item": [
+          {
+            "name": "Inscripciones",
+            "item": [
+              {
+                "name": "Listar Inscripciones",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/inscripciones"
+                }
+              },
+              {
+                "name": "Obtener único Inscripciones",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/inscripciones/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Crear Inscripciones",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"programaId\": \"00000000-0000-0000-0000-000000000000\",\n  \"personaId\": \"00000000-0000-0000-0000-000000000000\",\n  \"sedeId\": \"00000000-0000-0000-0000-000000000000\",\n  \"turnoId\": \"00000000-0000-0000-0000-000000000000\",\n  \"estadoInscripcionId\": \"00000000-0000-0000-0000-000000000000\"\n}"
+                  },
+                  "url": "http://localhost:3000/inscripciones"
+                }
+              },
+              {
+                "name": "Actualizar Inscripciones",
+                "request": {
+                  "method": "PUT",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"programaId\": \"00000000-0000-0000-0000-000000000000\",\n  \"personaId\": \"00000000-0000-0000-0000-000000000000\",\n  \"sedeId\": \"00000000-0000-0000-0000-000000000000\",\n  \"turnoId\": \"00000000-0000-0000-0000-000000000000\",\n  \"estadoInscripcionId\": \"00000000-0000-0000-0000-000000000000\"\n}"
+                  },
+                  "url": "http://localhost:3000/inscripciones/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Eliminar Inscripciones",
+                "request": {
+                  "method": "DELETE",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/inscripciones/550e8400-e29b-41d4-a716-446655440000"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Académico Maestro (Central)",
+        "item": [
+          {
+            "name": "Programas Maestros",
+            "item": [
+              {
+                "name": "Listar Programas Maestros",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/programas-maestros"
+                }
+              },
+              {
+                "name": "Obtener único Programas Maestros",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/programas-maestros/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Crear Programas Maestros",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"Diplomado IA\",\n  \"codigo\": \"D-IA\",\n  \"nombreAbre\": \"Dipl. IA\",\n  \"contenido\": \"Detalle central del programa...\",\n  \"cargaHoraria\": 200,\n  \"convocatoria\": \"Convocatoria 2024 Base\",\n  \"tipoId\": \"00000000-0000-0000-0000-000000000000\",\n  \"modalidadId\": \"00000000-0000-0000-0000-000000000000\",\n  \"duracionId\": \"00000000-0000-0000-0000-000000000000\"\n}"
+                  },
+                  "url": "http://localhost:3000/programas-maestros"
+                }
+              },
+              {
+                "name": "Actualizar Programas Maestros",
+                "request": {
+                  "method": "PUT",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"Diplomado IA\",\n  \"codigo\": \"D-IA\",\n  \"nombreAbre\": \"Dipl. IA\",\n  \"contenido\": \"Detalle central del programa...\",\n  \"cargaHoraria\": 200,\n  \"convocatoria\": \"Convocatoria 2024 Base\",\n  \"tipoId\": \"00000000-0000-0000-0000-000000000000\",\n  \"modalidadId\": \"00000000-0000-0000-0000-000000000000\",\n  \"duracionId\": \"00000000-0000-0000-0000-000000000000\"\n}"
+                  },
+                  "url": "http://localhost:3000/programas-maestros/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Eliminar Programas Maestros",
+                "request": {
+                  "method": "DELETE",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/programas-maestros/550e8400-e29b-41d4-a716-446655440000"
+                }
+              }
+            ]
+          },
+          {
+            "name": "Módulos Maestros",
+            "item": [
+              {
+                "name": "Listar Módulos Maestros",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/modulos-maestros"
+                }
+              },
+              {
+                "name": "Obtener único Módulos Maestros",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/modulos-maestros/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Crear Módulos Maestros",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"Módulo 1\",\n  \"codigo\": \"M1\",\n  \"descripcion\": \"Desc...\",\n  \"notaMinima\": 70,\n  \"programaId\": \"00000000-0000-0000-0000-000000000000\"\n}"
+                  },
+                  "url": "http://localhost:3000/modulos-maestros"
+                }
+              },
+              {
+                "name": "Actualizar Módulos Maestros",
+                "request": {
+                  "method": "PUT",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"Módulo 1\",\n  \"codigo\": \"M1\",\n  \"descripcion\": \"Desc...\",\n  \"notaMinima\": 70,\n  \"programaId\": \"00000000-0000-0000-0000-000000000000\"\n}"
+                  },
+                  "url": "http://localhost:3000/modulos-maestros/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Eliminar Módulos Maestros",
+                "request": {
+                  "method": "DELETE",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/modulos-maestros/550e8400-e29b-41d4-a716-446655440000"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Académico Operativo (Versiones)",
+        "item": [
+          {
+            "name": "Asignaciones de Facilitadores",
+            "item": [
+              {
+                "name": "Listar Asignaciones",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    },
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{token}}"
+                    }
+                  ],
+                  "url": "http://localhost:3000/asignaciones-facilitadores"
+                }
+              },
+              {
+                "name": "Crear/Actualizar Asignación (Upsert)",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    },
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{token}}"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"programaId\": \"uuid-oferta\",\n  \"moduloId\": \"uuid-modulo\",\n  \"turnoId\": \"uuid-turno\",\n  \"facilitadorId\": \"uuid-usuario-facilitador\",\n  \"estado\": \"ACTIVO\"\n}"
+                  },
+                  "url": "http://localhost:3000/asignaciones-facilitadores"
+                }
+              },
+              {
+                "name": "Actualizar Asignación (PATCH)",
+                "request": {
+                  "method": "PATCH",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    },
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{token}}"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"facilitadorId\": \"nuevo-uuid-facilitador\"\n}"
+                  },
+                  "url": "http://localhost:3000/asignaciones-facilitadores/:id"
+                }
+              },
+              {
+                "name": "Eliminar Asignación",
+                "request": {
+                  "method": "DELETE",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    },
+                    {
+                      "key": "Authorization",
+                      "value": "Bearer {{token}}"
+                    }
+                  ],
+                  "url": "http://localhost:3000/asignaciones-facilitadores/:id"
+                }
+              }
+            ]
+          },
+          {
+            "name": "Versiones de Programa",
+            "item": [
+              {
+                "name": "Listar Versiones de Programa",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/programa-versiones/7b840a2a-39bd-4250-ba58-13e9df7dc96a"
+                }
+              },
+              {
+                "name": "Crear Versiones de Programa",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"DIPLOMADO IA - COCHABAMBA\",\n  \"codigo\": \"D-IA-CB-2024\",\n  \"nombreAbre\": \"IA-CB\",\n  \"contenido\": \"Versión local para Cochabamba...\",\n  \"cargaHoraria\": 200,\n  \"costo\": 750,\n  \" banner\": \"banner_cb.jpg\",\n  \"afiche\": \"afiche_cb.jpg\",\n  \"fechaIniIns\": \"2024-03-01T00:00:00Z\",\n  \"fechaFinIns\": \"2024-03-31T00:00:00Z\",\n  \"fechaIniClase\": \"2024-04-10T00:00:00Z\",\n  \"versionId\": \"b0ffba16-402a-4115-adac-d15f29bca46b\",\n  \"duracionId\": \"4e7ac14f-822f-4277-bd23-e805e56b8525\",\n  \"tipoId\": \"9ba94d03-f489-46be-a9a8-08e5f05c0b73\",\n  \"modalidadId\": \"36698165-be9b-47dc-88e5-7e8b975b2531\",\n  \"tenantId\": \"186b77a0-7684-4d7b-964e-7590d5d72753\"\n}"
+                  },
+                  "url": "http://localhost:3000/programa-versiones"
+                }
+              },
+              {
+                "name": "Actualizar Versiones de Programa",
+                "request": {
+                  "method": "PUT",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"programaId\": \"00000000-0000-0000-0000-000000000000\",\n  \"sedeId\": \"00000000-0000-0000-0000-000000000000\",\n  \"versionId\": \"00000000-0000-0000-0000-000000000000\",\n  \"nombre\": \"Diplomado IA - Versión Sede Central\",\n  \"codigo\": \"D-IA-V1\",\n  \"nombreAbre\": \"D-IA-V1\",\n  \"contenido\": \"Snapshot del contenido maestro...\",\n  \"cargaHoraria\": 200,\n  \"convocatoria\": \"Snapshot convocatoria...\",\n  \"tipoId\": \"00000000-0000-0000-0000-000000000000\",\n  \"modalidadId\": \"00000000-0000-0000-0000-000000000000\",\n  \"duracionId\": \"00000000-0000-0000-0000-000000000000\",\n  \"costo\": 500,\n  \"horario\": \"Sábados 08:00 - 12:00\",\n  \"banner\": \"img.jpg\",\n  \"afiche\": \"afiche.jpg\",\n  \"fechaIniIns\": \"2024-01-01T00:00:00Z\",\n  \"fechaFinIns\": \"2024-02-01T00:00:00Z\",\n  \"fechaIniClase\": \"2024-02-15T00:00:00Z\"\n}"
+                  },
+                  "url": "http://localhost:3000/programa-versiones/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Eliminar Versiones de Programa",
+                "request": {
+                  "method": "DELETE",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/programa-versiones/550e8400-e29b-41d4-a716-446655440000"
+                }
+              }
+            ]
+          },
+          {
+            "name": "Módulos de Versión",
+            "item": [
+              {
+                "name": "Listar Módulos de Versión",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/programa-modulo-versiones/bea47cd0-e495-4645-b266-7f19ab7043a2"
+                }
+              },
+              {
+                "name": "Crear Módulos de Versión",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"Módulo de Prueba\",\n  \"codigo\": \"MOD-P1\",\n  \"descripcion\": \"Descripción del módulo...\",\n  \"notaMinima\": 71,\n  \"fechaInicio\": \"2024-04-01T00:00:00Z\",\n  \"fechaFin\": \"2024-04-30T00:00:00Z\",\n  \"programaId\": \"7b840a2a-39bd-4250-ba58-13e9df7dc96a\"\n}"
+                  },
+                  "url": "http://localhost:3000/programa-modulo-versiones"
+                }
+              },
+              {
+                "name": "Actualizar Módulos de Versión",
+                "request": {
+                  "method": "PUT",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"moduloId\": \"00000000-0000-0000-0000-000000000000\",\n  \"programaId\": \"00000000-0000-0000-0000-000000000000\",\n  \"nombre\": \"Módulo Snapshot\",\n  \"codigo\": \"M-SNAP\",\n  \"descripcion\": \"Desc snapshot...\",\n  \"notaMinima\": 69,\n  \"fechaInicio\": \"2024-02-01T00:00:00Z\",\n  \"fechaFin\": \"2024-03-01T00:00:00Z\"\n}"
+                  },
+                  "url": "http://localhost:3000/programa-modulo-versiones/bea47cd0-e495-4645-b266-7f19ab7043a2"
+                }
+              },
+              {
+                "name": "Eliminar Módulos de Versión",
+                "request": {
+                  "method": "DELETE",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/programa-modulo-versiones/bea47cd0-e495-4645-b266-7f19ab7043a2"
+                }
+              }
+            ]
+          },
+          {
+            "name": "Inscripciones",
+            "item": [
+              {
+                "name": "Listar Inscripciones",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/academic-ops/inscripciones"
+                }
+              },
+              {
+                "name": "Obtener único Inscripciones",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/academic-ops/inscripciones/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Crear Inscripciones",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"programaId\": \"00000000-0000-0000-0000-000000000000\",\n  \"personaId\": \"00000000-0000-0000-0000-000000000000\",\n  \"sedeId\": \"00000000-0000-0000-0000-000000000000\",\n  \"turnoId\": \"00000000-0000-0000-0000-000000000000\"\n}"
+                  },
+                  "url": "http://localhost:3000/academic-ops/inscripciones"
+                }
+              },
+              {
+                "name": "Actualizar Inscripciones",
+                "request": {
+                  "method": "PUT",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"programaId\": \"00000000-0000-0000-0000-000000000000\",\n  \"personaId\": \"00000000-0000-0000-0000-000000000000\",\n  \"sedeId\": \"00000000-0000-0000-0000-000000000000\",\n  \"turnoId\": \"00000000-0000-0000-0000-000000000000\"\n}"
+                  },
+                  "url": "http://localhost:3000/academic-ops/inscripciones/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Eliminar Inscripciones",
+                "request": {
+                  "method": "DELETE",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/academic-ops/inscripciones/550e8400-e29b-41d4-a716-446655440000"
+                }
+              }
+            ]
+          },
+          {
+            "name": "Versionalizar (Clonar)",
+            "request": {
+              "method": "POST",
+              "header": [
+                {
+                  "key": "X-SECRET",
+                  "value": "profe-secret-2024"
+                },
+                {
+                  "key": "Authorization",
+                  "value": "Bearer {{token}}"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"sedeId\": \"00000000-0000-0000-0000-000000000000\",\n  \"versionId\": \"00000000-0000-0000-0000-000000000000\",\n  \"costo\": 1500,\n  \"horario\": \"Tardes\",\n  \"banner\": \"banner_v.png\",\n  \"afiche\": \"afiche_v.png\",\n  \"fechaIniIns\": \"2024-01-01T00:00:00Z\",\n  \"fechaFinIns\": \"2024-01-31T00:00:00Z\",\n  \"fechaIniClase\": \"2024-02-01T00:00:00Z\"\n}"
+              },
+              "url": {
+                "raw": "http://localhost:3000/academic-ops/versionalizar/00000000-0000-0000-0000-000000000000",
+                "protocol": "http",
+                "host": [
+                  "localhost"
+                ],
+                "port": "3000",
+                "path": [
+                  "academic-ops",
+                  "versionalizar",
+                  "00000000-0000-0000-0000-000000000000"
+                ]
               }
             }
-          ]
-        },
-        {
-          "name": "Sedes",
-          "item": [
-            {
-              "name": "Listar Sedes",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/sedes"
+          }
+        ]
+      },
+      {
+        "name": "Maestros Académicos (Templates)",
+        "item": [
+          {
+            "name": "Programa Maestro (Base)",
+            "item": [
+              {
+                "name": "Listar Programa Maestro (Base)",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/programa-dos"
+                }
+              },
+              {
+                "name": "Obtener único Programa Maestro (Base)",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/programa-dos/550e8400-e29b-41d4-a716-446655440000"
+                }
+              },
+              {
+                "name": "Crear Programa Maestro (Base)",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"Diplomado Base IA\",\n  \"codigo\": \"BASE-IA\",\n  \"contenido\": \"Contenido base...\",\n  \"cargaHoraria\": 200,\n  \"costo\": 1500\n}"
+                  },
+                  "url": "http://localhost:3000/programa-dos"
+                }
+              },
+              {
+                "name": "Actualizar Programa Maestro (Base)",
+                "request": {
+                  "method": "PUT",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"Diplomado Base IA\",\n  \"codigo\": \"BASE-IA\",\n  \"contenido\": \"Contenido base...\",\n  \"cargaHoraria\": 200,\n  \"costo\": 1500\n}"
+                  },
+                  "url": "http://localhost:3000/programa-dos/7b840a2a-39bd-4250-ba58-13e9df7dc96a"
+                }
+              },
+              {
+                "name": "Eliminar Programa Maestro (Base)",
+                "request": {
+                  "method": "DELETE",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/programa-dos/550e8400-e29b-41d4-a716-446655440000"
+                }
               }
-            },
-            {
-              "name": "Obtener único Sedes",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/sedes/1"
+            ]
+          },
+          {
+            "name": "Módulos Maestros",
+            "item": [
+              {
+                "name": "Listar Módulos Maestros",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/programa-modulo-versiones/bea47cd0-e495-4645-b266-7f19ab7043a2"
+                }
+              },
+              {
+                "name": "Crear Módulos Maestros",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"Módulo Introductorio\",\n  \"codigo\": \"MOD-BASE-01\",\n  \"descripcion\": \"Desc base...\",\n  \"notaMinima\": 70,\n  \"programaDosId\": \"00000000-0000-0000-0000-000000000000\"\n}"
+                  },
+                  "url": "http://localhost:3000/programa-modulo-versiones"
+                }
+              },
+              {
+                "name": "Actualizar Módulos Maestros",
+                "request": {
+                  "method": "PUT",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"Módulo Introductorio\",\n  \"codigo\": \"MOD-BASE-01\",\n  \"descripcion\": \"Desc base...\",\n  \"notaMinima\": 70,\n  \"programaDosId\": \"00000000-0000-0000-0000-000000000000\"\n}"
+                  },
+                  "url": "http://localhost:3000/programa-modulo-versiones/bea47cd0-e495-4645-b266-7f19ab7043a2"
+                }
+              },
+              {
+                "name": "Eliminar Módulos Maestros",
+                "request": {
+                  "method": "DELETE",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/programa-modulo-versiones/bea47cd0-e495-4645-b266-7f19ab7043a2"
+                }
               }
-            },
-            {
-              "name": "Crear Sedes",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Sede Centro\",\n  \"departamentoId\": 1,\n  \"descripcion\": \"Ubicación central\",\n  \"horario\": \"08:00 - 18:00\",\n  \"turno\": \"Mañana\",\n  \"ubicacion\": \"Calle 123\",\n  \"contacto1\": 77777777\n}"
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Configuración Académica (Parámetros)",
+        "item": [
+          {
+            "name": "Versiones",
+            "item": [
+              {
+                "name": "Listar Versiones",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/versiones"
+                }
+              },
+              {
+                "name": "Obtener Única Versión",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/versiones/:id"
+                }
+              },
+              {
+                "name": "Crear Versión",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"V.1 2026\",\n  \"numero\": 1\n}"
+                  },
+                  "url": "http://localhost:3000/versiones"
+                }
+              },
+              {
+                "name": "Actualizar Versión (PUT)",
+                "request": {
+                  "method": "PUT",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"V.1 2026 EDIT\",\n  \"numero\": 1\n}"
+                  },
+                  "url": "http://localhost:3000/versiones/:id"
+                }
+              },
+              {
+                "name": "Actualizar Versión (PATCH)",
+                "request": {
+                  "method": "PATCH",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"V.1 2026 PATCH\"\n}"
+                  },
+                  "url": "http://localhost:3000/versiones/:id"
+                }
+              },
+              {
+                "name": "Eliminar Versión",
+                "request": {
+                  "method": "DELETE",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/versiones/:id"
+                }
+              }
+            ]
+          },
+          {
+            "name": "Turnos",
+            "item": [
+              {
+                "name": "Listar Turnos",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/turnos"
+                }
+              },
+              {
+                "name": "Obtener Único Turno",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/turnos/:id"
+                }
+              },
+              {
+                "name": "Crear Turno",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"MAÑANA\"\n}"
+                  },
+                  "url": "http://localhost:3000/turnos"
+                }
+              },
+              {
+                "name": "Actualizar Turno (PUT)",
+                "request": {
+                  "method": "PUT",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"TARDE\"\n}"
+                  },
+                  "url": "http://localhost:3000/turnos/:id"
+                }
+              },
+              {
+                "name": "Actualizar Turno (PATCH)",
+                "request": {
+                  "method": "PATCH",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"NOCHE\"\n}"
+                  },
+                  "url": "http://localhost:3000/turnos/:id"
+                }
+              },
+              {
+                "name": "Eliminar Turno",
+                "request": {
+                  "method": "DELETE",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/turnos/:id"
+                }
+              }
+            ]
+          },
+          {
+            "name": "Duraciones",
+            "item": [
+              {
+                "name": "Listar Duraciones",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/duraciones"
+                }
+              },
+              {
+                "name": "Obtener Única Duración",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/duraciones/:id"
+                }
+              },
+              {
+                "name": "Crear Duración",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"3 MESES\",\n  \"semana\": 12\n}"
+                  },
+                  "url": "http://localhost:3000/duraciones"
+                }
+              },
+              {
+                "name": "Actualizar Duración (PUT)",
+                "request": {
+                  "method": "PUT",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"4 MESES\",\n  \"semana\": 16\n}"
+                  },
+                  "url": "http://localhost:3000/duraciones/:id"
+                }
+              },
+              {
+                "name": "Actualizar Duración (PATCH)",
+                "request": {
+                  "method": "PATCH",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"5 MESES\"\n}"
+                  },
+                  "url": "http://localhost:3000/duraciones/:id"
+                }
+              },
+              {
+                "name": "Eliminar Duración",
+                "request": {
+                  "method": "DELETE",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/duraciones/:id"
+                }
+              }
+            ]
+          },
+          {
+            "name": "Modalidades",
+            "item": [
+              {
+                "name": "Listar Modalidades",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/modalidades"
+                }
+              },
+              {
+                "name": "Obtener Única Modalidad",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/modalidades/:id"
+                }
+              },
+              {
+                "name": "Crear Modalidad",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"VIRTUAL\"\n}"
+                  },
+                  "url": "http://localhost:3000/modalidades"
+                }
+              },
+              {
+                "name": "Actualizar Modalidad (PUT)",
+                "request": {
+                  "method": "PUT",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"SEMIPRESENCIAL\"\n}"
+                  },
+                  "url": "http://localhost:3000/modalidades/:id"
+                }
+              },
+              {
+                "name": "Actualizar Modalidad (PATCH)",
+                "request": {
+                  "method": "PATCH",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"A DISTANCIA\"\n}"
+                  },
+                  "url": "http://localhost:3000/modalidades/:id"
+                }
+              },
+              {
+                "name": "Eliminar Modalidad",
+                "request": {
+                  "method": "DELETE",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/modalidades/:id"
+                }
+              }
+            ]
+          },
+          {
+            "name": "Tipos",
+            "item": [
+              {
+                "name": "Listar Tipos",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/tipos"
+                }
+              },
+              {
+                "name": "Obtener Único Tipo",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/tipos/:id"
+                }
+              },
+              {
+                "name": "Crear Tipo",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"DIPLOMADO\"\n}"
+                  },
+                  "url": "http://localhost:3000/tipos"
+                }
+              },
+              {
+                "name": "Actualizar Tipo (PUT)",
+                "request": {
+                  "method": "PUT",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"CURSO CORTO\"\n}"
+                  },
+                  "url": "http://localhost:3000/tipos/:id"
+                }
+              },
+              {
+                "name": "Actualizar Tipo (PATCH)",
+                "request": {
+                  "method": "PATCH",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"TALLER\"\n}"
+                  },
+                  "url": "http://localhost:3000/tipos/:id"
+                }
+              },
+              {
+                "name": "Eliminar Tipo",
+                "request": {
+                  "method": "DELETE",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/tipos/:id"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Publicaciones y Eventos",
+        "item": [
+          {
+            "name": "Eventos",
+            "item": [
+              {
+                "name": "Listar Eventos",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/eventos"
+                }
+              },
+              {
+                "name": "Crear Evento",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"Taller de Innovación\",\n  \"descripcion\": \"Innova hoy\",\n  \"banner\": \"banner.jpg\",\n  \"afiche\": \"afiche.jpg\",\n  \"modulosIds\": \"uuid-mod1,uuid-mod2\",\n  \"fecha\": \"2024-12-01T10:00:00Z\",\n  \"lugar\": \"Auditorio Central\",\n  \"totalInscrito\": 0,\n  \"tipoId\": \"uuid-tipo-evento\"\n}"
+                  },
+                  "url": "http://localhost:3000/eventos"
+                }
+              }
+            ]
+          },
+          {
+            "name": "Blogs",
+            "item": [
+              {
+                "name": "Listar Blogs",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/blogs"
+                }
+              },
+              {
+                "name": "Crear Blog",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"titulo\": \"Nueva Noticia\",\n  \"descripcion\": \"Contenido del blog...\",\n  \"tipo\": \"noticias\",\n  \"imagenes\": [\"img1.jpg\", \"img2.jpg\"],\n  \"fecha\": \"2024-02-12T00:00:00Z\"\n}"
+                  },
+                  "url": "http://localhost:3000/blogs"
+                }
+              }
+            ]
+          },
+          {
+            "name": "Comunicados",
+            "item": [
+              {
+                "name": "Listar Comunicados",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/comunicados"
+                }
+              },
+              {
+                "name": "Crear Comunicado",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"Aviso Importante\",\n  \"descripcion\": \"Detalle del comunicado\",\n  \"tipo\": \"instructivo\",\n  \"imagen\": \"aviso.jpg\",\n  \"importancia\": \"alta\"\n}"
+                  },
+                  "url": "http://localhost:3000/comunicados"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Archivos",
+        "item": [
+          {
+            "name": "Upload Image (Dinámico)",
+            "request": {
+              "method": "POST",
+              "header": [
+                {
+                  "key": "Authorization",
+                  "value": "Bearer {{token}}"
                 },
-                "url": "http://localhost:3000/sedes"
-              }
-            },
-            {
-              "name": "Actualizar Sedes",
-              "request": {
-                "method": "PUT",
-                "header": [
+                {
+                  "key": "X-SECRET",
+                  "value": "profe_secret_2026"
+                }
+              ],
+              "body": {
+                "mode": "formdata",
+                "formdata": [
                   {
-                    "key": "Content-Type",
-                    "value": "application/json"
+                    "key": "file",
+                    "type": "file",
+                    "src": []
                   }
+                ]
+              },
+              "url": {
+                "raw": "http://localhost:3000/upload/:tableName",
+                "host": [
+                  "http://localhost:3000"
                 ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Sede Centro\",\n  \"departamentoId\": 1,\n  \"descripcion\": \"Ubicación central\",\n  \"horario\": \"08:00 - 18:00\",\n  \"turno\": \"Mañana\",\n  \"ubicacion\": \"Calle 123\",\n  \"contacto1\": 77777777\n}"
-                },
-                "url": "http://localhost:3000/sedes/1"
-              }
-            },
-            {
-              "name": "Eliminar Sedes",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/sedes/1"
+                "path": [
+                  "upload",
+                  ":tableName"
+                ],
+                "variable": [
+                  {
+                    "key": "tableName",
+                    "value": "User"
+                  }
+                ]
               }
             }
-          ]
-        },
-        {
-          "name": "Distritos",
-          "item": [
-            {
-              "name": "Listar Distritos",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/distritos"
-              }
-            },
-            {
-              "name": "Obtener único Distritos",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/distritos/1"
-              }
-            },
-            {
-              "name": "Crear Distritos",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Distrito 1\",\n  \"codigo\": 101,\n  \"departamentoId\": 1\n}"
-                },
-                "url": "http://localhost:3000/distritos"
-              }
-            },
-            {
-              "name": "Actualizar Distritos",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Distrito 1\",\n  \"codigo\": 101,\n  \"departamentoId\": 1\n}"
-                },
-                "url": "http://localhost:3000/distritos/1"
-              }
-            },
-            {
-              "name": "Eliminar Distritos",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/distritos/1"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Provincias",
-          "item": [
-            {
-              "name": "Listar Provincias",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/provincias"
-              }
-            },
-            {
-              "name": "Obtener único Provincias",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/provincias/1"
-              }
-            },
-            {
-              "name": "Crear Provincias",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Cercado\",\n  \"departamentoId\": 1\n}"
-                },
-                "url": "http://localhost:3000/provincias"
-              }
-            },
-            {
-              "name": "Actualizar Provincias",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Cercado\",\n  \"departamentoId\": 1\n}"
-                },
-                "url": "http://localhost:3000/provincias/1"
-              }
-            },
-            {
-              "name": "Eliminar Provincias",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/provincias/1"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Unidades Educativas",
-          "item": [
-            {
-              "name": "Listar Unidades Educativas",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/unidades-educativas"
-              }
-            },
-            {
-              "name": "Obtener único Unidades Educativas",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/unidades-educativas/1"
-              }
-            },
-            {
-              "name": "Crear Unidades Educativas",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"U.E. Bolivia\",\n  \"codigo\": 1001,\n  \"distritoId\": 1\n}"
-                },
-                "url": "http://localhost:3000/unidades-educativas"
-              }
-            },
-            {
-              "name": "Actualizar Unidades Educativas",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"U.E. Bolivia\",\n  \"codigo\": 1001,\n  \"distritoId\": 1\n}"
-                },
-                "url": "http://localhost:3000/unidades-educativas/1"
-              }
-            },
-            {
-              "name": "Eliminar Unidades Educativas",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/unidades-educativas/1"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Usuarios y Permisos",
-      "item": [
-        {
-          "name": "Usuarios",
-          "item": [
-            {
-              "name": "Listar Usuarios",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/users"
-              }
-            },
-            {
-              "name": "Obtener único Usuarios",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/users/1"
-              }
-            },
-            {
-              "name": "Crear Usuarios",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"username\": \"docente1\",\n  \"nombre\": \"Juan\",\n  \"apellidos\": \"Perez\",\n  \"correo\": \"juan@profe.bo\",\n  \"password\": \"password123\",\n  \"tenantId\": 1\n}"
-                },
-                "url": "http://localhost:3000/users"
-              }
-            },
-            {
-              "name": "Actualizar Usuarios",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"username\": \"docente1\",\n  \"nombre\": \"Juan\",\n  \"apellidos\": \"Perez\",\n  \"correo\": \"juan@profe.bo\",\n  \"password\": \"password123\",\n  \"tenantId\": 1\n}"
-                },
-                "url": "http://localhost:3000/users/1"
-              }
-            },
-            {
-              "name": "Eliminar Usuarios",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/users/1"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Roles",
-          "item": [
-            {
-              "name": "Listar Roles",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/roles"
-              }
-            },
-            {
-              "name": "Obtener único Roles",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/roles/1"
-              }
-            },
-            {
-              "name": "Crear Roles",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"name\": \"FACILITADOR\",\n  \"guardName\": \"web\"\n}"
-                },
-                "url": "http://localhost:3000/roles"
-              }
-            },
-            {
-              "name": "Actualizar Roles",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"name\": \"FACILITADOR\",\n  \"guardName\": \"web\"\n}"
-                },
-                "url": "http://localhost:3000/roles/1"
-              }
-            },
-            {
-              "name": "Eliminar Roles",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/roles/1"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Permisos",
-          "item": [
-            {
-              "name": "Listar Permisos",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/permissions"
-              }
-            },
-            {
-              "name": "Obtener único Permisos",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/permissions/1"
-              }
-            },
-            {
-              "name": "Crear Permisos",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"name\": \"create_academic\",\n  \"guardName\": \"web\",\n  \"groupName\": \"Academic\"\n}"
-                },
-                "url": "http://localhost:3000/permissions"
-              }
-            },
-            {
-              "name": "Actualizar Permisos",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"name\": \"create_academic\",\n  \"guardName\": \"web\",\n  \"groupName\": \"Academic\"\n}"
-                },
-                "url": "http://localhost:3000/permissions/1"
-              }
-            },
-            {
-              "name": "Eliminar Permisos",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/permissions/1"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Personas (MAP)",
-          "item": [
-            {
-              "name": "Listar Personas (MAP)",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/personas"
-              }
-            },
-            {
-              "name": "Obtener único Personas (MAP)",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/personas/1"
-              }
-            },
-            {
-              "name": "Crear Personas (MAP)",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"ci\": 1234567,\n  \"nombre1\": \"Juan\",\n  \"apellido1\": \"Perez\",\n  \"generoId\": 1,\n  \"areaId\": 1,\n  \"fechaNac\": \"1990-01-01T00:00:00Z\"\n}"
-                },
-                "url": "http://localhost:3000/personas"
-              }
-            },
-            {
-              "name": "Actualizar Personas (MAP)",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"ci\": 1234567,\n  \"nombre1\": \"Juan\",\n  \"apellido1\": \"Perez\",\n  \"generoId\": 1,\n  \"areaId\": 1,\n  \"fechaNac\": \"1990-01-01T00:00:00Z\"\n}"
-                },
-                "url": "http://localhost:3000/personas/1"
-              }
-            },
-            {
-              "name": "Eliminar Personas (MAP)",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/personas/1"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Areas de Trabajo",
-          "item": [
-            {
-              "name": "Listar Areas de Trabajo",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/areas"
-              }
-            },
-            {
-              "name": "Obtener único Areas de Trabajo",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/areas/1"
-              }
-            },
-            {
-              "name": "Crear Areas de Trabajo",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"SISTEMAS\"\n}"
-                },
-                "url": "http://localhost:3000/areas"
-              }
-            },
-            {
-              "name": "Actualizar Areas de Trabajo",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"SISTEMAS\"\n}"
-                },
-                "url": "http://localhost:3000/areas/1"
-              }
-            },
-            {
-              "name": "Eliminar Areas de Trabajo",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/areas/1"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Géneros",
-          "item": [
-            {
-              "name": "Listar Géneros",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/generos"
-              }
-            },
-            {
-              "name": "Obtener único Géneros",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/generos/1"
-              }
-            },
-            {
-              "name": "Crear Géneros",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Masculino\"\n}"
-                },
-                "url": "http://localhost:3000/generos"
-              }
-            },
-            {
-              "name": "Actualizar Géneros",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Masculino\"\n}"
-                },
-                "url": "http://localhost:3000/generos/1"
-              }
-            },
-            {
-              "name": "Eliminar Géneros",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/generos/1"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Académico (Programas y Cursos)",
-      "item": [
-        {
-          "name": "Programas",
-          "item": [
-            {
-              "name": "Listar Programas",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/programas"
-              }
-            },
-            {
-              "name": "Obtener único Programas",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/programas/1"
-              }
-            },
-            {
-              "name": "Crear Programas",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Diplomado en IA\",\n  \"codigo\": \"IA001\",\n  \"cargaHoraria\": 200,\n  \"costo\": 1500,\n  \"duracionId\": 1,\n  \"versionId\": 1,\n  \"tipoId\": 1,\n  \"modalidadId\": 1,\n  \"contenido\": \"Contenido del programa\",\n  \"banner\": \"banner.jpg\",\n  \"afiche\": \"afiche.jpg\",\n  \"fechaIniIns\": \"2024-01-01T00:00:00Z\",\n  \"fechaFinIns\": \"2024-12-31T23:59:59Z\",\n  \"fechaIniClase\": \"2024-02-01T00:00:00Z\",\n  \"tenantId\": 1\n}"
-                },
-                "url": "http://localhost:3000/programas"
-              }
-            },
-            {
-              "name": "Actualizar Programas",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Diplomado en IA\",\n  \"codigo\": \"IA001\",\n  \"cargaHoraria\": 200,\n  \"costo\": 1500,\n  \"duracionId\": 1,\n  \"versionId\": 1,\n  \"tipoId\": 1,\n  \"modalidadId\": 1,\n  \"contenido\": \"Contenido del programa\",\n  \"banner\": \"banner.jpg\",\n  \"afiche\": \"afiche.jpg\",\n  \"fechaIniIns\": \"2024-01-01T00:00:00Z\",\n  \"fechaFinIns\": \"2024-12-31T23:59:59Z\",\n  \"fechaIniClase\": \"2024-02-01T00:00:00Z\",\n  \"tenantId\": 1\n}"
-                },
-                "url": "http://localhost:3000/programas/1"
-              }
-            },
-            {
-              "name": "Eliminar Programas",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/programas/1"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Módulos",
-          "item": [
-            {
-              "name": "Listar Módulos",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/modulos"
-              }
-            },
-            {
-              "name": "Obtener único Módulos",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/modulos/1"
-              }
-            },
-            {
-              "name": "Crear Módulos",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Módulo 1\",\n  \"programaId\": 1,\n  \"descripcion\": \"Introducción\",\n  \"fechaInicio\": \"2024-03-01T00:00:00Z\",\n  \"fechaFin\": \"2023-04-01T00:00:00Z\"\n}"
-                },
-                "url": "http://localhost:3000/modulos"
-              }
-            },
-            {
-              "name": "Actualizar Módulos",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Módulo 1\",\n  \"programaId\": 1,\n  \"descripcion\": \"Introducción\",\n  \"fechaInicio\": \"2024-03-01T00:00:00Z\",\n  \"fechaFin\": \"2023-04-01T00:00:00Z\"\n}"
-                },
-                "url": "http://localhost:3000/modulos/1"
-              }
-            },
-            {
-              "name": "Eliminar Módulos",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/modulos/1"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Duraciones",
-          "item": [
-            {
-              "name": "Listar Duraciones",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/duraciones"
-              }
-            },
-            {
-              "name": "Obtener único Duraciones",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/duraciones/1"
-              }
-            },
-            {
-              "name": "Crear Duraciones",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"4 Semanas\",\n  \"semana\": 4\n}"
-                },
-                "url": "http://localhost:3000/duraciones"
-              }
-            },
-            {
-              "name": "Actualizar Duraciones",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"4 Semanas\",\n  \"semana\": 4\n}"
-                },
-                "url": "http://localhost:3000/duraciones/1"
-              }
-            },
-            {
-              "name": "Eliminar Duraciones",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/duraciones/1"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Versiones",
-          "item": [
-            {
-              "name": "Listar Versiones",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/versiones"
-              }
-            },
-            {
-              "name": "Obtener único Versiones",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/versiones/1"
-              }
-            },
-            {
-              "name": "Crear Versiones",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Versión 1\",\n  \"numero\": 1,\n  \"romano\": \"I\",\n  \"gestion\": \"2024\"\n}"
-                },
-                "url": "http://localhost:3000/versiones"
-              }
-            },
-            {
-              "name": "Actualizar Versiones",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Versión 1\",\n  \"numero\": 1,\n  \"romano\": \"I\",\n  \"gestion\": \"2024\"\n}"
-                },
-                "url": "http://localhost:3000/versiones/1"
-              }
-            },
-            {
-              "name": "Eliminar Versiones",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/versiones/1"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Tipos de Programa",
-          "item": [
-            {
-              "name": "Listar Tipos de Programa",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/tipos"
-              }
-            },
-            {
-              "name": "Obtener único Tipos de Programa",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/tipos/1"
-              }
-            },
-            {
-              "name": "Crear Tipos de Programa",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Diplomado\"\n}"
-                },
-                "url": "http://localhost:3000/tipos"
-              }
-            },
-            {
-              "name": "Actualizar Tipos de Programa",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Diplomado\"\n}"
-                },
-                "url": "http://localhost:3000/tipos/1"
-              }
-            },
-            {
-              "name": "Eliminar Tipos de Programa",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/tipos/1"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Modalidades",
-          "item": [
-            {
-              "name": "Listar Modalidades",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/modalidades"
-              }
-            },
-            {
-              "name": "Obtener único Modalidades",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/modalidades/1"
-              }
-            },
-            {
-              "name": "Crear Modalidades",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Virtual\"\n}"
-                },
-                "url": "http://localhost:3000/modalidades"
-              }
-            },
-            {
-              "name": "Actualizar Modalidades",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Virtual\"\n}"
-                },
-                "url": "http://localhost:3000/modalidades/1"
-              }
-            },
-            {
-              "name": "Eliminar Modalidades",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/modalidades/1"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Turnos",
-          "item": [
-            {
-              "name": "Listar Turnos",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/turnos"
-              }
-            },
-            {
-              "name": "Obtener único Turnos",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/turnos/1"
-              }
-            },
-            {
-              "name": "Crear Turnos",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Noche\",\n  \"descripcion\": \"19:00 - 21:00\"\n}"
-                },
-                "url": "http://localhost:3000/turnos"
-              }
-            },
-            {
-              "name": "Actualizar Turnos",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Noche\",\n  \"descripcion\": \"19:00 - 21:00\"\n}"
-                },
-                "url": "http://localhost:3000/turnos/1"
-              }
-            },
-            {
-              "name": "Eliminar Turnos",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/turnos/1"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Estados de Inscripción",
-          "item": [
-            {
-              "name": "Listar Estados de Inscripción",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/estados-inscripcion"
-              }
-            },
-            {
-              "name": "Obtener único Estados de Inscripción",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/estados-inscripcion/1"
-              }
-            },
-            {
-              "name": "Crear Estados de Inscripción",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"INSCRITO\"\n}"
-                },
-                "url": "http://localhost:3000/estados-inscripcion"
-              }
-            },
-            {
-              "name": "Actualizar Estados de Inscripción",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"INSCRITO\"\n}"
-                },
-                "url": "http://localhost:3000/estados-inscripcion/1"
-              }
-            },
-            {
-              "name": "Eliminar Estados de Inscripción",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/estados-inscripcion/1"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Inscripciones",
-          "item": [
-            {
-              "name": "Listar Inscripciones",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/inscripciones"
-              }
-            },
-            {
-              "name": "Obtener único Inscripciones",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/inscripciones/1"
-              }
-            },
-            {
-              "name": "Crear Inscripciones",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"programaId\": 1,\n  \"personaId\": 1,\n  \"sedeId\": 1,\n  \"turnoId\": 1,\n  \"estadoInscripcionId\": 1\n}"
-                },
-                "url": "http://localhost:3000/inscripciones"
-              }
-            },
-            {
-              "name": "Actualizar Inscripciones",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"programaId\": 1,\n  \"personaId\": 1,\n  \"sedeId\": 1,\n  \"turnoId\": 1,\n  \"estadoInscripcionId\": 1\n}"
-                },
-                "url": "http://localhost:3000/inscripciones/1"
-              }
-            },
-            {
-              "name": "Eliminar Inscripciones",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/inscripciones/1"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Bauchers",
-          "item": [
-            {
-              "name": "Listar Bauchers",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/bauchers"
-              }
-            },
-            {
-              "name": "Obtener único Bauchers",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/bauchers/1"
-              }
-            },
-            {
-              "name": "Crear Bauchers",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"inscripcionId\": 1,\n  \"monto\": 1500,\n  \"numeroDeposito\": \"DEP-123\",\n  \"fechaDeposito\": \"2024-01-15T00:00:00Z\"\n}"
-                },
-                "url": "http://localhost:3000/bauchers"
-              }
-            },
-            {
-              "name": "Actualizar Bauchers",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"inscripcionId\": 1,\n  \"monto\": 1500,\n  \"numeroDeposito\": \"DEP-123\",\n  \"fechaDeposito\": \"2024-01-15T00:00:00Z\"\n}"
-                },
-                "url": "http://localhost:3000/bauchers/1"
-              }
-            },
-            {
-              "name": "Eliminar Bauchers",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/bauchers/1"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Calificaciones",
-          "item": [
-            {
-              "name": "Listar Calificaciones",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/calificaciones"
-              }
-            },
-            {
-              "name": "Obtener único Calificaciones",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/calificaciones/1"
-              }
-            },
-            {
-              "name": "Crear Calificaciones",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"inscripcionId\": 1,\n  \"moduloId\": 1,\n  \"nota\": 85\n}"
-                },
-                "url": "http://localhost:3000/calificaciones"
-              }
-            },
-            {
-              "name": "Actualizar Calificaciones",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"inscripcionId\": 1,\n  \"moduloId\": 1,\n  \"nota\": 85\n}"
-                },
-                "url": "http://localhost:3000/calificaciones/1"
-              }
-            },
-            {
-              "name": "Eliminar Calificaciones",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/calificaciones/1"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Eventos y Socialización",
-      "item": [
-        {
-          "name": "Eventos",
-          "item": [
-            {
-              "name": "Listar Eventos",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/eventos"
-              }
-            },
-            {
-              "name": "Obtener único Eventos",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/eventos/1"
-              }
-            },
-            {
-              "name": "Crear Eventos",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Congreso 2024\",\n  \"codigo\": \"CONG-24\",\n  \"descripcion\": \"Congreso Educativo\",\n  \"fecha\": \"2024-10-10T00:00:00Z\",\n  \"lugar\": \"La Paz\",\n  \"tipoId\": 1,\n  \"tenantId\": 1\n}"
-                },
-                "url": "http://localhost:3000/eventos"
-              }
-            },
-            {
-              "name": "Actualizar Eventos",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Congreso 2024\",\n  \"codigo\": \"CONG-24\",\n  \"descripcion\": \"Congreso Educativo\",\n  \"fecha\": \"2024-10-10T00:00:00Z\",\n  \"lugar\": \"La Paz\",\n  \"tipoId\": 1,\n  \"tenantId\": 1\n}"
-                },
-                "url": "http://localhost:3000/eventos/1"
-              }
-            },
-            {
-              "name": "Eliminar Eventos",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/eventos/1"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Tipos de Evento",
-          "item": [
-            {
-              "name": "Listar Tipos de Evento",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/tipos-evento"
-              }
-            },
-            {
-              "name": "Obtener único Tipos de Evento",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/tipos-evento/1"
-              }
-            },
-            {
-              "name": "Crear Tipos de Evento",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Seminario\"\n}"
-                },
-                "url": "http://localhost:3000/tipos-evento"
-              }
-            },
-            {
-              "name": "Actualizar Tipos de Evento",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"nombre\": \"Seminario\"\n}"
-                },
-                "url": "http://localhost:3000/tipos-evento/1"
-              }
-            },
-            {
-              "name": "Eliminar Tipos de Evento",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/tipos-evento/1"
-              }
-            }
-          ]
-        },
-        {
-          "name": "Participantes Eventos",
-          "item": [
-            {
-              "name": "Listar Participantes Eventos",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/evento-persona"
-              }
-            },
-            {
-              "name": "Obtener único Participantes Eventos",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/evento-persona/1"
-              }
-            },
-            {
-              "name": "Crear Participantes Eventos",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"eventoId\": 1,\n  \"personaId\": 1\n}"
-                },
-                "url": "http://localhost:3000/evento-persona"
-              }
-            },
-            {
-              "name": "Actualizar Participantes Eventos",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"eventoId\": 1,\n  \"personaId\": 1\n}"
-                },
-                "url": "http://localhost:3000/evento-persona/1"
-              }
-            },
-            {
-              "name": "Eliminar Participantes Eventos",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/evento-persona/1"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "name": "Auditoría",
-      "item": [
-        {
-          "name": "Logs de Auditoría",
-          "item": [
-            {
-              "name": "Listar Logs de Auditoría",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/audit-logs"
-              }
-            },
-            {
-              "name": "Obtener único Logs de Auditoría",
-              "request": {
-                "method": "GET",
-                "url": "http://localhost:3000/audit-logs/1"
-              }
-            },
-            {
-              "name": "Crear Logs de Auditoría",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{}"
-                },
-                "url": "http://localhost:3000/audit-logs"
-              }
-            },
-            {
-              "name": "Actualizar Logs de Auditoría",
-              "request": {
-                "method": "PUT",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{}"
-                },
-                "url": "http://localhost:3000/audit-logs/1"
-              }
-            },
-            {
-              "name": "Eliminar Logs de Auditoría",
-              "request": {
-                "method": "DELETE",
-                "url": "http://localhost:3000/audit-logs/1"
-              }
-            }
-          ]
-        }
-      ]
-    }
-  ]
-}
+          }
+        ]
+      }
+    ]
+  }
