@@ -51,7 +51,7 @@ export class GenericCrudService<T> {
                 'mappersona', 'areatrabajo', 'genero', 'provincia', 'unidadeducativa', 'actaconclusion', 'programaversionoperativa', 'profe',
                 'programainscripcionestado', 'programabaucher', 'programarestriccion', 'calificacionparticipante', 'programacalificacion',
                 'programatipocalificacion', 'eventorestriccion', 'eventocuestionario', 'eventopregunta', 'eventoopcion', 'eventorespuesta', 'galeria',
-                'programadosfacilitador', 'programadosturno', 'programamodulodos'
+                'programadosfacilitador', 'programadosturno', 'programamodulodos', 'evaluacionadmins', 'cargo', 'bancoprofesional'
             ];
 
             if (globalModels.includes(currentModel)) {
@@ -145,6 +145,21 @@ export class GenericCrudService<T> {
 
     async findOne(id: string, ability?: any) {
         let where: any = { id };
+
+        if (ability) {
+            const caslWhere = this.getCaslWhere(ability, 'read');
+            where = { AND: [where, caslWhere] };
+        }
+
+        const res = await (this.prisma[this.modelName] as any).findFirst({
+            where
+        });
+
+        return this.filterFields(res, ability);
+    }
+
+    async findOneByFilter(filter: any, ability?: any) {
+        let where: any = { ...filter };
 
         if (ability) {
             const caslWhere = this.getCaslWhere(ability, 'read');

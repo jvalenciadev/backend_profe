@@ -2325,6 +2325,171 @@
             }
           }
         ]
+      },
+      {
+        "name": "Recursos Humanos (RRHH)",
+        "item": [
+          {
+            "name": "Cargos",
+            "item": [
+              {
+                "name": "Listar Cargos",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/cargos"
+                }
+              },
+              {
+                "name": "Crear Cargo",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"nombre\": \"DIRECTOR ADMINISTRATIVO\"\n}"
+                  },
+                  "url": "http://localhost:3000/cargos"
+                }
+              }
+            ]
+          },
+          {
+            "name": "Banco Profesional (Postulaciones)",
+            "item": [
+              {
+                "name": "Listar Postulantes",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "url": "http://localhost:3000/banco-profesional"
+                }
+              },
+              {
+                "name": "Crear Postulación",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "profe_secret_2026"
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"ci\": 1234567,\n  \"nombre\": \"ALBERTO QUISPE\",\n  \"fechaNac\": \"1990-05-20\",\n  \"licUniversitaria\": \"INGENIERÍA DE SISTEMAS\",\n  \"esMaestro\": true,\n  \"categoria\": \"4ta\",\n  \"postgrados\": {\n    \"diplomados\": [\"Educación Superior\"],\n    \"maestrias\": [],\n    \"doctorados\": []\n  },\n  \"produccionIntelectual\": [\n    { \"titulo\": \"Manual de Redes\", \"año\": 2023 }\n  ],\n  \"cargoId\": \"uuid-cargo-here\"\n}"
+                  },
+                  "url": "http://localhost:3000/banco-profesional"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "Evaluaciones (Hoja de Concepto)",
+        "item": [
+          {
+            "name": "Listar Admins para Evaluar",
+            "request": {
+              "method": "GET",
+              "header": [
+                {
+                  "key": "X-SECRET",
+                  "value": "profe_secret_2026"
+                }
+              ],
+              "url": "http://localhost:3000/evaluations/admins?role=admin"
+            }
+          },
+          {
+            "name": "Crear Evaluación (Hoja Concepto)",
+            "request": {
+              "method": "POST",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "Authorization",
+                  "value": "Bearer {{token}}"
+                },
+                {
+                  "key": "X-SECRET",
+                  "value": "profe_secret_2026"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"userId\": \"uuid-admin-a-evaluar\",\n  \"gestion\": \"2022\",\n  \"periodo\": \"GESTIÓN 2022\",\n  \"criterios\": {\n    \"asistencia\": 10,\n    \"rasgos\": 10,\n    \"ascendencia\": 10,\n    \"interes\": 10,\n    \"iniciativa\": 10\n  }\n}"
+              },
+              "url": "http://localhost:3000/evaluations"
+            }
+          },
+          {
+            "name": "Descargar PDF de Evaluación",
+            "request": {
+              "method": "GET",
+              "header": [
+                {
+                  "key": "X-SECRET",
+                  "value": "profe_secret_2026"
+                }
+              ],
+              "url": "http://localhost:3000/evaluations/pdf/:id"
+            }
+          },
+          {
+            "name": "Verificar Código de Evaluación",
+            "request": {
+              "method": "GET",
+              "header": [
+                {
+                  "key": "X-SECRET",
+                  "value": "profe_secret_2026"
+                }
+              ],
+              "url": "http://localhost:3000/evaluations/verify/:code"
+            }
+          }
+        ]
+      },
+      {
+        "name": "Acceso Público (Uploads)",
+        "item": [
+          {
+            "name": "Ver imagen de subida",
+            "request": {
+              "method": "GET",
+              "header": [],
+              "url": "http://localhost:3000/uploads/beni/comunicados/2026/02/1770959199129.png"
+            }
+          }
+        ]
       }
     ]
   }
