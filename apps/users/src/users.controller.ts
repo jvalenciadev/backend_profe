@@ -28,12 +28,12 @@ export class UsersController {
 
   @Put('profile')
   async updateProfilePut(@Req() req: any, @Body() data: any) {
-    return this.usersService.update(req.user.id, data, req.user, req.ability);
+    return this.usersService.update(req.user.id, data, req.user);
   }
 
   @Patch('profile')
   async updateProfilePatch(@Req() req: any, @Body() data: any) {
-    return this.usersService.update(req.user.id, data, req.user, req.ability);
+    return this.usersService.update(req.user.id, data, req.user);
   }
 
   @Put(':id')
@@ -46,6 +46,17 @@ export class UsersController {
   @CheckPolicies(ability => ability.can('update', 'User'))
   updatePatch(@Param('id') id: string, @Body() data: any, @Req() req: any) {
     return this.usersService.update(id, data, req.user, req.ability);
+  }
+
+  @Post(':id/reset-password')
+  @CheckPolicies(ability => ability.can('update', 'User'))
+  resetPassword(@Param('id') id: string, @Req() req: any) {
+    return this.usersService.resetPassword(id, req.user);
+  }
+
+  @Post('request-email-verification')
+  async requestEmailVerification(@Req() req: any, @Body('email') email: string) {
+    return this.usersService.requestEmailVerification(req.user.id, email);
   }
 
   @Delete(':id')

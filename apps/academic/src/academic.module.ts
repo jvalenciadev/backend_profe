@@ -24,8 +24,8 @@ import {
   AsignacionesController, AsignacionesService,
   BlogsController, BlogsService,
   ComunicadosController, ComunicadosService,
-  ProfeController, ProfeService
 } from './academic-crud.controllers';
+import { PublicController } from './public.controller';
 
 @Module({
   imports: [DatabaseModule],
@@ -52,7 +52,7 @@ import {
     AsignacionesController,
     BlogsController,
     ComunicadosController,
-    ProfeController,
+    PublicController,
   ],
   providers: [
     AcademicService,
@@ -76,7 +76,6 @@ import {
     AsignacionesService,
     BlogsService,
     ComunicadosService,
-    ProfeService,
   ],
 })
 export class AcademicModule { }

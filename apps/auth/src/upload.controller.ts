@@ -49,9 +49,7 @@ export class UploadController {
         const uploadsRoot = path.join(process.cwd(), 'uploads');
         const relativePath = path.relative(uploadsRoot, fullPath).replace(/\\/g, '/');
 
-        const baseUrl = process.env.BASE_URL || `http://localhost:${process.env.AUTH_PORT || 3001}`;
-        console.log('Upload URL Base:', baseUrl); // Debug log
-        const fileUrl = `${baseUrl}/uploads/${relativePath}`;
+        const fileUrl = `/uploads/${relativePath}`;
 
         return {
             success: true,

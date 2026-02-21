@@ -27,7 +27,7 @@ export class DepartmentsService {
       const existing = await this.prisma.departamento.findFirst({
         where: {
           nombre: createDepartmentDto.nombre,
-          estado: { not: 'ELIMINADO' }
+          estado: { not: 'eliminado' }
         }
       });
 
@@ -67,7 +67,7 @@ export class DepartmentsService {
   async findAll() {
     try {
       const departamentos = await this.prisma.departamento.findMany({
-        where: { estado: 'ACTIVO' },
+        where: { estado: 'activo' },
         orderBy: { nombre: 'asc' },
         select: {
           id: true,
@@ -103,15 +103,15 @@ export class DepartmentsService {
       const dep = await this.prisma.departamento.findFirst({
         where: {
           id: id,
-          estado: 'ACTIVO'
+          estado: 'activo'
         },
         include: {
           sedes: {
-            where: { estado: 'ACTIVO' },
+            where: { estado: 'activo' },
             select: {
               id: true,
               nombre: true,
-              nombreAbre: true,
+              nombreAbreviado: true,
               ubicacion: true,
             }
           },
@@ -160,7 +160,7 @@ export class DepartmentsService {
         throw new NotFoundException(`No se encontró el departamento con ID ${id}`);
       }
 
-      if (existing.estado === 'ELIMINADO') {
+      if (existing.estado === 'eliminado') {
         throw new BadRequestException('No se puede actualizar un departamento eliminado');
       }
 
@@ -170,7 +170,7 @@ export class DepartmentsService {
           where: {
             nombre: updateDepartmentDto.nombre,
             id: { not: id },
-            estado: { not: 'ELIMINADO' }
+            estado: { not: 'eliminado' }
           }
         });
 
@@ -221,8 +221,8 @@ export class DepartmentsService {
         include: {
           _count: {
             select: {
-              sedes: { where: { estado: 'ACTIVO' } },
-              users: { where: { estado: 'ACTIVO' } },
+              sedes: { where: { estado: 'activo' } },
+              users: { where: { estado: 'activo' } },
             }
           }
         }
@@ -232,7 +232,7 @@ export class DepartmentsService {
         throw new NotFoundException(`No se encontró el departamento con ID ${id}`);
       }
 
-      if (existing.estado === 'ELIMINADO') {
+      if (existing.estado === 'eliminado') {
         throw new BadRequestException('El departamento ya fue eliminado previamente');
       }
 
@@ -254,7 +254,7 @@ export class DepartmentsService {
       const dep = await this.prisma.departamento.update({
         where: { id: id },
         data: {
-          estado: 'ELIMINADO',
+          estado: 'eliminado',
           deletedAt: new Date(),
           deletedBy: user?.id || null
         }

@@ -43,7 +43,7 @@ export class GenericCrudService<T> {
                 return newObj;
             };
 
-            const currentModel = this.modelName.toLowerCase();
+            const currentModel = this.modelName.toLowerCase().replace(/_/g, '');
             const depIdModels = ['sede', 'distrito', 'programados', 'eventoinscripcion'];
             const tenantIdModels = ['user', 'blog', 'comunicado', 'evento', 'programainscripcion', 'video', 'auditlog'];
             const globalModels = [
@@ -51,7 +51,8 @@ export class GenericCrudService<T> {
                 'mappersona', 'areatrabajo', 'genero', 'provincia', 'unidadeducativa', 'actaconclusion', 'programaversionoperativa', 'profe',
                 'programainscripcionestado', 'programabaucher', 'programarestriccion', 'calificacionparticipante', 'programacalificacion',
                 'programatipocalificacion', 'eventorestriccion', 'eventocuestionario', 'eventopregunta', 'eventoopcion', 'eventorespuesta', 'galeria',
-                'programadosfacilitador', 'programadosturno', 'programamodulodos', 'evaluacionadmins', 'cargo', 'bancoprofesional'
+                'programadosfacilitador', 'programadosturno', 'programamodulodos', 'evaluacionadmins', 'cargo', 'bancoprofesional',
+                'programa_inscripcion_estado', 'unidad_educativa'
             ];
 
             if (globalModels.includes(currentModel)) {
@@ -128,7 +129,7 @@ export class GenericCrudService<T> {
     async findAll(filter: any = {}, ability?: any) {
         let where: any = { ...filter };
         if (this.hasStatus) {
-            where.estado = { not: 'ELIMINADO' };
+            where.estado = { not: 'eliminado' };
         }
 
         if (ability) {
@@ -205,7 +206,7 @@ export class GenericCrudService<T> {
 
         if (this.hasStatus) {
             const updateData: any = {
-                estado: 'ELIMINADO',
+                estado: 'eliminado',
                 deletedAt: new Date(),
             };
             if (this.hasAudit) {

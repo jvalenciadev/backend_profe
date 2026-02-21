@@ -6,6 +6,66 @@
     },
     "item": [
       {
+        "name": "Profe (Institución)",
+        "item": [
+          {
+            "name": "GET Información Institucional",
+            "request": {
+              "method": "GET",
+              "header": [
+                {
+                  "key": "X-SECRET",
+                  "value": "profe_secret_2026"
+                }
+              ],
+              "url": "http://localhost:3000/profe"
+            }
+          },
+          {
+            "name": "POST Crear Institución (solo una vez)",
+            "request": {
+              "method": "POST",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-SECRET",
+                  "value": "profe_secret_2026"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"imagen\": \"/uploads/global/logo.png\",\n  \"nombre\": \"ESFM TECNOLOGICO Y HUMANISTICO EL ALTO\",\n  \"descripcion\": \"Escuela Superior de Formación de Maestros\",\n  \"sobreNosotros\": \"Somos una institución educativa de nivel superior...\",\n  \"mision\": \"Formar maestros con valores y competencias...\",\n  \"vision\": \"Ser la institución líder en formación docente...\",\n  \"actividad\": \"Formación de maestros para el nivel primario y secundario\",\n  \"fechaCreacion\": \"1990-03-15\",\n  \"correo\": \"info@esfm.edu.bo\",\n  \"celular\": \"70000000\",\n  \"telefono\": \"2000000\",\n  \"pagina\": \"https://esfm.edu.bo\",\n  \"facebook\": \"https://facebook.com/esfm\",\n  \"tiktok\": null,\n  \"youtube\": null,\n  \"ubicacion\": \"El Alto, La Paz, Bolivia\",\n  \"latitud\": -16.5,\n  \"longitud\": -68.15,\n  \"banner\": \"/uploads/global/banner.png\",\n  \"afiche\": \"/uploads/global/afiche.png\",\n  \"convocatoria\": \"/uploads/global/convocatoria.pdf\"\n}"
+              },
+              "url": "http://localhost:3000/profe"
+            }
+          },
+          {
+            "name": "PATCH Editar Institución",
+            "request": {
+              "method": "PATCH",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "X-SECRET",
+                  "value": "profe_secret_2026"
+                }
+              ],
+              "body": {
+                "mode": "raw",
+                "raw": "{\n  \"nombre\": \"ESFM TECNOLOGICO Y HUMANISTICO EL ALTO\",\n  \"correo\": \"nuevo@esfm.edu.bo\",\n  \"celular\": \"71111111\",\n  \"mision\": \"Nueva misión actualizada...\",\n  \"vision\": \"Nueva visión actualizada...\"\n}"
+              },
+              "url": "http://localhost:3000/profe/{{profeId}}"
+            }
+          }
+        ]
+      },
+      {
         "name": "Auth & Sesión",
         "item": [
           {
@@ -19,7 +79,7 @@
                 },
                 {
                   "key": "X-SECRET",
-                  "value": "profe_secret_2026"
+                  "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                 }
               ],
               "body": {
@@ -40,7 +100,7 @@
                 },
                 {
                   "key": "X-SECRET",
-                  "value": "profe_secret_2026"
+                  "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                 }
               ],
               "body": {
@@ -61,7 +121,7 @@
                 },
                 {
                   "key": "X-SECRET",
-                  "value": "profe_secret_2026"
+                  "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                 }
               ],
               "url": "http://localhost:3000/auth/profile"
@@ -116,7 +176,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/departments"
@@ -129,7 +189,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/departments/550e8400-e29b-41d4-a716-446655440000"
@@ -146,7 +206,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -167,7 +227,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -184,7 +244,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/departments/550e8400-e29b-41d4-a716-446655440000"
@@ -202,7 +262,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/sedes"
@@ -215,7 +275,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/sedes/550e8400-e29b-41d4-a716-446655440000"
@@ -232,7 +292,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -253,7 +313,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -270,7 +330,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/sedes/550e8400-e29b-41d4-a716-446655440000"
@@ -288,7 +348,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/distritos"
@@ -301,7 +361,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/distritos/550e8400-e29b-41d4-a716-446655440000"
@@ -318,7 +378,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -339,7 +399,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -356,7 +416,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/distritos/550e8400-e29b-41d4-a716-446655440000"
@@ -374,7 +434,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/unidades-educativas"
@@ -387,7 +447,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/unidades-educativas/550e8400-e29b-41d4-a716-446655440000"
@@ -404,7 +464,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -425,7 +485,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -442,7 +502,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/unidades-educativas/550e8400-e29b-41d4-a716-446655440000"
@@ -460,7 +520,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/galerias"
@@ -473,7 +533,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/galerias/550e8400-e29b-41d4-a716-446655440000"
@@ -490,7 +550,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -511,7 +571,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -528,7 +588,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/galerias/550e8400-e29b-41d4-a716-446655440000"
@@ -551,7 +611,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/users"
@@ -564,7 +624,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/users/550e8400-e29b-41d4-a716-446655440000"
@@ -581,7 +641,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -602,7 +662,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -619,7 +679,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/users/550e8400-e29b-41d4-a716-446655440000"
@@ -642,7 +702,7 @@
                 },
                 {
                   "key": "X-SECRET",
-                  "value": "profe_secret_2026"
+                  "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                 }
               ],
               "body": {
@@ -662,7 +722,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/roles"
@@ -675,7 +735,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/roles/550e8400-e29b-41d4-a716-446655440000"
@@ -692,7 +752,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -713,7 +773,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -730,7 +790,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/roles/550e8400-e29b-41d4-a716-446655440000"
@@ -748,7 +808,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/permissions"
@@ -761,7 +821,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/permissions/550e8400-e29b-41d4-a716-446655440000"
@@ -778,7 +838,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -799,7 +859,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -816,7 +876,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/permissions/550e8400-e29b-41d4-a716-446655440000"
@@ -839,7 +899,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/inscripciones"
@@ -852,7 +912,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/inscripciones/550e8400-e29b-41d4-a716-446655440000"
@@ -869,7 +929,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -890,7 +950,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -907,7 +967,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/inscripciones/550e8400-e29b-41d4-a716-446655440000"
@@ -930,7 +990,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/programas-maestros"
@@ -943,7 +1003,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/programas-maestros/550e8400-e29b-41d4-a716-446655440000"
@@ -960,7 +1020,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -981,7 +1041,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -998,7 +1058,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/programas-maestros/550e8400-e29b-41d4-a716-446655440000"
@@ -1016,7 +1076,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/modulos-maestros"
@@ -1029,7 +1089,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/modulos-maestros/550e8400-e29b-41d4-a716-446655440000"
@@ -1046,7 +1106,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -1067,7 +1127,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -1084,7 +1144,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/modulos-maestros/550e8400-e29b-41d4-a716-446655440000"
@@ -1107,7 +1167,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     },
                     {
                       "key": "Authorization",
@@ -1128,7 +1188,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     },
                     {
                       "key": "Authorization",
@@ -1153,7 +1213,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     },
                     {
                       "key": "Authorization",
@@ -1174,7 +1234,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     },
                     {
                       "key": "Authorization",
@@ -1196,7 +1256,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/programa-versiones/7b840a2a-39bd-4250-ba58-13e9df7dc96a"
@@ -1213,7 +1273,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -1234,7 +1294,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -1251,7 +1311,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/programa-versiones/550e8400-e29b-41d4-a716-446655440000"
@@ -1269,7 +1329,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/programa-modulo-versiones/bea47cd0-e495-4645-b266-7f19ab7043a2"
@@ -1286,7 +1346,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -1307,7 +1367,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -1324,7 +1384,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/programa-modulo-versiones/bea47cd0-e495-4645-b266-7f19ab7043a2"
@@ -1342,7 +1402,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/academic-ops/inscripciones"
@@ -1355,7 +1415,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/academic-ops/inscripciones/550e8400-e29b-41d4-a716-446655440000"
@@ -1372,7 +1432,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -1393,7 +1453,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -1410,7 +1470,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/academic-ops/inscripciones/550e8400-e29b-41d4-a716-446655440000"
@@ -1466,7 +1526,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/programa-dos"
@@ -1479,7 +1539,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/programa-dos/550e8400-e29b-41d4-a716-446655440000"
@@ -1496,7 +1556,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -1517,7 +1577,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -1534,7 +1594,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/programa-dos/550e8400-e29b-41d4-a716-446655440000"
@@ -1552,7 +1612,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/programa-modulo-versiones/bea47cd0-e495-4645-b266-7f19ab7043a2"
@@ -1569,7 +1629,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -1590,7 +1650,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -1607,7 +1667,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/programa-modulo-versiones/bea47cd0-e495-4645-b266-7f19ab7043a2"
@@ -1630,7 +1690,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/versiones"
@@ -1643,7 +1703,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/versiones/:id"
@@ -1660,7 +1720,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -1681,7 +1741,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -1702,7 +1762,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -1719,7 +1779,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/versiones/:id"
@@ -1737,7 +1797,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/turnos"
@@ -1750,7 +1810,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/turnos/:id"
@@ -1767,7 +1827,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -1788,7 +1848,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -1809,7 +1869,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -1826,7 +1886,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/turnos/:id"
@@ -1844,7 +1904,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/duraciones"
@@ -1857,7 +1917,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/duraciones/:id"
@@ -1874,7 +1934,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -1895,7 +1955,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -1916,7 +1976,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -1933,7 +1993,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/duraciones/:id"
@@ -1951,7 +2011,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/modalidades"
@@ -1964,7 +2024,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/modalidades/:id"
@@ -1981,7 +2041,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -2002,7 +2062,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -2023,7 +2083,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -2040,7 +2100,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/modalidades/:id"
@@ -2058,7 +2118,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/tipos"
@@ -2071,7 +2131,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/tipos/:id"
@@ -2088,7 +2148,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -2109,7 +2169,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -2130,7 +2190,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -2147,7 +2207,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/tipos/:id"
@@ -2170,7 +2230,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/eventos"
@@ -2187,7 +2247,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -2209,7 +2269,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/blogs"
@@ -2226,7 +2286,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -2248,7 +2308,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/comunicados"
@@ -2265,7 +2325,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -2293,7 +2353,7 @@
                 },
                 {
                   "key": "X-SECRET",
-                  "value": "profe_secret_2026"
+                  "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                 }
               ],
               "body": {
@@ -2339,7 +2399,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/cargos"
@@ -2356,7 +2416,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -2378,7 +2438,7 @@
                   "header": [
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "url": "http://localhost:3000/banco-profesional"
@@ -2395,7 +2455,7 @@
                     },
                     {
                       "key": "X-SECRET",
-                      "value": "profe_secret_2026"
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
                     }
                   ],
                   "body": {
@@ -2413,68 +2473,181 @@
         "name": "Evaluaciones (Hoja de Concepto)",
         "item": [
           {
-            "name": "Listar Admins para Evaluar",
-            "request": {
-              "method": "GET",
-              "header": [
-                {
-                  "key": "X-SECRET",
-                  "value": "profe_secret_2026"
+            "name": "── PERÍODOS GLOBALES (Admin) ──",
+            "item": [
+              {
+                "name": "1. Crear Período con Criterios (GLOBAL)",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"gestion\": \"2025\",\n  \"semestre\": \"1\",\n  \"periodo\": \"GESTIÓN 2025\",\n  \"criterios\": [\n    { \"nombre\": \"Asistencia, puntualidad y disciplina en cumplimiento de los deberes docentes\", \"puntajeMaximo\": 10, \"orden\": 1 },\n    { \"nombre\": \"Rasgos positivos de personalidad y carácter, simpatía y cordialidad en sus relaciones profesionales\", \"puntajeMaximo\": 10, \"orden\": 2 },\n    { \"nombre\": \"Ascendencia moral y disposición de ánimo estimulante para los estudiantes.\", \"puntajeMaximo\": 10, \"orden\": 3 },\n    { \"nombre\": \"Interés por perfeccionar su preparación técnica y cultural\", \"puntajeMaximo\": 10, \"orden\": 4 },\n    { \"nombre\": \"Iniciativa en beneficio del mejoramiento de la educación\", \"puntajeMaximo\": 10, \"orden\": 5 }\n  ]\n}"
+                  },
+                  "url": "http://localhost:3000/evaluations/periodos"
                 }
-              ],
-              "url": "http://localhost:3000/evaluations/admins?role=admin"
-            }
-          },
-          {
-            "name": "Crear Evaluación (Hoja Concepto)",
-            "request": {
-              "method": "POST",
-              "header": [
-                {
-                  "key": "Content-Type",
-                  "value": "application/json"
-                },
-                {
-                  "key": "Authorization",
-                  "value": "Bearer {{token}}"
-                },
-                {
-                  "key": "X-SECRET",
-                  "value": "profe_secret_2026"
-                }
-              ],
-              "body": {
-                "mode": "raw",
-                "raw": "{\n  \"userId\": \"uuid-admin-a-evaluar\",\n  \"gestion\": \"2022\",\n  \"periodo\": \"GESTIÓN 2022\",\n  \"criterios\": {\n    \"asistencia\": 10,\n    \"rasgos\": 10,\n    \"ascendencia\": 10,\n    \"interes\": 10,\n    \"iniciativa\": 10\n  }\n}"
               },
-              "url": "http://localhost:3000/evaluations"
-            }
+              {
+                "name": "2. Listar Todos los Períodos (GLOBAL)",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
+                    }
+                  ],
+                  "url": "http://localhost:3000/evaluations/periodos"
+                }
+              },
+              {
+                "name": "3. Ver Período por ID",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
+                    }
+                  ],
+                  "url": "http://localhost:3000/evaluations/periodos/{{periodoId}}"
+                }
+              },
+              {
+                "name": "4. Activar / Desactivar Período",
+                "request": {
+                  "method": "PATCH",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"activo\": false\n}"
+                  },
+                  "url": "http://localhost:3000/evaluations/periodos/{{periodoId}}/toggle"
+                }
+              },
+              {
+                "name": "5. Eliminar Período",
+                "request": {
+                  "method": "DELETE",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
+                    }
+                  ],
+                  "url": "http://localhost:3000/evaluations/periodos/{{periodoId}}"
+                }
+              }
+            ]
           },
           {
-            "name": "Descargar PDF de Evaluación",
-            "request": {
-              "method": "GET",
-              "header": [
-                {
-                  "key": "X-SECRET",
-                  "value": "profe_secret_2026"
+            "name": "── EVALUACIONES (RESPONSABLE evalúa) ──",
+            "item": [
+              {
+                "name": "1. Listar Usuarios a Evaluar (mismo tenant)",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
+                    }
+                  ],
+                  "url": "http://localhost:3000/evaluations/usuarios?tenantId={{tenantId}}&periodoId={{periodoId}}"
                 }
-              ],
-              "url": "http://localhost:3000/evaluations/pdf/:id"
-            }
-          },
-          {
-            "name": "Verificar Código de Evaluación",
-            "request": {
-              "method": "GET",
-              "header": [
-                {
-                  "key": "X-SECRET",
-                  "value": "profe_secret_2026"
+              },
+              {
+                "name": "2. Crear Evaluación (Hoja de Concepto)",
+                "request": {
+                  "method": "POST",
+                  "header": [
+                    {
+                      "key": "Content-Type",
+                      "value": "application/json"
+                    },
+                    {
+                      "key": "X-SECRET",
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
+                    }
+                  ],
+                  "body": {
+                    "mode": "raw",
+                    "raw": "{\n  \"userId\": \"{{userIdAEvaluar}}\",\n  \"periodoId\": \"{{periodoId}}\",\n  \"responsableTenantId\": \"{{tenantId}}\",\n  \"puntajes\": [\n    { \"criterioId\": \"{{criterioId1}}\", \"puntaje\": 10 },\n    { \"criterioId\": \"{{criterioId2}}\", \"puntaje\": 10 },\n    { \"criterioId\": \"{{criterioId3}}\", \"puntaje\": 10 },{ \"criterioId\": \"{{criterioId4}}\", \"puntaje\": 10 },\n    { \"criterioId\": \"{{criterioId5}}\", \"puntaje\": 10 }\n  ]\n}"
+                  },
+                  "url": "http://localhost:3000/evaluations"
                 }
-              ],
-              "url": "http://localhost:3000/evaluations/verify/:code"
-            }
+              },
+              {
+                "name": "3. Listar Evaluaciones del Tenant",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
+                    }
+                  ],
+                  "url": "http://localhost:3000/evaluations?tenantId={{tenantId}}"
+                }
+              },
+              {
+                "name": "4. Ver Evaluación por ID",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
+                    }
+                  ],
+                  "url": "http://localhost:3000/evaluations/{{evaluacionId}}"
+                }
+              },
+              {
+                "name": "5. Descargar PDF (Hoja de Concepto)",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
+                    }
+                  ],
+                  "url": "http://localhost:3000/evaluations/pdf/{{evaluacionId}}"
+                }
+              },
+              {
+                "name": "6. Verificar Código de Autenticidad",
+                "request": {
+                  "method": "GET",
+                  "header": [
+                    {
+                      "key": "X-SECRET",
+                      "value": "mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM="
+                    }
+                  ],
+                  "url": "http://localhost:3000/evaluations/verify/ddpPp"
+                }
+              }
+            ]
           }
         ]
       },

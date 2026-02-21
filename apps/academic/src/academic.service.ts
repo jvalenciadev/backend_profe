@@ -25,7 +25,7 @@ export class AcademicService extends GenericCrudService<any> {
     const version = await this.prisma.programaDos.create({
       data: {
         nombre: rest.nombre || master.nombre,
-        nombreAbre: rest.nombreAbre || master.nombreAbre,
+        nombreAbreviado: rest.nombreAbreviado || master.nombreAbreviado,
         codigo: rest.codigo || master.codigo,
         contenido: rest.contenido || master.contenido,
         horario: rest.horario || master.horario,
@@ -34,9 +34,9 @@ export class AcademicService extends GenericCrudService<any> {
         banner: rest.banner || master.banner,
         afiche: rest.afiche || master.afiche,
         convocatoria: rest.convocatoria || master.convocatoria,
-        fechaIniIns: rest.fechaIniIns ? new Date(rest.fechaIniIns) : master.fechaIniIns,
-        fechaFinIns: rest.fechaFinIns ? new Date(rest.fechaFinIns) : master.fechaFinIns,
-        fechaIniClase: rest.fechaIniClase ? new Date(rest.fechaIniClase) : master.fechaIniClase,
+        fechaInicioInscripcion: rest.fechaInicioInscripcion ? new Date(rest.fechaInicioInscripcion) : master.fechaInicioInscripcion,
+        fechaFinInscripcion: rest.fechaFinInscripcion ? new Date(rest.fechaFinInscripcion) : master.fechaFinInscripcion,
+        fechaInicioClases: rest.fechaInicioClases ? new Date(rest.fechaInicioClases) : master.fechaInicioClases,
         estadoInscripcion: rest.estadoInscripcion ?? master.estadoInscripcion,
         estado: rest.estado || master.estado,
 
@@ -60,7 +60,7 @@ export class AcademicService extends GenericCrudService<any> {
             // Las fechas solo existen en ProgramaModuloDos (Versiones), no en el Maestro
             fechaInicio: m.fechaInicio ? new Date(m.fechaInicio) : new Date(),
             fechaFin: m.fechaFin ? new Date(m.fechaFin) : new Date(),
-            estado: m.estado || 'ACTIVO',
+            estado: m.estado || 'activo',
             createdBy: user?.id || null
           }))
         },
@@ -70,7 +70,7 @@ export class AcademicService extends GenericCrudService<any> {
             turnoIds: t.turnoIds,
             cupo: t.cupo,
             cupoPre: t.cupoPre || 0,
-            estado: t.estado || 'ACTIVO',
+            estado: t.estado || 'activo',
             createdBy: user?.id || null
           }))
         } : undefined
@@ -86,7 +86,7 @@ export class AcademicService extends GenericCrudService<any> {
     let estadoInscripcionId = data.estadoInscripcionId;
 
     if (!estadoInscripcionId) {
-      const defaultState = await this.prisma.programaInscripcionEstado.findFirst({
+      const defaultState = await this.prisma.programa_inscripcion_estado.findFirst({
         where: { nombre: { contains: 'INSCRITO', mode: 'insensitive' } }
       });
       estadoInscripcionId = defaultState?.id;

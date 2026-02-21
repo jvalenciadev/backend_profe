@@ -29,3 +29,4 @@ async function bootstrap() {
   console.log(`🚀 Monolithic Server running on: http://localhost:${port}`);
 }
 bootstrap();
+// Hot-reload trigger

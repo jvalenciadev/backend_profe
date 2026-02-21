@@ -7,7 +7,7 @@ export class ProgramasService extends GenericCrudService<any> {
     constructor(p: PrismaService) { super(p, 'programa', true, true); }
 
     async findAll(filter: any = {}, ability?: any) {
-        let where: any = { ...filter, estado: { not: 'ELIMINADO' } };
+        let where: any = { ...filter, estado: { not: 'eliminado' } };
         if (ability) {
             const caslWhere = this.getCaslWhere(ability, 'read');
             where = { AND: [where, caslWhere] };
@@ -27,15 +27,18 @@ export class ProgramasService extends GenericCrudService<any> {
     }
 
     async findOne(id: string, ability?: any) {
-        let where: any = { estado: { not: 'ELIMINADO' } };
-        // Allow searching by ID or Codigo
-        if (id.length > 30) (where as any).id = id;
-        else (where as any).codigo = id;
+        let where: any = { estado: { not: 'eliminado' } };
+
+        // Determinar si buscamos por ID (UUID) o por Código
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+        if (isUuid) where.id = id;
+        else where.codigo = id;
 
         if (ability) {
             const caslWhere = this.getCaslWhere(ability, 'read');
             where = { AND: [where, caslWhere] };
         }
+
         return await this.prisma.programa.findFirst({
             where,
             include: {
@@ -44,8 +47,7 @@ export class ProgramasService extends GenericCrudService<any> {
                 },
                 tipo: true,
                 modalidad: true,
-                duracion: true,
-                versionesOperativas: true
+                duracion: true
             }
         });
     }
@@ -67,7 +69,7 @@ export class ProgramasService extends GenericCrudService<any> {
                         nombre: m.nombre,
                         descripcion: m.descripcion,
                         notaMinima: m.notaMinima,
-                        estado: m.estado || 'ACTIVO',
+                        estado: m.estado || 'activo',
                         createdBy: user?.id || undefined
                     }))
                 } : undefined
@@ -113,7 +115,7 @@ export class ProgramasService extends GenericCrudService<any> {
                     nombre: m.nombre,
                     descripcion: m.descripcion,
                     notaMinima: m.notaMinima,
-                    estado: m.estado || 'ACTIVO',
+                    estado: m.estado || 'activo',
                     createdBy: user?.id || undefined
                 }))
             };
@@ -137,7 +139,7 @@ export class ProgramaDosService extends GenericCrudService<any> {
     }
 
     async findAll(filter: any = {}, ability?: any) {
-        let where: any = { ...filter, estado: { not: 'ELIMINADO' } };
+        let where: any = { ...filter, estado: { not: 'eliminado' } };
         if (ability) {
             const caslWhere = this.getCaslWhere(ability, 'read');
             where = { AND: [where, caslWhere] };
@@ -152,7 +154,6 @@ export class ProgramaDosService extends GenericCrudService<any> {
                 tipo: true,
                 modalidad: true,
                 duracion: true,
-                sede: true,
                 programa: true,
                 version: true
             },
@@ -161,9 +162,10 @@ export class ProgramaDosService extends GenericCrudService<any> {
     }
 
     async findOne(id: string, ability?: any) {
-        let where: any = { estado: { not: 'ELIMINADO' } };
-        if (id.length > 30) (where as any).id = id;
-        else (where as any).codigo = id;
+        let where: any = { estado: { not: 'eliminado' } };
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+        if (isUuid) where.id = id;
+        else where.codigo = id;
 
         if (ability) {
             const caslWhere = this.getCaslWhere(ability, 'read');
@@ -179,7 +181,6 @@ export class ProgramaDosService extends GenericCrudService<any> {
                 tipo: true,
                 modalidad: true,
                 duracion: true,
-                sede: true,
                 programa: true,
                 version: true
             }
@@ -191,7 +192,7 @@ export class ProgramaDosService extends GenericCrudService<any> {
 
         // If a master program code is provided, link it
         if (programaCodigo && !rest.programaId) {
-            const master = await this.prisma.programa.findUnique({ where: { codigo: programaCodigo } });
+            const master = await this.prisma.programa.findFirst({ where: { codigo: programaCodigo } });
             if (master) {
                 (rest as any).programaId = master.id;
             }
@@ -214,7 +215,7 @@ export class ProgramaDosService extends GenericCrudService<any> {
                         notaMinima: m.notaMinima,
                         fechaInicio: m.fechaInicio ? new Date(m.fechaInicio) : undefined,
                         fechaFin: m.fechaFin ? new Date(m.fechaFin) : undefined,
-                        estado: m.estado || 'ACTIVO',
+                        estado: m.estado || 'activo',
                         createdBy: user?.id || undefined
                     }))
                 } : undefined,
@@ -223,7 +224,7 @@ export class ProgramaDosService extends GenericCrudService<any> {
                         turnoIds: t.turnoIds,
                         cupo: t.cupo,
                         cupoPre: t.cupoPre || 0,
-                        estado: t.estado || 'ACTIVO',
+                        estado: t.estado || 'activo',
                         createdBy: user?.id || undefined
                     }))
                 } : undefined
@@ -237,7 +238,6 @@ export class ProgramaDosService extends GenericCrudService<any> {
                 tipo: true,
                 modalidad: true,
                 duracion: true,
-                sede: true,
                 version: true
             }
         });
@@ -247,7 +247,7 @@ export class ProgramaDosService extends GenericCrudService<any> {
         const { modulos, turnos, programaCodigo, id: _, modulos: __, createdAt, updatedAt, ...rest } = data;
 
         if (programaCodigo && !rest.programaId) {
-            const master = await this.prisma.programa.findUnique({ where: { codigo: programaCodigo } });
+            const master = await this.prisma.programa.findFirst({ where: { codigo: programaCodigo } });
             if (master) {
                 (rest as any).programaId = master.id;
             }
@@ -267,7 +267,7 @@ export class ProgramaDosService extends GenericCrudService<any> {
                         notaMinima: m.notaMinima,
                         fechaInicio: m.fechaInicio ? new Date(m.fechaInicio) : undefined,
                         fechaFin: m.fechaFin ? new Date(m.fechaFin) : undefined,
-                        estado: m.estado || 'ACTIVO',
+                        estado: m.estado || 'activo',
                         updatedBy: user?.id || undefined
                     }))
                 } : undefined,
@@ -277,7 +277,7 @@ export class ProgramaDosService extends GenericCrudService<any> {
                         turnoIds: t.turnoIds,
                         cupo: t.cupo,
                         cupoPre: t.cupoPre || 0,
-                        estado: t.estado || 'ACTIVO',
+                        estado: t.estado || 'activo',
                         createdBy: user?.id || undefined,
                         updatedBy: user?.id || undefined
                     }))
@@ -289,8 +289,7 @@ export class ProgramaDosService extends GenericCrudService<any> {
                 },
                 turnos: true,
                 programa: true,
-                version: true,
-                sede: true
+                version: true
             }
         });
     }
@@ -304,7 +303,7 @@ export class AsignacionesService extends GenericCrudService<any> {
     }
 
     async findAll(filter: any = {}, ability?: any) {
-        let where: any = { ...filter, estado: { not: 'ELIMINADO' } };
+        let where: any = { ...filter, estado: { not: 'eliminado' } };
 
         if (ability) {
             const caslWhere = this.getCaslWhere(ability, 'read');
@@ -317,37 +316,38 @@ export class AsignacionesService extends GenericCrudService<any> {
             where,
             include: {
                 modulo: true,
-                turno: true,
-                facilitador: true
+                facilitador: true,
+                programaDos: true
             },
             orderBy: { createdAt: 'desc' }
         });
     }
 
     async create(data: any, user?: any) {
-        const { moduloId, turnoId, ...rest } = data;
+        const { moduloId, facilitadorId, ...rest } = data;
 
-        // Buscar si ya existe una asignación para este módulo y turno (incluyendo las eliminadas)
-        const existing = await this.prisma.programaDosFacilitador.findUnique({
+        // Buscar si ya existe una asignación para este módulo y facilitador
+        const existing = await this.prisma.programaDosFacilitador.findFirst({
             where: {
-                moduloId_turnoId: { moduloId, turnoId }
+                moduloId,
+                facilitadorId
             }
         });
 
-        // Si existe y está activa, bloqueamos (Conflicto Real)
-        if (existing && existing.estado !== 'ELIMINADO') {
-            throw new ConflictException('Bloqueado: Este módulo y turno ya tienen un facilitador asignado.');
+        // Si existe y está activa, bloqueamos
+        if (existing && existing.estado !== 'eliminado') {
+            throw new ConflictException('Bloqueado: Este facilitador ya está asignado a este módulo.');
         }
 
         const auditData = this.hasAudit ? { updatedBy: user?.id || undefined } : {};
 
         // Si existe pero está eliminada, la RECICLAMOS (Reactivar)
-        if (existing && existing.estado === 'ELIMINADO') {
+        if (existing && existing.estado === 'eliminado') {
             return await this.prisma.programaDosFacilitador.update({
                 where: { id: existing.id },
                 data: {
                     ...rest,
-                    estado: 'ACTIVO',
+                    estado: 'activo',
                     deletedAt: null,
                     deletedBy: null,
                     ...auditData
@@ -360,7 +360,9 @@ export class AsignacionesService extends GenericCrudService<any> {
         return await this.prisma.programaDosFacilitador.create({
             data: {
                 moduloId,
-                turnoId,
+                facilitadorId,
+                programaDosId: data.programaDosId,
+                modalidadId: data.modalidadId,
                 ...rest,
                 ...createAudit
             }
@@ -381,7 +383,7 @@ export class EventosService extends GenericCrudService<any> {
 
     async findAll(filter: any = {}, ability?: any) {
         let where: any = { ...filter };
-        if (this.hasStatus) where.estado = { not: 'ELIMINADO' };
+        if (this.hasStatus) where.estado = { not: 'eliminado' };
         if (ability) {
             const caslWhere = this.getCaslWhere(ability, 'read');
             where = { AND: [where, caslWhere] };
@@ -423,7 +425,7 @@ export class EventosPersonasService extends GenericCrudService<any> {
 
 @Injectable()
 export class EstadosInscripcionService extends GenericCrudService<any> {
-    constructor(p: PrismaService) { super(p, 'programaInscripcionEstado', true, true); }
+    constructor(p: PrismaService) { super(p, 'programa_inscripcion_estado', true, true); }
 }
 
 @Injectable()
@@ -432,7 +434,7 @@ export class BlogsService extends GenericCrudService<any> {
 
     async findAll(filter: any = {}, ability?: any) {
         let where: any = { ...filter };
-        if (this.hasStatus) where.estado = { not: 'ELIMINADO' };
+        if (this.hasStatus) where.estado = { not: 'eliminado' };
         if (ability) {
             const caslWhere = this.getCaslWhere(ability, 'read');
             where = { AND: [where, caslWhere] };
@@ -451,7 +453,7 @@ export class ComunicadosService extends GenericCrudService<any> {
 
     async findAll(filter: any = {}, ability?: any) {
         let where: any = { ...filter };
-        if (this.hasStatus) where.estado = { not: 'ELIMINADO' };
+        if (this.hasStatus) where.estado = { not: 'eliminado' };
         if (ability) {
             const caslWhere = this.getCaslWhere(ability, 'read');
             where = { AND: [where, caslWhere] };
@@ -578,23 +580,5 @@ export class ComunicadosController extends CrudControllerFactory('comunicados') 
 
 
 
-@Injectable()
-export class ProfeService extends GenericCrudService<any> {
-    constructor(p: PrismaService) { super(p, 'profe', true, true); }
 
-    async create(data: any, user?: any) {
-        const count = await this.prisma.profe.count({
-            where: { estado: { not: 'ELIMINADO' } }
-        });
 
-        if (count > 0) {
-            throw new BadRequestException('Solo puede existir un registro de Información Institucional. Edite el existente.');
-        }
-        return super.create(data, user);
-    }
-}
-
-@Controller('profe')
-export class ProfeController extends CrudControllerFactory('profe') {
-    constructor(public service: ProfeService) { super(service); }
-}

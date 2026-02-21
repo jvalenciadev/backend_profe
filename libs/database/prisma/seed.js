@@ -17,7 +17,8 @@ async function main() {
             { name: 'RESPONSABLE_DEPARTAMENTAL', desc: 'Gestión por departamento' },
             { name: 'FACILITADOR', desc: 'Gestión académica' },
             { name: 'ESTUDIANTE', desc: 'Acceso a cursos' },
-            { name: 'AUDITOR_EXTERNO', desc: 'Solo lectura' }
+            { name: 'AUDITOR_EXTERNO', desc: 'Solo lectura' },
+            { name: 'POSTULACION_PROFE', desc: 'Postulantes al programa PROFE' }
         ];
 
         const roles = {};
@@ -25,7 +26,7 @@ async function main() {
             roles[r.name] = await prisma.role.upsert({
                 where: { name: r.name },
                 update: {},
-                create: { name: r.name, guardName: 'web' },
+                create: { name: r.name, guardName: 'api' }, // Cambiado a 'api' para consistencia
             });
         }
 
@@ -36,6 +37,7 @@ async function main() {
             { name: 'manage_users', action: 'manage', subject: 'User' },
             { name: 'manage_programs', action: 'manage', subject: 'Programa' },
             { name: 'view_reports', action: 'read', subject: 'Report' },
+            { name: 'manage_banco_profesional', action: 'manage', subject: 'BancoProfesional' },
         ];
 
         const perms = {};
@@ -43,7 +45,7 @@ async function main() {
             perms[p.name] = await prisma.permission.upsert({
                 where: { name: p.name },
                 update: {},
-                create: { name: p.name, action: p.action, subject: p.subject, guardName: 'web' }
+                create: { name: p.name, action: p.action, subject: p.subject, guardName: 'api' }
             });
         }
 
@@ -55,6 +57,32 @@ async function main() {
             ],
             skipDuplicates: true
         });
+
+        // POSTULACION_PROFE -> Puede ver y editar su propia ficha (BancoProfesional)
+        await prisma.rolePermission.createMany({
+            data: [
+                { roleId: roles['POSTULACION_PROFE'].id, permissionId: perms['manage_banco_profesional'].id }
+            ],
+            skipDuplicates: true
+        });
+
+        // --- 1.5 DATOS BANCO PROFESIONAL ---
+        console.log('📝 Configurando Tipos de Posgrado y Cargos...');
+        const tipostPosgrado = ['Diplomado', 'Especialidad', 'Maestría', 'Doctorado'];
+        for (const t of tipostPosgrado) {
+            const existing = await prisma.bpTipoPosgrado.findFirst({ where: { nombre: t } });
+            if (!existing) {
+                await prisma.bpTipoPosgrado.create({ data: { nombre: t } });
+            }
+        }
+
+        const cargosIniciales = ['Facilitador', 'Especialista', 'Coordinador'];
+        for (const c of cargosIniciales) {
+            const existing = await prisma.cargo.findFirst({ where: { nombre: c } });
+            if (!existing) {
+                await prisma.cargo.create({ data: { nombre: c } });
+            }
+        }
 
         // RESPONSABLE -> Usuarios y Programas
         await prisma.rolePermission.createMany({

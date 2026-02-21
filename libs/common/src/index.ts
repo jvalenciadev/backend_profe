@@ -6,6 +6,7 @@ export * from './casl/check-policies.decorator';
 export * from './filters/all-exceptions.filter';
 export * from './guards/jwt-auth.guard';
 export * from './decorators/current-user.decorator';
+export * from './decorators/public.decorator';
 export * from './common.module';
 export * from './upload/upload.module';
 export * from './upload/upload-config.service';

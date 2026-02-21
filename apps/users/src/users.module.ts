@@ -11,9 +11,13 @@ import {
 } from './users-crud.controllers';
 
 import { CommonModule } from '@app/common';
-import { CargosController, CargosService, BancoProfesionalController, BancoProfesionalService } from './hr-crud.controllers';
+import { CargosController, CargosService } from './hr-crud.controllers';
 import { EvaluationsController } from './evaluations.controller';
 import { EvaluationsService } from './evaluations.service';
+import { ProfeController, ProfeService } from './profe.controller';
+import { BancoProfesionalController } from './banco-profesional.controller';
+import { BancoProfesionalService } from './banco-profesional.service';
+import { PublicBancoProfesionalController } from './public-banco-profesional.controller';
 
 @Module({
   imports: [DatabaseModule, CommonModule],
@@ -26,7 +30,9 @@ import { EvaluationsService } from './evaluations.service';
     GenerosController,
     CargosController,
     BancoProfesionalController,
-    EvaluationsController
+    EvaluationsController,
+    ProfeController,
+    PublicBancoProfesionalController,
   ],
   providers: [
     UsersService,
@@ -37,7 +43,8 @@ import { EvaluationsService } from './evaluations.service';
     GenerosService,
     CargosService,
     BancoProfesionalService,
-    EvaluationsService
+    EvaluationsService,
+    ProfeService,
   ],
 })
 export class UsersModule { }

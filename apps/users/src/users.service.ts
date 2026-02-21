@@ -1,13 +1,15 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '@app/database';
-import { CaslPrismaService, AppAbility } from '@app/common';
+import { CaslPrismaService, AppAbility, MailService } from '@app/common';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class UsersService {
   constructor(
     private prisma: PrismaService,
-    private caslPrisma: CaslPrismaService
+    private caslPrisma: CaslPrismaService,
+    private mailService: MailService,
   ) { }
 
   async create(data: any, currentUser: any) {
@@ -20,7 +22,7 @@ export class UsersService {
       'nombre', 'apellidos', 'imagen', 'genero', 'licenciatura',
       'direccion', 'curriculum', 'fechaNacimiento', 'estadoCivil',
       'facebook', 'tiktok', 'cargo', 'celular', 'tenantId', 'personaId',
-      'estado', 'username'
+      'estado', 'username', 'cargoPostulacionId', 'ci'
     ];
 
     const createData: any = {
@@ -37,8 +39,12 @@ export class UsersService {
         if ((field === 'tenantId' || field === 'personaId') && value === '') {
           value = null;
         }
-        // Solo sobreescribir si no es uno de los campos base ya configurados arriba
-        if (createData[field] === undefined || (field === 'tenantId' && value !== null)) {
+
+        if (field === 'cargo') {
+          createData['cargoStr'] = value;
+        } else if (field === 'ci') {
+          createData['ci'] = value ? BigInt(value) : null;
+        } else if (createData[field] === undefined || (field === 'tenantId' && value !== null)) {
           createData[field] = value;
         }
       }
@@ -60,6 +66,9 @@ export class UsersService {
         } : undefined,
       },
     });
+
+    // Enviar correo de bienvenida al nuevo admin
+    await this.mailService.sendWelcomeEmail(user.correo, user.nombre, user.username);
 
     return user;
   }
@@ -83,16 +92,19 @@ export class UsersService {
       where: {
         AND: [
           caslWhere,
-          { estado: { in: ['ACTIVO', 'INACTIVO'] } },
-          searchWhere
+          searchWhere,
+          { estado: { not: 'eliminado' } }
         ]
       },
       include: {
         roles: { include: { role: true } },
         sedes: { include: { sede: true } },
         tenant: true,
+        cargoPostulacion: true,
       },
+      orderBy: { createdAt: 'desc' }
     });
+
     return users;
   }
 
@@ -103,13 +115,14 @@ export class UsersService {
       where: {
         AND: [
           caslWhere,
-          { id: id, estado: { in: ['ACTIVO', 'INACTIVO'] } }
+          { id: id, estado: { not: 'eliminado' } }
         ]
       },
       include: {
         roles: { include: { role: true } },
         sedes: { include: { sede: true } },
         tenant: true,
+        cargoPostulacion: true,
       },
     });
     if (!user) throw new NotFoundException(`Usuario no encontrado o no tiene permisos para verlo`);
@@ -127,38 +140,60 @@ export class UsersService {
 
     const { roles, sedes, email, ...userData } = data;
 
-    // Solo permitir campos que existen en el modelo User para evitar "Inconsistent column data"
     const allowedFields = [
       'nombre', 'apellidos', 'imagen', 'genero', 'licenciatura',
       'direccion', 'curriculum', 'fechaNacimiento', 'estadoCivil',
       'facebook', 'tiktok', 'cargo', 'celular', 'tenantId', 'personaId',
-      'estado', 'username', 'password'
+      'estado', 'username', 'password', 'verificationCode',
+      'resumenProfesional', 'habilidades', 'idiomas', 'experienciaLaboral', 'linkedinUrl',
+      'cargoPostulacionId', 'ci'
     ];
 
     const updateData: any = {
       updatedBy: currentUser?.id || null,
     };
 
-    // Copiar solo campos permitidos y sanitizar UUIDs vacíos
+    const targetUser = await this.prisma.user.findUnique({ where: { id } });
+    if (!targetUser) throw new NotFoundException('Usuario no encontrado');
+
+    // Si el usuario requiere cambio de contraseña, validar el código enviado al correo
+    if (targetUser.requiresPasswordChange && data.verificationCode) {
+      if (targetUser.resetPasswordToken !== data.verificationCode) {
+        throw new ForbiddenException('Código de verificación incorrecto');
+      }
+    } else if (targetUser.requiresPasswordChange && !data.verificationCode) {
+      throw new ForbiddenException('El código de verificación es obligatorio');
+    }
+
     allowedFields.forEach(field => {
       if (userData[field] !== undefined) {
         let value = userData[field];
         if ((field === 'tenantId' || field === 'personaId') && value === '') {
           value = null;
         }
-        updateData[field] = value;
+
+        if (field === 'cargo') {
+          updateData['cargoStr'] = value;
+        } else if (field === 'ci') {
+          updateData['ci'] = value ? BigInt(value) : null;
+        } else if (field !== 'verificationCode') { // Filtramos el código de verificación
+          updateData[field] = value;
+        }
       }
     });
 
     if (email) updateData.correo = email;
 
     if (updateData.password) {
-      updateData.password = await bcrypt.hash(updateData.password, 12);
+      const hashedPassword = await bcrypt.hash(userData.password, 12);
+      updateData.password = hashedPassword;
+      updateData.requiresPasswordChange = false;
+      updateData.resetPasswordToken = null;
+      updateData.resetPasswordExpires = null;
     }
 
     if (roles) {
       updateData.roles = {
-        // Limpieza total antes de re-asignar para evitar conflictos de llave primaria o duplicados
         deleteMany: {},
         create: roles.map((roleId: string) => ({
           roleId,
@@ -169,7 +204,6 @@ export class UsersService {
 
     if (sedes) {
       updateData.sedes = {
-        // Limpieza total de sedes antes de re-asignar
         deleteMany: {},
         create: sedes.map((sedeId: string) => ({
           sedeId
@@ -183,7 +217,8 @@ export class UsersService {
       include: {
         roles: { include: { role: true } },
         sedes: { include: { sede: true } },
-        tenant: true
+        tenant: true,
+        cargoPostulacion: true
       }
     });
 
@@ -194,11 +229,54 @@ export class UsersService {
     const user = await this.prisma.user.update({
       where: { id: id },
       data: {
-        estado: 'ELIMINADO',
+        estado: 'eliminado',
         deletedAt: new Date(),
         deletedBy: currentUser?.id || null,
       },
     });
+    return user;
+  }
+
+  async requestEmailVerification(id: string, email: string) {
+    const token = crypto.randomInt(100000, 999999).toString();
+    const expiryDate = new Date();
+    expiryDate.setMinutes(expiryDate.getMinutes() + 15); // Código válido por 15 min
+
+    await this.prisma.user.update({
+      where: { id },
+      data: {
+        resetPasswordToken: token,
+        resetPasswordExpires: expiryDate
+      }
+    });
+
+    await this.mailService.sendPasswordResetEmail(email, token, 'Usuario de Validación');
+    return { message: 'Código enviado correctamente' };
+  }
+
+  async resetPassword(id: string, currentUser: any) {
+    const defaultPassword = 'password123';
+    const hashedPassword = await bcrypt.hash(defaultPassword, 12);
+    const expiryDate = new Date();
+    expiryDate.setDate(expiryDate.getDate() + 1); // 1 día para cambiarla
+
+    // Generar un código de 6 dígitos para verificación
+    const token = crypto.randomInt(100000, 999999).toString();
+
+    const user = await this.prisma.user.update({
+      where: { id },
+      data: {
+        password: hashedPassword,
+        requiresPasswordChange: true,
+        resetPasswordExpires: expiryDate,
+        updatedBy: currentUser?.id || null,
+        resetPasswordToken: token,
+      }
+    });
+
+    // Enviar correo al correo actual registrado
+    await this.mailService.sendPasswordResetEmail(user.correo, token, user.nombre);
+
     return user;
   }
 }

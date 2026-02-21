@@ -35,7 +35,7 @@ export class ProvinciasController extends CrudControllerFactory('provincias') {
 // UnidadEducativa
 @Injectable()
 export class UnidadEducativaService extends GenericCrudService<any> {
-    constructor(prisma: PrismaService) { super(prisma, 'unidadEducativa', true, true); }
+    constructor(prisma: PrismaService) { super(prisma, 'unidad_educativa', true, true); }
 }
 @Controller('unidades-educativas')
 export class UnidadEducativaController extends CrudControllerFactory('unidades-educativas') {

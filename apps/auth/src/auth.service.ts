@@ -93,7 +93,22 @@ export class AuthService {
 
     const isMatch = await bcrypt.compare(pass, user.password);
 
-    if (user && isMatch) {
+    if (isMatch) {
+      // Restricción de acceso por estado: solo 'activo' y 'pendiente' pueden ingresar
+      const estado = String(user.estado).toLowerCase();
+      if (estado !== 'activo' && estado !== 'pendiente') {
+        throw new UnauthorizedException(
+          `Acceso denegado. Su cuenta se encuentra en estado ${user.estado.toUpperCase()}. Por favor, contacte con el administrador del sistema.`
+        );
+      }
+
+      // Validar expiración de contraseña reseteada (1 día de límite)
+      if (user.requiresPasswordChange && user.resetPasswordExpires && new Date() > user.resetPasswordExpires) {
+        throw new UnauthorizedException(
+          'Su contraseña temporal ha expirado (límite de 1 día). Por favor, contacte con el administrador para un nuevo reseteo.'
+        );
+      }
+
       // Return user without password
       const { password, ...result } = user;
       return result;
@@ -126,7 +141,7 @@ export class AuthService {
         nombre: user.nombre,
         apellidos: user.apellidos,
         imagen: user.imagen,
-        cargo: user.cargo,
+        cargo: user.cargoStr,
         celular: user.celular,
         genero: user.genero,
         licenciatura: user.licenciatura,
@@ -141,7 +156,8 @@ export class AuthService {
         roles: roles,
         permissions: ability.rules,
         estado: user.estado,
-        sedes: user.sedes
+        sedes: user.sedes,
+        requiresPasswordChange: user.requiresPasswordChange
       }
     };
   }
@@ -168,7 +184,7 @@ export class AuthService {
       nombre: user.nombre,
       apellidos: user.apellidos,
       imagen: user.imagen,
-      cargo: user.cargo,
+      cargo: user.cargoStr,
       celular: user.celular,
       genero: user.genero,
       licenciatura: user.licenciatura,
@@ -183,7 +199,8 @@ export class AuthService {
       roles: roles,
       permissions: ability.rules,
       estado: user.estado,
-      sedes: user.sedes
+      sedes: user.sedes,
+      requiresPasswordChange: user.requiresPasswordChange
     };
   }
 

@@ -1,6 +1,5 @@
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native"]
+  provider = "prisma-client-js"
 }
 
 datasource db {
@@ -8,92 +7,919 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// El modelo acta_conclusion ha sido eliminado por desuso
+
+model User {
+  id                        String                      @id @default(uuid()) @db.Uuid
+  imagen                    String?
+  nombre                    String
+  apellidos                 String
+  genero                    String?                     @default("No prefiero decirlo")
+  licenciatura              String?
+  direccion                 String?
+  curriculum                String?
+  fechaNacimiento           String?                     @map("fecha_nacimiento")
+  estadoCivil               String?                     @map("estado_civil")
+  facebook                  String?
+  tiktok                    String?
+  cargoStr                  String?                     @map("cargo")
+  celular                   String?
+  correo                    String                      @unique
+  username                  String                      @unique
+  password                  String
+  rememberToken             String?                     @map("remember_token")
+  estado                    Estado                      @default(activo)
+  resetPasswordToken        String?                     @map("reset_password_token")
+  resetPasswordExpires      DateTime?                   @map("reset_password_expires")
+  requiresPasswordChange    Boolean?                    @default(false) @map("requires_password_change")
+  tenantId                  String?                     @map("tenant_id") @db.Uuid
+  personaId                 String?                     @unique @map("per_id") @db.Uuid
+  createdAt                 DateTime                    @default(now()) @map("created_at")
+  updatedAt                 DateTime                    @updatedAt @map("updated_at")
+  deletedAt                 DateTime?                   @map("deleted_at")
+  createdBy                 String?                     @map("created_by") @db.Uuid
+  updatedBy                 String?                     @map("updated_by") @db.Uuid
+  deletedBy                 String?                     @map("deleted_by") @db.Uuid
+  sedeIds                   String?                     @map("sede_ids")
+  proIds                    String?                     @map("pro_ids")
+  ci                        BigInt?                     @map("per_ci")
+  esMaestro                 Boolean                     @default(false) @map("bp_es_maestro")
+  licUniversitaria          String?                     @map("bp_lic_universitaria")
+  licMescp                  String?                     @map("bp_lic_mescp")
+  tieneProduccion           Boolean                     @default(false) @map("bp_tiene_produccion")
+  hojaDeVidaPdf             String?                     @map("bp_hoja_vida_pdf")
+  cargoPostulacionId        String?                     @map("car_id_postulacion") @db.Uuid
+  resumenProfesional        String?                     @map("bp_resumen_profesional")
+  habilidades               String?                     @map("bp_habilidades")
+  idiomas                   String?                     @map("bp_idiomas")
+  experienciaLaboral        String?                     @map("bp_experiencia_laboral")
+  linkedinUrl               String?                     @map("bp_linkedin_url")
+  cargoPostulacion          Cargo?                      @relation(fields: [cargoPostulacionId], references: [id])
+  tenant                    Departamento?               @relation("UserTenant", fields: [tenantId], references: [id])
+  bp_posgrado               bp_posgrado[]
+  bp_produccion_intelectual bp_produccion_intelectual[]
+  evaluaciones              EvaluacionAdmins[]
+  roles                     UserRole[]
+  sedes                     UserSede[]
+  auditLogs                 AuditLog[]
+  programaDosFacilitadors   ProgramaDosFacilitador[]
+
+  @@map("admins")
+}
+
+// El modelo area_trabajo ha sido eliminado por desuso
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  action     String
+  resource   String
+  resourceId String?
+  userId     String?  @db.Uuid
+  details    Json?
+  ip         String?
+  userAgent  String?
+  timestamp  DateTime @default(now())
+  tenantId   String?  @db.Uuid
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+model Blog {
+  id          String    @id @default(uuid()) @map("blog_id") @db.Uuid
+  titulo      String    @map("blog_titulo")
+  descripcion String?   @map("blog_descripcion")
+  fecha       DateTime? @map("blog_fecha") @db.Date
+  estado      Estado    @default(activo) @map("blog_estado")
+  tenantId    String?   @map("tenant_id") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  imagenes    Json?     @map("blog_imagenes")
+  tipo        String?   @map("blog_tipo")
+  createdBy   String?   @map("created_by") @db.Uuid
+  deletedAt   DateTime? @map("deleted_at")
+  deletedBy   String?   @map("deleted_by") @db.Uuid
+  updatedBy   String?   @map("updated_by") @db.Uuid
+
+  tenant Departamento? @relation(fields: [tenantId], references: [id])
+
+  @@map("blog")
+}
+
+model bp_posgrado {
+  bpg_id           String           @id @default(uuid()) @db.Uuid
+  btp_id           String           @db.Uuid
+  bpg_titulo       String
+  bpg_fecha        DateTime         @db.Date
+  bpg_imagen       String?
+  bpg_estado       Estado           @default(activo)
+  created_at       DateTime         @default(now())
+  updated_at       DateTime
+  deleted_at       DateTime?
+  created_by       String?          @db.Uuid
+  updated_by       String?          @db.Uuid
+  deleted_by       String?          @db.Uuid
+  user_id          String           @db.Uuid
+  bp_tipo_posgrado bp_tipo_posgrado @relation(fields: [btp_id], references: [btp_id])
+  admins           User             @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model bp_produccion_intelectual {
+  bpi_id               String    @id @default(uuid()) @db.Uuid
+  bpi_titulo           String
+  bpi_anio_publicacion Int
+  bpi_estado           Estado    @default(activo)
+  created_at           DateTime  @default(now())
+  updated_at           DateTime
+  deleted_at           DateTime?
+  created_by           String?   @db.Uuid
+  updated_by           String?   @db.Uuid
+  deleted_by           String?   @db.Uuid
+  user_id              String    @db.Uuid
+  admins               User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+}
+
+model bp_tipo_posgrado {
+  btp_id      String        @id @default(uuid()) @db.Uuid
+  btp_nombre  String
+  btp_estado  Estado        @default(activo)
+  created_at  DateTime      @default(now())
+  updated_at  DateTime
+  bp_posgrado bp_posgrado[]
+}
+
+model CalificacionParticipante {
+  id             String   @id @default(uuid()) @map("cp_id") @db.Uuid
+  puntaje        Int      @map("cp_puntaje")
+  estado         String   @default("aprobado") @map("cp_estado")
+  programaId     String   @map("pi_id") @db.Uuid
+  modalidadId    String   @map("pm_id") @db.Uuid
+  calificacionId String   @map("pc_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("calificacion_participante")
+}
+
+model Cargo {
+  id           String             @id @default(uuid()) @map("car_id") @db.Uuid
+  nombre       String             @map("car_nombre")
+  estado       Estado             @default(activo) @map("car_estado")
+  createdAt    DateTime           @default(now()) @map("created_at")
+  updatedAt    DateTime           @updatedAt @map("updated_at")
+  deletedAt    DateTime?          @map("deleted_at")
+  createdBy    String?            @map("created_by") @db.Uuid
+  updatedBy    String?            @map("updated_by") @db.Uuid
+  deletedBy    String?            @map("deleted_by") @db.Uuid
+  admins       User[]
+  evaluaciones EvaluacionAdmins[]
+
+  @@map("cargo")
+}
+
+model Comunicado {
+  id          String    @id @default(uuid()) @map("comun_id") @db.Uuid
+  imagen      String    @map("comun_imagen")
+  nombre      String    @map("comun_nombre")
+  descripcion String    @map("comun_descripcion")
+  importancia String    @default("normal") @map("comun_importancia")
+  estado      Estado    @default(activo) @map("comun_estado")
+  tenantId    String?   @map("tenant_id") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  tipo        String?   @map("comun_tipo")
+  createdBy   String?   @map("created_by") @db.Uuid
+  deletedAt   DateTime? @map("deleted_at")
+  deletedBy   String?   @map("deleted_by") @db.Uuid
+  updatedBy   String?   @map("updated_by") @db.Uuid
+
+  tenant Departamento? @relation(fields: [tenantId], references: [id])
+
+  @@map("comunicado")
+}
+
 model Departamento {
-  id                 String                @id @default(uuid()) @map("dep_id") @db.Uuid
-  nombre             String                @map("dep_nombre")
-  abreviacion        String                @map("dep_abreviacion")
-  estado             Estado                @default(ACTIVO) @map("dep_estado")
-  createdAt          DateTime              @default(now()) @map("created_at")
-  updatedAt          DateTime              @updatedAt @map("updated_at")
-  deletedAt          DateTime?             @map("deleted_at")
-  createdBy          String?               @map("created_by") @db.Uuid
-  updatedBy          String?               @map("updated_by") @db.Uuid
-  deletedBy          String?               @map("deleted_by") @db.Uuid
-  users              User[]
-  auditLogs          AuditLog[]
-  blogs              Blog[]
-  comunicados        Comunicado[]
-  distritos          Distrito[]
-  eventos            Evento[]
-  eventoInscripcions EventoInscripcion[]
-  inscripciones      ProgramaInscripcion[]
-  sedes              Sede[]
-  programaDos        ProgramaDos[]
+  id          String       @id @default(uuid()) @map("dep_id") @db.Uuid
+  nombre      String       @map("dep_nombre")
+  abreviacion String       @map("dep_abreviacion")
+  estado      Estado       @default(activo) @map("dep_estado")
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+  deletedAt   DateTime?    @map("deleted_at")
+  createdBy   String?      @map("created_by") @db.Uuid
+  updatedBy   String?      @map("updated_by") @db.Uuid
+  deletedBy   String?      @map("deleted_by") @db.Uuid
+  users       User[]       @relation("UserTenant")
+  blogs       Blog[]
+  comunicados Comunicado[]
+  eventos     Evento[]
+  sedes       Sede[]
+  distritos   distrito[]
 
   @@map("departamento")
 }
 
-model Sede {
-  id                String                @id @default(uuid()) @map("sede_id") @db.Uuid
-  imagen            String?               @map("sede_imagen")
-  nombre            String                @map("sede_nombre")
-  nombreAbre        String?               @map("sede_nombre_abre")
-  descripcion       String                @map("sede_descripcion")
-  imagenResp1       String?               @map("sede_imagen_responsable1")
-  nombreResp1       String?               @map("sede_nombre_responsable1")
-  cargoResp1        String?               @map("sede_cargo_responsable1")
-  imagenResp2       String?               @map("sede_imagen_responsable2")
-  nombreResp2       String?               @map("sede_nombre_responsable2")
-  cargoResp2        String?               @map("sede_cargo_responsable2")
-  contacto1         Int                   @map("sede_contacto_1")
-  contacto2         Int?                  @map("sede_contacto_2")
-  facebook          String?               @map("sede_facebook")
-  tiktok            String?               @map("sede_tiktok")
-  whatsapp          String?               @map("sede_grupo_whatsapp")
-  horario           String                @map("sede_horario")
-  turno             String                @map("sede_turno")
-  ubicacion         String                @map("sede_ubicacion")
-  latitud           Decimal?              @map("sede_latitud") @db.Decimal(11, 8)
-  longitud          Decimal?              @map("sede_longitud") @db.Decimal(11, 8)
-  estado            Estado                @default(ACTIVO) @map("sede_estado")
-  departamentoId    String                @map("dep_id") @db.Uuid
-  createdAt         DateTime              @default(now()) @map("created_at")
-  updatedAt         DateTime              @updatedAt @map("updated_at")
-  deletedAt         DateTime?             @map("deleted_at")
-  createdBy         String?               @map("created_by") @db.Uuid
-  updatedBy         String?               @map("updated_by") @db.Uuid
-  deletedBy         String?               @map("deleted_by") @db.Uuid
-  galerias          Galeria[]
-  ofertasAcademicas ProgramaDos[]
-  inscripciones     ProgramaInscripcion[]
-  users             UserSede[]
-  departamento      Departamento          @relation(fields: [departamentoId], references: [id], onDelete: Cascade)
-
-  @@map("sede")
-}
-
-model Distrito {
-  id                 String            @id @default(uuid()) @map("dis_id") @db.Uuid
-  codigo             Int               @map("dis_codigo")
-  nombre             String            @map("dis_nombre")
-  estado             Estado            @default(ACTIVO) @map("dis_estado")
-  departamentoId     String            @map("dep_id") @db.Uuid
-  createdAt          DateTime          @default(now()) @map("created_at")
-  updatedAt          DateTime          @updatedAt @map("updated_at")
-  deletedAt          DateTime?         @map("deleted_at")
-  createdBy          String?           @map("created_by") @db.Uuid
-  updatedBy          String?           @map("updated_by") @db.Uuid
-  deletedBy          String?           @map("deleted_by") @db.Uuid
-  departamento       Departamento      @relation(fields: [departamentoId], references: [id], onDelete: Cascade)
-  unidadesEducativas UnidadEducativa[]
+model distrito {
+  id             String       @id @default(uuid()) @map("dis_id") @db.Uuid
+  codigo         Int          @map("dis_codigo")
+  nombre         String       @map("dis_nombre")
+  estado         Estado       @default(activo) @map("dis_estado")
+  departamentoId String       @map("dep_id") @db.Uuid
+  createdAt      DateTime     @default(now()) @map("created_at")
+  updatedAt      DateTime     @updatedAt @map("updated_at")
+  deletedAt      DateTime?    @map("deleted_at")
+  createdBy      String?      @map("created_by") @db.Uuid
+  updatedBy      String?      @map("updated_by") @db.Uuid
+  deletedBy      String?      @map("deleted_by") @db.Uuid
+  departamento   Departamento @relation(fields: [departamentoId], references: [id])
 
   @@map("distrito")
 }
 
-model Provincia {
+model EvaluacionAdmins {
+  id                 String              @id @default(uuid()) @map("eva_id") @db.Uuid
+  puntajeTotal       Int                 @map("eva_puntaje_total")
+  codigoVerificacion String              @map("eva_codigo_verificacion")
+  qrCode             String?             @map("eva_qr_code")
+  estado             Estado              @default(activo) @map("eva_estado")
+  createdAt          DateTime            @default(now()) @map("created_at")
+  updatedAt          DateTime            @updatedAt @map("updated_at")
+  deletedAt          DateTime?           @map("deleted_at")
+  createdBy          String?             @map("created_by") @db.Uuid
+  updatedBy          String?             @map("updated_by") @db.Uuid
+  deletedBy          String?             @map("deleted_by") @db.Uuid
+  periodoId          String              @map("evp_id") @db.Uuid
+  userId             String              @map("user_id") @db.Uuid
+  tenantId           String?             @map("tenant_id") @db.Uuid
+  cargoId            String?             @map("car_id_postulacion") @db.Uuid
+  cargo              Cargo?              @relation(fields: [cargoId], references: [id])
+  periodoEval        EvaluacionPeriodo   @relation(fields: [periodoId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "evaluacion_admins_periodo_fkey")
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "evaluacion_admins_user_fkey")
+  puntajes           EvaluacionPuntaje[]
+
+  @@unique([userId, periodoId], map: "evaluacion_admins_user_periodo_unique")
+  @@map("evaluacion_admins")
+}
+
+model EvaluacionCriterio {
+  id            String              @id @default(uuid()) @map("evc_id") @db.Uuid
+  periodoId     String              @map("evp_id") @db.Uuid
+  nombre        String              @map("evc_nombre")
+  puntajeMaximo Int                 @map("evc_puntaje_maximo")
+  orden         Int                 @default(0) @map("evc_orden")
+  estado        Estado              @default(activo) @map("evc_estado")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+  periodoEval   EvaluacionPeriodo   @relation(fields: [periodoId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "evaluacion_criterio_periodo_fkey")
+  puntajes      EvaluacionPuntaje[]
+
+  @@map("evaluacion_criterio")
+}
+
+model EvaluacionPeriodo {
+  id           String               @id @default(uuid()) @map("evp_id") @db.Uuid
+  periodo      String               @map("evp_periodo")
+  gestion      String               @map("evp_gestion")
+  semestre     String               @map("evp_semestre")
+  activo       Boolean              @default(true) @map("evp_activo")
+  estado       Estado               @default(activo) @map("evp_estado")
+  createdAt    DateTime             @default(now()) @map("created_at")
+  updatedAt    DateTime             @updatedAt @map("updated_at")
+  deletedAt    DateTime?            @map("deleted_at")
+  createdBy    String?              @map("created_by") @db.Uuid
+  updatedBy    String?              @map("updated_by") @db.Uuid
+  deletedBy    String?              @map("deleted_by") @db.Uuid
+  evaluaciones EvaluacionAdmins[]
+  criterios    EvaluacionCriterio[]
+
+  @@map("evaluacion_periodo")
+}
+
+model EvaluacionPuntaje {
+  id           String             @id @default(uuid()) @map("evpu_id") @db.Uuid
+  evaluacionId String             @map("eva_id") @db.Uuid
+  criterioId   String             @map("evc_id") @db.Uuid
+  puntaje      Int                @map("evpu_puntaje")
+  criterio     EvaluacionCriterio @relation(fields: [criterioId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "evaluacion_puntaje_crit_fkey")
+  evaluacion   EvaluacionAdmins   @relation(fields: [evaluacionId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "evaluacion_puntaje_eval_fkey")
+
+  @@unique([evaluacionId, criterioId], map: "evaluacion_puntaje_eval_crit_unique")
+  @@map("evaluacion_puntaje")
+}
+
+model Evento {
+  id                 String    @id @default(uuid()) @map("eve_id") @db.Uuid
+  nombre             String    @map("eve_nombre")
+  codigo             String?   @map("eve_codigo")
+  descripcion        String    @map("eve_descripcion")
+  banner             String    @map("eve_banner")
+  afiche             String    @map("eve_afiche")
+  modalidadIds       String    @map("pm_ids")
+  fecha              DateTime  @map("eve_fecha") @db.Date
+  inscripcionAbierta Boolean   @default(true) @map("eve_inscripcion")
+  asistencia         Boolean?  @map("eve_asistencia")
+  lugar              String    @map("eve_lugar")
+  totalInscritos     Int       @map("eve_total_inscrito")
+  estado             Estado    @default(activo) @map("eve_estado")
+  tipoId             String    @map("et_id") @db.Uuid
+  tenantId           String?   @map("tenant_id") @db.Uuid
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+  deletedAt          DateTime? @map("deleted_at")
+  createdBy          String?   @map("created_by") @db.Uuid
+  updatedBy          String?   @map("updated_by") @db.Uuid
+  deletedBy          String?   @map("deleted_by") @db.Uuid
+
+  tipo               TipoEvento           @relation(fields: [tipoId], references: [id])
+  tenant             Departamento?        @relation(fields: [tenantId], references: [id])
+  cuestionarios      EventoCuestionario[]
+  eventoInscripcions EventoInscripcion[]
+
+  @@map("evento")
+}
+
+model EventoCuestionario {
+  id            String    @id @default(uuid()) @map("eve_cue_id") @db.Uuid
+  titulo        String    @map("eve_cue_titulo")
+  descripcion   String    @map("eve_cue_descripcion")
+  fechaInicio   DateTime  @map("eve_cue_fecha_ini")
+  fechaFin      DateTime  @map("eve_cue_fecha_fin")
+  puntosMaximos Int?      @map("eve_cue_pts_max")
+  estado        Estado    @default(activo) @map("eve_cue_estado")
+  eventoId      String    @map("eve_id") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  createdBy     String?   @map("created_by") @db.Uuid
+  deletedAt     DateTime? @map("deleted_at")
+  deletedBy     String?   @map("deleted_by") @db.Uuid
+  updatedBy     String?   @map("updated_by") @db.Uuid
+
+  evento Evento @relation(fields: [eventoId], references: [id])
+
+  @@map("evento_cuestionario")
+}
+
+model EventoInscripcion {
+  id             String    @id @default(uuid()) @map("eve_ins_id") @db.Uuid
+  asistencia     Boolean   @default(false) @map("eve_ins_asistencia")
+  estado         Estado    @default(activo) @map("eve_ins_estado")
+  nroDeposito    String?   @map("eve_nro_deposito")
+  fechaDeposito  DateTime? @map("eve_fecha_deposito") @db.Date
+  imagenDeposito String?   @map("eve_imagen_deposito")
+  personaId      String    @map("eve_per_id") @db.Uuid
+  eventoId       String    @map("eve_id") @db.Uuid
+  departamentoId String    @map("dep_id") @db.Uuid
+  modalidadId    String    @map("pm_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  createdBy      String?   @map("created_by") @db.Uuid
+  deletedAt      DateTime? @map("deleted_at")
+  deletedBy      String?   @map("deleted_by") @db.Uuid
+  updatedBy      String?   @map("updated_by") @db.Uuid
+
+  persona EventoPersona @relation(fields: [personaId], references: [id])
+  evento  Evento        @relation(fields: [eventoId], references: [id])
+
+  @@map("evento_inscripcion_v2")
+}
+
+model evento_opciones {
+  id         String    @id @default(uuid()) @map("eve_opc_id") @db.Uuid
+  texto      String    @map("eve_opc_texto")
+  esCorrecta Boolean   @default(false) @map("eve_opc_es_correcta")
+  estado     Estado    @default(activo) @map("eve_opc_estado")
+  preguntaId String    @map("eve_pre_id") @db.Uuid
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  createdBy  String?   @map("created_by") @db.Uuid
+  deletedAt  DateTime? @map("deleted_at")
+  deletedBy  String?   @map("deleted_by") @db.Uuid
+  updatedBy  String?   @map("updated_by") @db.Uuid
+
+  @@map("evento_opciones")
+}
+
+model EventoPersona {
+  id              String    @id @default(uuid()) @map("eve_per_id") @db.Uuid
+  ci              BigInt    @map("eve_per_ci")
+  complemento     String    @map("eve_per_complemento")
+  expedido        String    @map("eve_per_expedido")
+  nombre1         String    @map("eve_per_nombre_1")
+  nombre2         String    @map("eve_per_nombre_2")
+  apellido1       String    @map("eve_per_apellido_1")
+  apellido2       String    @map("eve_per_apellido_2")
+  fechaNacimiento DateTime  @map("eve_per_fecha_nacimiento") @db.Date
+  correo          String    @map("eve_per_correo")
+  celular         String    @map("eve_per_celular")
+  generoId        BigInt    @map("gen_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  createdBy       String?   @map("created_by") @db.Uuid
+  deletedAt       DateTime? @map("deleted_at")
+  deletedBy       String?   @map("deleted_by") @db.Uuid
+  updatedBy       String?   @map("updated_by") @db.Uuid
+
+  inscripciones EventoInscripcion[]
+
+  @@map("evento_personas")
+}
+
+model evento_pregunta {
+  id             String    @id @default(uuid()) @map("eve_pre_id") @db.Uuid
+  texto          String    @map("eve_pre_texto")
+  tipo           String    @map("eve_pre_tipo")
+  obligatorio    Boolean   @default(true) @map("eve_pre_obligatorio")
+  estado         Estado    @default(activo) @map("eve_pre_estado")
+  cuestionarioId String    @map("eve_cue_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+  createdBy      String?   @map("created_by") @db.Uuid
+  deletedAt      DateTime? @map("deleted_at")
+  deletedBy      String?   @map("deleted_by") @db.Uuid
+  updatedBy      String?   @map("updated_by") @db.Uuid
+
+  @@map("evento_pregunta")
+}
+
+model evento_respuestas {
+  id         BigInt    @id @default(autoincrement()) @map("eve_res_id")
+  texto      String    @map("eve_res_texto")
+  preguntaId String    @map("eve_pre_id") @db.Uuid
+  opcionId   String    @map("eve_opc_id") @db.Uuid
+  personaId  String    @map("eve_per_id") @db.Uuid
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  createdBy  String?   @map("created_by") @db.Uuid
+  deletedAt  DateTime? @map("deleted_at")
+  deletedBy  String?   @map("deleted_by") @db.Uuid
+  updatedBy  String?   @map("updated_by") @db.Uuid
+
+  @@map("evento_respuestas")
+}
+
+model evento_restriccion {
+  id              String    @id @default(uuid()) @map("er_id") @db.Uuid
+  descripcion     String    @map("er_descripcion")
+  generoIds       String?   @map("gen_ids")
+  subsistemaIds   String?   @map("sub_ids")
+  nivelIds        String?   @map("niv_ids")
+  especialidadIds String?   @map("esp_ids")
+  estado          Estado    @default(activo) @map("pr_estado")
+  eventoId        String    @map("eve_id") @db.Uuid
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  createdBy       String?   @map("created_by") @db.Uuid
+  deletedAt       DateTime? @map("deleted_at")
+  deletedBy       String?   @map("deleted_by") @db.Uuid
+  updatedBy       String?   @map("updated_by") @db.Uuid
+
+  @@map("evento_restriccion")
+}
+
+model Galeria {
+  id         String    @id @default(uuid()) @map("galeria_id") @db.Uuid
+  imagen     String    @map("galeria_imagen")
+  estado     Estado    @default(activo) @map("galeria_estado")
+  sedeId     String?   @map("sede_id") @db.Uuid
+  programaId String?   @map("pro_id") @db.Uuid
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  createdBy  String?   @map("created_by") @db.Uuid
+  deletedAt  DateTime? @map("deleted_at")
+  deletedBy  String?   @map("deleted_by") @db.Uuid
+  updatedBy  String?   @map("updated_by") @db.Uuid
+
+  sede     Sede?     @relation(fields: [sedeId], references: [id])
+  programa Programa? @relation(fields: [programaId], references: [id])
+
+  @@map("galeria")
+}
+
+model UserRole {
+  userId    String @map("model_id") @db.Uuid
+  roleId    String @map("role_id") @db.Uuid
+  modelType String @default("App\\User") @map("model_type")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId, modelType])
+  @@map("model_has_roles")
+}
+
+model Permission {
+  id         String           @id @default(uuid()) @db.Uuid
+  name       String
+  guardName  String           @map("guard_name")
+  groupName  String?          @map("group_name")
+  action     String
+  subject    String
+  conditions Json?
+  updatedAt  DateTime         @updatedAt @map("updated_at")
+  createdAt  DateTime         @default(now()) @map("created_at")
+  createdBy  String?          @map("created_by") @db.Uuid
+  deletedAt  DateTime?        @map("deleted_at")
+  deletedBy  String?          @map("deleted_by") @db.Uuid
+  estado     Estado           @default(activo) @map("perm_estado")
+  updatedBy  String?          @map("updated_by") @db.Uuid
+  roles      RolePermission[]
+
+  @@map("permissions")
+}
+
+model Profe {
+  id              String    @id @default(uuid()) @map("profe_id") @db.Uuid
+  imagen          String    @map("profe_imagen")
+  logoPrincipal   String?   @map("profe_logo_principal")
+  nombre          String    @map("profe_nombre")
+  nombreAbreviado String?   @map("profe_nombre_abreviado")
+  descripcion     String    @map("profe_descripcion")
+  sobreNosotros   String    @map("profe_sobre_nosotros")
+  mision          String    @map("profe_mision")
+  vision          String    @map("profe_vision")
+  actividad       String    @map("profe_actividad")
+  fechaCreacion   DateTime  @map("profe_fecha_creacion") @db.Date
+  correo          String?   @map("profe_correo")
+  celular         String?   @map("profe_celular")
+  telefono        String?   @map("profe_telefono")
+  pagina          String?   @map("profe_pagina")
+  facebook        String?   @map("profe_facebook")
+  tiktok          String?   @map("profe_tiktok")
+  youtube         String?   @map("profe_youtube")
+  ubicacion       String    @map("profe_ubicacion")
+  latitud         Decimal?  @map("profe_latitud") @db.Decimal(11, 8)
+  longitud        Decimal?  @map("profe_longitud") @db.Decimal(11, 8)
+  banner          String    @map("profe_banner")
+  afiche          String    @map("profe_afiche")
+  convocatoria    String    @map("profe_convocatoria")
+  color           String?   @default("#1474a6") @map("profe_color")
+  colorSecundario String?   @default("#4f46e5") @map("profe_color_secundario")
+  estado          Estado    @default(activo) @map("profe_estado")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+  createdBy       String?   @map("created_by") @db.Uuid
+  deletedAt       DateTime? @map("deleted_at")
+  deletedBy       String?   @map("deleted_by") @db.Uuid
+  updatedBy       String?   @map("updated_by") @db.Uuid
+
+  @@map("profe")
+}
+
+model Programa {
+  id                     String    @id @default(uuid()) @map("pro_id") @db.Uuid
+  codigo                 String?   @map("pro_codigo")
+  nombre                 String    @map("pro_nombre")
+  nombreAbreviado        String?   @map("pro_nombre_abre")
+  contenido              String    @map("pro_contenido")
+  horario                String?   @map("pro_horario")
+  cargaHoraria           Int       @map("pro_carga_horaria")
+  costo                  Int       @map("pro_costo")
+  banner                 String    @map("pro_banner")
+  afiche                 String    @map("pro_afiche")
+  convocatoria           String?   @map("pro_convocatoria")
+  fechaInicioInscripcion DateTime  @map("pro_fecha_inicio_inscripcion") @db.Date
+  fechaFinInscripcion    DateTime  @map("pro_fecha_fin_inscripcion") @db.Date
+  fechaInicioClases      DateTime  @map("pro_fecha_inicio_clase") @db.Date
+  estadoInscripcion      Boolean   @default(true) @map("pro_estado_inscripcion")
+  estado                 Estado    @default(activo) @map("pro_estado")
+  duracionId             String    @map("pd_id") @db.Uuid
+  tipoId                 String    @map("pro_tip_id") @db.Uuid
+  modalidadId            String    @map("pm_id") @db.Uuid
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+  deletedAt              DateTime? @map("deleted_at")
+  createdBy              String?   @map("created_by") @db.Uuid
+  updatedBy              String?   @map("updated_by") @db.Uuid
+  deletedBy              String?   @map("deleted_by") @db.Uuid
+
+  modulos     ProgramaModulo[]
+  programaDos ProgramaDos[]
+  tipo        ProgramaTipo?      @relation(fields: [tipoId], references: [id])
+  modalidad   ProgramaModalidad? @relation(fields: [modalidadId], references: [id])
+  duracion    ProgramaDuracion?  @relation(fields: [duracionId], references: [id])
+  galerias    Galeria[]
+
+  @@map("programa")
+}
+
+model ProgramaBaucher {
+  id                String    @id @default(uuid()) @map("pro_bau_id") @db.Uuid
+  imagen            String    @map("pro_bau_imagen")
+  nroDeposito       BigInt?   @map("pro_bau_nro_deposito")
+  monto             Int       @map("pro_bau_monto")
+  fecha             DateTime  @map("pro_bau_fecha") @db.Date
+  tipoPago          String    @default("Baucher") @map("pro_bau_tipo_pago")
+  confirmado        Boolean?  @map("pro_bau_confirmado")
+  fechaConfirmacion DateTime? @map("pro_bau_fecha_conf")
+  inscripcionId     String    @map("pi_id") @db.Uuid
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  createdBy         String?   @map("created_by") @db.Uuid
+  deletedAt         DateTime? @map("deleted_at")
+  estado            Estado    @default(activo) @map("pro_bau_estado")
+  updatedBy         String?   @map("updated_by") @db.Uuid
+
+  @@map("programa_baucher")
+}
+
+model programa_calificacion {
+  id        String   @id @default(uuid()) @map("pc_id") @db.Uuid
+  estado    Estado   @default(activo) @map("pc_estado")
+  tipoId    String   @map("pro_tip_id") @db.Uuid
+  ptcId     String   @map("ptc_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("programa_calificacion")
+}
+
+model ProgramaDos {
+  id                     String    @id @default(uuid()) @map("pro_id") @db.Uuid
+  codigo                 String?   @map("pro_codigo")
+  nombre                 String    @map("pro_nombre")
+  nombreAbreviado        String?   @map("pro_nombre_abre")
+  contenido              String    @map("pro_contenido")
+  horario                String?   @map("pro_horario")
+  cargaHoraria           Int       @map("pro_carga_horaria")
+  costo                  Int       @map("pro_costo")
+  banner                 String    @map("pro_banner")
+  afiche                 String    @map("pro_afiche")
+  convocatoria           String?   @map("pro_convocatoria")
+  fechaInicioInscripcion DateTime  @map("pro_fecha_inicio_inscripcion") @db.Date
+  fechaFinInscripcion    DateTime  @map("pro_fecha_fin_inscripcion") @db.Date
+  fechaInicioClases      DateTime  @map("pro_fecha_inicio_clase") @db.Date
+  estadoInscripcion      Boolean   @default(true) @map("pro_estado_inscripcion")
+  estado                 Estado    @default(activo) @map("pro_estado")
+  sedeId                 String?   @map("sede_id") @db.Uuid
+  duracionId             String    @map("pd_id") @db.Uuid
+  versionId              String    @map("pv_id") @db.Uuid
+  tipoId                 String    @map("pro_tip_id") @db.Uuid
+  modalidadId            String    @map("pm_id") @db.Uuid
+  programaId             String?   @map("programa_id") @db.Uuid
+  departamentoId         String?   @map("dep_id") @db.Uuid
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+  deletedAt              DateTime? @map("deleted_at")
+  createdBy              String?   @map("created_by") @db.Uuid
+  updatedBy              String?   @map("updated_by") @db.Uuid
+  deletedBy              String?   @map("deleted_by") @db.Uuid
+
+  programa                Programa?                @relation(fields: [programaId], references: [id])
+  modulos                 ProgramaModuloDos[]
+  turnos                  ProgramaDosTurno[]
+  programaDosFacilitadors ProgramaDosFacilitador[]
+  tipo                    ProgramaTipo?            @relation("ProgramaDosToTipo", fields: [tipoId], references: [id])
+  modalidad               ProgramaModalidad?       @relation("ProgramaDosToModalidad", fields: [modalidadId], references: [id])
+  duracion                ProgramaDuracion?        @relation("ProgramaDosToDuracion", fields: [duracionId], references: [id])
+  version                 ProgramaVersion?         @relation(fields: [versionId], references: [id])
+  sede                    Sede?                    @relation(fields: [sedeId], references: [id])
+
+  @@map("programa_dos")
+}
+
+model ProgramaDosFacilitador {
+  id            String    @id @default(uuid()) @map("pdf_id") @db.Uuid
+  programaDosId String    @map("pro_id") @db.Uuid
+  modalidadId   String    @map("pm_id") @db.Uuid
+  moduloId      String    @map("pdt_id") @db.Uuid
+  facilitadorId String    @map("fac_id") @db.Uuid
+  estado        Estado    @default(activo) @map("pdf_estado")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+  createdBy     String?   @map("created_by") @db.Uuid
+  updatedBy     String?   @map("updated_by") @db.Uuid
+  deletedBy     String?   @map("deleted_by") @db.Uuid
+
+  modulo      ProgramaModuloDos @relation(fields: [moduloId], references: [id])
+  facilitador User              @relation(fields: [facilitadorId], references: [id])
+  programaDos ProgramaDos       @relation(fields: [programaDosId], references: [id])
+
+  @@map("programa_dos_facilitador")
+}
+
+model ProgramaDosTurno {
+  id            String    @id @default(uuid()) @map("pdt_id") @db.Uuid
+  programaDosId String    @map("pro_id") @db.Uuid
+  turnoIds      String    @map("pro_tur_ids")
+  cupo          Int       @map("pro_cupo")
+  cupoPre       Int       @map("pro_cupo_preinscrito")
+  estado        Estado    @default(activo) @map("pdt_estado")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+  createdBy     String?   @map("created_by") @db.Uuid
+  updatedBy     String?   @map("updated_by") @db.Uuid
+  deletedBy     String?   @map("deleted_by") @db.Uuid
+
+  programaDos ProgramaDos @relation(fields: [programaDosId], references: [id])
+
+  @@map("programa_dos_turno")
+}
+
+model ProgramaDuracion {
+  id           String        @id @default(uuid()) @map("pd_id") @db.Uuid
+  nombre       String        @map("pd_nombre")
+  semanas      Int           @map("pd_semana")
+  estado       Estado        @default(activo) @map("pd_estado")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  deletedAt    DateTime?     @map("deleted_at")
+  createdBy    String?       @map("created_by") @db.Uuid
+  updatedBy    String?       @map("updated_by") @db.Uuid
+  deletedBy    String?       @map("deleted_by") @db.Uuid
+  programas    Programa[]
+  programasDos ProgramaDos[] @relation("ProgramaDosToDuracion")
+
+  @@map("programa_duracion")
+}
+
+model ProgramaInscripcion {
+  id                  String    @id @default(uuid()) @map("pi_id") @db.Uuid
+  documentoDigital    String?   @map("pi_doc_digital")
+  certificacion       Boolean?  @map("pi_certificacion")
+  entregoCertificado  Boolean?  @map("pi_entrego_cert")
+  folio               BigInt?
+  partida             BigInt?
+  carton              BigInt?
+  licenciatura        String?   @map("pi_licenciatura")
+  unidadEducativa     String?   @map("pi_unidad_educativa")
+  nivel               String?   @map("pi_nivel")
+  subsistema          String?   @map("pi_subsistema")
+  materia             String?   @map("pi_materia")
+  observacion         String?   @map("pi_observacion")
+  estado              Estado    @default(activo) @map("pi_estado")
+  programaId          String    @map("pro_id") @db.Uuid
+  turnoId             String    @map("pro_tur_id") @db.Uuid
+  sedeId              String    @map("sede_id") @db.Uuid
+  estadoInscripcionId String    @map("pie_id") @db.Uuid
+  personaId           String    @map("per_id") @db.Uuid
+  tenantId            String?   @map("tenant_id") @db.Uuid
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+  deletedAt           DateTime? @map("deleted_at")
+  createdBy           String?   @map("created_by") @db.Uuid
+  updatedBy           String?   @map("updated_by") @db.Uuid
+  deletedBy           String?   @map("deleted_by") @db.Uuid
+
+  @@map("programa_inscripcion")
+}
+
+model programa_inscripcion_estado {
+  id        String    @id @default(uuid()) @map("pie_id") @db.Uuid
+  nombre    String    @map("pie_nombre")
+  estado    Estado    @default(activo) @map("pie_estado")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+  createdBy String?   @map("created_by") @db.Uuid
+  deletedBy String?   @map("deleted_by") @db.Uuid
+  updatedBy String?   @map("updated_by") @db.Uuid
+
+  @@map("programa_inscripcion_estado")
+}
+
+model ProgramaModalidad {
+  id           String        @id @default(uuid()) @map("pm_id") @db.Uuid
+  nombre       String        @map("pm_nombre")
+  estado       Estado        @default(activo) @map("pm_estado")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  deletedAt    DateTime?     @map("deleted_at")
+  createdBy    String?       @map("created_by") @db.Uuid
+  updatedBy    String?       @map("updated_by") @db.Uuid
+  deletedBy    String?       @map("deleted_by") @db.Uuid
+  programas    Programa[]
+  programasDos ProgramaDos[] @relation("ProgramaDosToModalidad")
+
+  @@map("programa_modalidad")
+}
+
+model ProgramaModulo {
+  id          String    @id @default(uuid()) @map("pm_id") @db.Uuid
+  codigo      String?   @map("pm_codigo")
+  nombre      String    @map("pm_nombre")
+  descripcion String    @map("pm_descripcion")
+  notaMinima  Int       @default(69) @map("pm_nota_minima")
+  estado      Estado    @default(activo) @map("pm_estado")
+  programaId  String    @map("pro_id") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  createdBy   String?   @map("created_by") @db.Uuid
+  deletedAt   DateTime? @map("deleted_at")
+  deletedBy   String?   @map("deleted_by") @db.Uuid
+  updatedBy   String?   @map("updated_by") @db.Uuid
+
+  programa Programa @relation(fields: [programaId], references: [id])
+
+  @@map("programa_modulo")
+}
+
+model ProgramaModuloDos {
+  id            String    @id @default(uuid()) @map("pm_id") @db.Uuid
+  codigo        String?   @map("pm_codigo")
+  nombre        String    @map("pm_nombre")
+  descripcion   String    @map("pm_descripcion")
+  notaMinima    Int       @default(69) @map("pm_nota_minima")
+  fechaInicio   DateTime  @map("pm_fecha_inicio") @db.Date
+  fechaFin      DateTime  @map("pm_fecha_fin") @db.Date
+  estado        Estado    @default(activo) @map("pm_estado")
+  programaDosId String    @map("pro_id") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+  createdBy     String?   @map("created_by") @db.Uuid
+  updatedBy     String?   @map("updated_by") @db.Uuid
+  deletedBy     String?   @map("deleted_by") @db.Uuid
+
+  programaDos   ProgramaDos              @relation(fields: [programaDosId], references: [id])
+  facilitadores ProgramaDosFacilitador[]
+
+  @@map("programa_modulo_dos")
+}
+
+model programa_restriccion {
+  id              String   @id @default(uuid()) @map("pr_id") @db.Uuid
+  descripcion     String   @map("res_descripcion")
+  generoIds       String?  @map("gen_ids")
+  subsistemaIds   String?  @map("sub_ids")
+  nivelIds        String?  @map("niv_ids")
+  especialidadIds String?  @map("esp_ids")
+  categoriaIds    String?  @map("cat_ids")
+  cargoIds        String?  @map("car_ids")
+  estado          Estado   @default(activo) @map("pr_estado")
+  programaId      String   @map("pro_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@map("programa_restriccion")
+}
+
+model ProgramaTipo {
+  id           String        @id @default(uuid()) @map("pro_tip_id") @db.Uuid
+  nombre       String        @map("pro_tip_nombre")
+  estado       Estado        @default(activo) @map("pro_tip_estado")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  deletedAt    DateTime?     @map("deleted_at")
+  createdBy    String?       @map("created_by") @db.Uuid
+  updatedBy    String?       @map("updated_by") @db.Uuid
+  deletedBy    String?       @map("deleted_by") @db.Uuid
+  programas    Programa[]
+  programasDos ProgramaDos[] @relation("ProgramaDosToTipo")
+
+  @@map("programa_tipo")
+}
+
+model programa_tipo_calificacion {
+  id        String   @id @default(uuid()) @map("ptc_id") @db.Uuid
+  nombre    String   @map("ptc_nombre")
+  nota      Int      @map("ptc_nota")
+  estado    Estado   @default(activo) @map("ptc_estado")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("programa_tipo_calificacion")
+}
+
+model ProgramaTurno {
+  id          String    @id @default(uuid()) @map("pro_tur_id") @db.Uuid
+  nombre      String    @map("pro_tur_nombre")
+  descripcion String?   @map("pro_tur_descripcion")
+  estado      Estado    @default(activo) @map("pro_tur_estado")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+  createdBy   String?   @map("created_by") @db.Uuid
+  deletedBy   String?   @map("deleted_by") @db.Uuid
+  updatedBy   String?   @map("updated_by") @db.Uuid
+
+  @@map("programa_turno")
+}
+
+model ProgramaVersion {
+  id           String        @id @default(uuid()) @map("pv_id") @db.Uuid
+  nombre       String        @map("pv_nombre")
+  romano       String?       @map("pv_romano")
+  numero       Int           @map("pv_numero")
+  gestion      String?       @map("pv_gestion")
+  estado       Estado        @default(activo) @map("pv_estado")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+  deletedAt    DateTime?     @map("deleted_at")
+  createdBy    String?       @map("created_by") @db.Uuid
+  updatedBy    String?       @map("updated_by") @db.Uuid
+  deletedBy    String?       @map("deleted_by") @db.Uuid
+  programasDos ProgramaDos[]
+
+  @@map("programa_version")
+}
+
+model provincia {
   id        String    @id @default(uuid()) @map("prov_id") @db.Uuid
   nombre    String    @map("prov_nombre")
-  estado    Estado    @default(ACTIVO) @map("prov_estado")
+  estado    Estado    @default(activo) @map("prov_estado")
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
@@ -104,856 +930,121 @@ model Provincia {
   @@map("provincia")
 }
 
-model User {
-  id                   String                   @id @default(uuid()) @db.Uuid
-  imagen               String?
-  nombre               String
-  apellidos            String
-  genero               String?                  @default("No prefiero decirlo")
-  licenciatura         String?
-  direccion            String?
-  curriculum           String?
-  fechaNacimiento      String?                  @map("fecha_nacimiento")
-  estadoCivil          String?                  @map("estado_civil")
-  facebook             String?
-  tiktok               String?
-  cargo                String?
-  celular              Int?
-  correo               String                   @unique
-  username             String                   @unique
-  password             String
-  rememberToken        String?                  @map("remember_token")
-  estado               Estado                   @default(ACTIVO)
-  resetPasswordToken   String?                  @map("reset_password_token")
-  resetPasswordExpires DateTime?                @map("reset_password_expires")
-  tenantId             String?                  @map("tenant_id") @db.Uuid
-  personaId            String?                  @unique @map("per_id") @db.Uuid
-  createdAt            DateTime                 @default(now()) @map("created_at")
-  updatedAt            DateTime                 @updatedAt @map("updated_at")
-  deletedAt            DateTime?                @map("deleted_at")
-  createdBy            String?                  @map("created_by") @db.Uuid
-  updatedBy            String?                  @map("updated_by") @db.Uuid
-  deletedBy            String?                  @map("deleted_by") @db.Uuid
-  sedeIds              String?                  @map("sede_ids")
-  proIds               String?                  @map("pro_ids")
-  tenant               Departamento?            @relation(fields: [tenantId], references: [id])
-  auditLogs            AuditLog[]
-  roles                UserRole[]
-  sedes                UserSede[]
-  facilitaciones       ProgramaDosFacilitador[]
-  evaluaciones         EvaluacionAdmins[]       @relation("UserEvaluations")
-
-  @@map("admins")
-}
-
-model Role {
-  id          String           @id @default(uuid()) @db.Uuid
-  name        String           @unique
-  guardName   String           @map("guard_name")
-  estado      Estado           @default(ACTIVO)
-  createdAt   DateTime         @default(now()) @map("created_at")
-  updatedAt   DateTime         @updatedAt @map("updated_at")
-  deletedAt   DateTime?        @map("deleted_at")
-  createdBy   String?          @map("created_by") @db.Uuid
-  updatedBy   String?          @map("updated_by") @db.Uuid
-  deletedBy   String?          @map("deleted_by") @db.Uuid
-  users       UserRole[]
-  permissions RolePermission[]
-
-  @@map("roles")
-}
-
-model Permission {
-  id         String           @id @default(uuid()) @db.Uuid
-  name       String           @unique
-  guardName  String           @map("guard_name")
-  groupName  String?          @map("group_name")
-  action     String
-  subject    String
-  conditions Json?
-  estado     Estado           @default(ACTIVO) @map("perm_estado")
-  createdAt  DateTime         @default(now()) @map("created_at")
-  updatedAt  DateTime         @updatedAt @map("updated_at")
-  deletedAt  DateTime?        @map("deleted_at")
-  createdBy  String?          @map("created_by") @db.Uuid
-  updatedBy  String?          @map("updated_by") @db.Uuid
-  deletedBy  String?          @map("deleted_by") @db.Uuid
-  roles      RolePermission[]
-
-  @@map("permissions")
-}
-
-model UserRole {
-  userId    String @map("model_id") @db.Uuid
-  roleId    String @map("role_id") @db.Uuid
-  modelType String @default("App\\User") @map("model_type")
-  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role      Role   @relation(fields: [roleId], references: [id], onDelete: Cascade)
-
-  @@id([userId, roleId, modelType])
-  @@map("model_has_roles")
-}
-
 model RolePermission {
-  roleId       String     @map("role_id") @db.Uuid
-  permissionId String     @map("permission_id") @db.Uuid
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  roleId       String @map("role_id") @db.Uuid
+  permissionId String @map("permission_id") @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@id([roleId, permissionId])
   @@map("role_has_permissions")
 }
 
-model UserSede {
-  userId String @map("user_id") @db.Uuid
-  sedeId String @map("sede_id") @db.Uuid
-  sede   Sede   @relation(fields: [sedeId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+model Role {
+  id              String           @id @default(uuid()) @db.Uuid
+  name            String
+  guardName       String           @map("guard_name")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
+  createdAt       DateTime         @default(now()) @map("created_at")
+  createdBy       String?          @map("created_by") @db.Uuid
+  deletedAt       DateTime?        @map("deleted_at")
+  deletedBy       String?          @map("deleted_by") @db.Uuid
+  estado          Estado           @default(activo)
+  updatedBy       String?          @map("updated_by") @db.Uuid
+  userRoles       UserRole[]
+  rolePermissions RolePermission[]
 
-  @@id([userId, sedeId])
-  @@map("user_has_sedes")
+  @@map("roles")
 }
 
-model Programa {
-  id                  String               @id @default(uuid()) @map("pro_id") @db.Uuid
-  codigo              String?              @unique @map("pro_codigo")
-  nombre              String               @map("pro_nombre")
-  nombreAbre          String?              @map("pro_nombre_abre")
-  contenido           String               @map("pro_contenido")
-  horario             String?              @map("pro_horario")
-  cargaHoraria        Int                  @map("pro_carga_horaria")
-  costo               Int                  @map("pro_costo")
-  banner              String               @map("pro_banner")
-  afiche              String               @map("pro_afiche")
-  convocatoria        String?              @map("pro_convocatoria")
-  fechaIniIns         DateTime             @map("pro_fecha_inicio_inscripcion") @db.Date
-  fechaFinIns         DateTime             @map("pro_fecha_fin_inscripcion") @db.Date
-  fechaIniClase       DateTime             @map("pro_fecha_inicio_clase") @db.Date
-  estadoInscripcion   Boolean              @default(true) @map("pro_estado_inscripcion")
-  estado              Estado               @default(ACTIVO) @map("pro_estado")
-  duracionId          String               @map("pd_id") @db.Uuid
-  tipoId              String               @map("pro_tip_id") @db.Uuid
-  modalidadId         String               @map("pm_id") @db.Uuid
-  createdAt           DateTime             @default(now()) @map("created_at")
-  updatedAt           DateTime             @updatedAt @map("updated_at")
-  deletedAt           DateTime?            @map("deleted_at")
-  createdBy           String?              @map("created_by") @db.Uuid
-  updatedBy           String?              @map("updated_by") @db.Uuid
-  deletedBy           String?              @map("deleted_by") @db.Uuid
-  duracion            ProgramaDuracion     @relation(fields: [duracionId], references: [id])
-  modalidad           ProgramaModalidad    @relation(fields: [modalidadId], references: [id])
-  tipo                ProgramaTipo         @relation(fields: [tipoId], references: [id])
-  versionesOperativas ProgramaDos[]        @relation("MasterToVersion")
-  modulos             ProgramaModulo[]
-  restriccion         ProgramaRestriccion?
+model Sede {
+  id                 String        @id @default(uuid()) @map("sede_id") @db.Uuid
+  imagen             String?       @map("sede_imagen")
+  nombre             String        @map("sede_nombre")
+  nombreAbreviado    String?       @map("sede_nombre_abre")
+  descripcion        String        @map("sede_descripcion")
+  imagenResponsable1 String?       @map("sede_imagen_responsable1")
+  nombreResponsable1 String?       @map("sede_nombre_responsable1")
+  cargoResponsable1  String?       @map("sede_cargo_responsable1")
+  imagenResponsable2 String?       @map("sede_imagen_responsable2")
+  nombreResponsable2 String?       @map("sede_nombre_responsable2")
+  cargoResponsable2  String?       @map("sede_cargo_responsable2")
+  contacto1          Int           @map("sede_contacto_1")
+  contacto2          Int?          @map("sede_contacto_2")
+  facebook           String?       @map("sede_facebook")
+  tiktok             String?       @map("sede_tiktok")
+  grupoWhatsapp      String?       @map("sede_grupo_whatsapp")
+  horario            String        @map("sede_horario")
+  turno              String        @map("sede_turno")
+  ubicacion          String        @map("sede_ubicacion")
+  latitud            Decimal?      @map("sede_latitud") @db.Decimal(11, 8)
+  longitud           Decimal?      @map("sede_longitud") @db.Decimal(11, 8)
+  estado             Estado        @default(activo) @map("sede_estado")
+  departamentoId     String        @map("dep_id") @db.Uuid
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+  deletedAt          DateTime?     @map("deleted_at")
+  createdBy          String?       @map("created_by") @db.Uuid
+  updatedBy          String?       @map("updated_by") @db.Uuid
+  deletedBy          String?       @map("deleted_by") @db.Uuid
+  users              UserSede[]
+  departamento       Departamento  @relation(fields: [departamentoId], references: [id])
+  programasDos       ProgramaDos[]
+  galerias           Galeria[]
 
-  @@map("programa")
-}
-
-model ProgramaDuracion {
-  id          String        @id @default(uuid()) @map("pd_id") @db.Uuid
-  nombre      String        @map("pd_nombre")
-  semana      Int           @map("pd_semana")
-  estado      Estado        @default(ACTIVO) @map("pd_estado")
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @updatedAt @map("updated_at")
-  deletedAt   DateTime?     @map("deleted_at")
-  createdBy   String?       @map("created_by") @db.Uuid
-  updatedBy   String?       @map("updated_by") @db.Uuid
-  deletedBy   String?       @map("deleted_by") @db.Uuid
-  programas   Programa[]
-  programaDos ProgramaDos[]
-
-  @@map("programa_duracion")
-}
-
-model ProgramaVersion {
-  id          String        @id @default(uuid()) @map("pv_id") @db.Uuid
-  nombre      String        @map("pv_nombre")
-  romano      String?       @map("pv_romano")
-  numero      Int           @map("pv_numero")
-  gestion     String?       @map("pv_gestion")
-  estado      Estado        @default(ACTIVO) @map("pv_estado")
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @updatedAt @map("updated_at")
-  deletedAt   DateTime?     @map("deleted_at")
-  createdBy   String?       @map("created_by") @db.Uuid
-  updatedBy   String?       @map("updated_by") @db.Uuid
-  deletedBy   String?       @map("deleted_by") @db.Uuid
-  programaDos ProgramaDos[]
-
-  @@map("programa_version")
-}
-
-model ProgramaTipo {
-  id             String                 @id @default(uuid()) @map("pro_tip_id") @db.Uuid
-  nombre         String                 @map("pro_tip_nombre")
-  estado         Estado                 @default(ACTIVO) @map("pro_tip_estado")
-  createdAt      DateTime               @default(now()) @map("created_at")
-  updatedAt      DateTime               @updatedAt @map("updated_at")
-  deletedAt      DateTime?              @map("deleted_at")
-  createdBy      String?                @map("created_by") @db.Uuid
-  updatedBy      String?                @map("updated_by") @db.Uuid
-  deletedBy      String?                @map("deleted_by") @db.Uuid
-  programas      Programa[]
-  calificaciones ProgramaCalificacion[]
-  programaDos    ProgramaDos[]
-
-  @@map("programa_tipo")
-}
-
-model ProgramaModalidad {
-  id             String                     @id @default(uuid()) @map("pm_id") @db.Uuid
-  nombre         String                     @map("pm_nombre")
-  estado         Estado                     @default(ACTIVO) @map("pm_estado")
-  createdAt      DateTime                   @default(now()) @map("created_at")
-  updatedAt      DateTime                   @updatedAt @map("updated_at")
-  deletedAt      DateTime?                  @map("deleted_at")
-  createdBy      String?                    @map("created_by") @db.Uuid
-  updatedBy      String?                    @map("updated_by") @db.Uuid
-  deletedBy      String?                    @map("deleted_by") @db.Uuid
-  calificaciones CalificacionParticipante[]
-  inscripciones  EventoInscripcion[]
-  programas      Programa[]
-  programaDos    ProgramaDos[]
-
-  @@map("programa_modalidad")
-}
-
-model ProgramaModulo {
-  id             String                     @id @default(uuid()) @map("pm_id") @db.Uuid
-  codigo         String?                    @map("pm_codigo")
-  nombre         String                     @map("pm_nombre")
-  descripcion    String                     @map("pm_descripcion")
-  notaMinima     Int                        @default(69) @map("pm_nota_minima")
-  estado         Estado                     @default(ACTIVO) @map("pm_estado")
-  programaId     String                     @map("pro_id") @db.Uuid
-  createdAt      DateTime                   @default(now()) @map("created_at")
-  updatedAt      DateTime                   @updatedAt @map("updated_at")
-  deletedAt      DateTime?                  @map("deleted_at")
-  createdBy      String?                    @map("created_by") @db.Uuid
-  updatedBy      String?                    @map("updated_by") @db.Uuid
-  deletedBy      String?                    @map("deleted_by") @db.Uuid
-  calificaciones CalificacionParticipante[]
-  programa       Programa                   @relation(fields: [programaId], references: [id], onDelete: Cascade)
-
-  @@map("programa_modulo")
-}
-
-model ProgramaDos {
-  id                String                   @id @default(uuid()) @map("pro_id") @db.Uuid
-  codigo            String?                  @map("pro_codigo")
-  nombre            String                   @map("pro_nombre")
-  nombreAbre        String?                  @map("pro_nombre_abre")
-  contenido         String                   @map("pro_contenido")
-  horario           String?                  @map("pro_horario")
-  cargaHoraria      Int                      @map("pro_carga_horaria")
-  costo             Int                      @map("pro_costo")
-  banner            String                   @map("pro_banner")
-  afiche            String                   @map("pro_afiche")
-  convocatoria      String?                  @map("pro_convocatoria")
-  fechaIniIns       DateTime                 @map("pro_fecha_inicio_inscripcion") @db.Date
-  fechaFinIns       DateTime                 @map("pro_fecha_fin_inscripcion") @db.Date
-  fechaIniClase     DateTime                 @map("pro_fecha_inicio_clase") @db.Date
-  estadoInscripcion Boolean                  @default(true) @map("pro_estado_inscripcion")
-  estado            Estado                   @default(ACTIVO) @map("pro_estado")
-  sedeId            String?                  @map("sede_id") @db.Uuid
-  duracionId        String                   @map("pd_id") @db.Uuid
-  versionId         String                   @map("pv_id") @db.Uuid
-  tipoId            String                   @map("pro_tip_id") @db.Uuid
-  modalidadId       String                   @map("pm_id") @db.Uuid
-  programaId        String?                  @map("programa_id") @db.Uuid
-  departamentoId    String?                  @map("dep_id") @db.Uuid
-  createdAt         DateTime                 @default(now()) @map("created_at")
-  updatedAt         DateTime                 @updatedAt @map("updated_at")
-  deletedAt         DateTime?                @map("deleted_at")
-  createdBy         String?                  @map("created_by") @db.Uuid
-  updatedBy         String?                  @map("updated_by") @db.Uuid
-  deletedBy         String?                  @map("deleted_by") @db.Uuid
-  duracion          ProgramaDuracion         @relation(fields: [duracionId], references: [id])
-  modalidad         ProgramaModalidad        @relation(fields: [modalidadId], references: [id])
-  tipo              ProgramaTipo             @relation(fields: [tipoId], references: [id])
-  programa          Programa?                @relation("MasterToVersion", fields: [programaId], references: [id])
-  version           ProgramaVersion          @relation(fields: [versionId], references: [id])
-  sede              Sede?                    @relation(fields: [sedeId], references: [id])
-  departamento      Departamento?            @relation(fields: [departamentoId], references: [id])
-  inscripciones     ProgramaInscripcion[]
-  modulos           ProgramaModuloDos[]
-  turnos            ProgramaDosTurno[]
-  facilitadores     ProgramaDosFacilitador[]
-
-  @@map("programa_dos")
-}
-
-model ProgramaModuloDos {
-  id           String                   @id @default(uuid()) @map("pm_id") @db.Uuid
-  codigo       String?                  @map("pm_codigo")
-  nombre       String                   @map("pm_nombre")
-  descripcion  String                   @map("pm_descripcion")
-  notaMinima   Int                      @default(69) @map("pm_nota_minima")
-  fechaInicio  DateTime                 @map("pm_fecha_inicio") @db.Date
-  fechaFin     DateTime                 @map("pm_fecha_fin") @db.Date
-  estado       Estado                   @default(ACTIVO) @map("pm_estado")
-  programaId   String                   @map("pro_id") @db.Uuid
-  createdAt    DateTime                 @default(now()) @map("created_at")
-  updatedAt    DateTime                 @updatedAt @map("updated_at")
-  deletedAt    DateTime?                @map("deleted_at")
-  createdBy    String?                  @map("created_by") @db.Uuid
-  updatedBy    String?                  @map("updated_by") @db.Uuid
-  deletedBy    String?                  @map("deleted_by") @db.Uuid
-  programa     ProgramaDos              @relation(fields: [programaId], references: [id], onDelete: Cascade)
-  asignaciones ProgramaDosFacilitador[]
-
-  @@map("programa_modulo_dos")
-}
-
-model ProgramaDosTurno {
-  id           String                   @id @default(uuid()) @map("pdt_id") @db.Uuid
-  programaId   String                   @map("pro_id") @db.Uuid
-  turnoIds     String                   @map("pro_tur_ids")
-  cupo         Int                      @map("pro_cupo")
-  cupoPre      Int                      @map("pro_cupo_preinscrito")
-  estado       Estado                   @default(ACTIVO) @map("pdt_estado")
-  createdAt    DateTime                 @default(now()) @map("created_at")
-  updatedAt    DateTime                 @updatedAt @map("updated_at")
-  deletedAt    DateTime?                @map("deleted_at")
-  createdBy    String?                  @map("created_by") @db.Uuid
-  updatedBy    String?                  @map("updated_by") @db.Uuid
-  deletedBy    String?                  @map("deleted_by") @db.Uuid
-  programa     ProgramaDos              @relation(fields: [programaId], references: [id], onDelete: Cascade)
-  asignaciones ProgramaDosFacilitador[]
-
-  @@map("programa_dos_turno")
-}
-
-model ProgramaDosFacilitador {
-  id            String    @id @default(uuid()) @map("pdf_id") @db.Uuid
-  programaId    String    @map("pro_id") @db.Uuid
-  moduloId      String    @map("pm_id") @db.Uuid
-  turnoId       String    @map("pdt_id") @db.Uuid
-  facilitadorId String    @map("fac_id") @db.Uuid
-  estado        Estado    @default(ACTIVO) @map("pdf_estado")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-  deletedAt     DateTime? @map("deleted_at")
-  createdBy     String?   @map("created_by") @db.Uuid
-  updatedBy     String?   @map("updated_by") @db.Uuid
-  deletedBy     String?   @map("deleted_by") @db.Uuid
-
-  programa    ProgramaDos       @relation(fields: [programaId], references: [id], onDelete: Cascade)
-  modulo      ProgramaModuloDos @relation(fields: [moduloId], references: [id], onDelete: Cascade)
-  turno       ProgramaDosTurno  @relation(fields: [turnoId], references: [id], onDelete: Cascade)
-  facilitador User              @relation(fields: [facilitadorId], references: [id], onDelete: Cascade)
-
-  @@unique([moduloId, turnoId])
-  @@map("programa_dos_facilitador")
-}
-
-model ProgramaTurno {
-  id            String                @id @default(uuid()) @map("pro_tur_id") @db.Uuid
-  nombre        String                @map("pro_tur_nombre")
-  descripcion   String?               @map("pro_tur_descripcion")
-  estado        Estado                @default(ACTIVO) @map("pro_tur_estado")
-  createdAt     DateTime              @default(now()) @map("created_at")
-  updatedAt     DateTime              @updatedAt @map("updated_at")
-  deletedAt     DateTime?             @map("deleted_at")
-  createdBy     String?               @map("created_by") @db.Uuid
-  updatedBy     String?               @map("updated_by") @db.Uuid
-  deletedBy     String?               @map("deleted_by") @db.Uuid
-  inscripciones ProgramaInscripcion[]
-
-  @@map("programa_turno")
-}
-
-model ProgramaInscripcion {
-  id                  String                     @id @default(uuid()) @map("pi_id") @db.Uuid
-  docDigital          String?                    @map("pi_doc_digital")
-  certificacion       Boolean?                   @map("pi_certificacion")
-  entregoCert         Boolean?                   @map("pi_entrego_cert")
-  folio               BigInt?
-  partida             BigInt?
-  carton              BigInt?
-  licenciatura        String?                    @map("pi_licenciatura")
-  unidadEducativa     String?                    @map("pi_unidad_educativa")
-  nivel               String?                    @map("pi_nivel")
-  subsistema          String?                    @map("pi_subsistema")
-  materia             String?                    @map("pi_materia")
-  observacion         String?                    @map("pi_observacion")
-  estado              Estado                     @default(ACTIVO) @map("pi_estado")
-  programaId          String                     @map("pro_id") @db.Uuid
-  turnoId             String                     @map("pro_tur_id") @db.Uuid
-  sedeId              String                     @map("sede_id") @db.Uuid
-  estadoInscripcionId String                     @map("pie_id") @db.Uuid
-  personaId           String                     @map("per_id") @db.Uuid
-  tenantId            String?                    @map("tenant_id") @db.Uuid
-  createdAt           DateTime                   @default(now()) @map("created_at")
-  updatedAt           DateTime                   @updatedAt @map("updated_at")
-  deletedAt           DateTime?                  @map("deleted_at")
-  createdBy           String?                    @map("created_by") @db.Uuid
-  updatedBy           String?                    @map("updated_by") @db.Uuid
-  deletedBy           String?                    @map("deleted_by") @db.Uuid
-  actas               ActaConclusion[]
-  calificaciones      CalificacionParticipante[]
-  bouchers            ProgramaBaucher[]
-  estadoInscripcion   ProgramaInscripcionEstado  @relation(fields: [estadoInscripcionId], references: [id], onDelete: Cascade)
-  programa            ProgramaDos                @relation(fields: [programaId], references: [id], onDelete: Cascade)
-  turno               ProgramaTurno              @relation(fields: [turnoId], references: [id], onDelete: Cascade)
-  sede                Sede                       @relation(fields: [sedeId], references: [id], onDelete: Cascade)
-  tenant              Departamento?              @relation(fields: [tenantId], references: [id])
-
-  @@map("programa_inscripcion")
-}
-
-model ProgramaInscripcionEstado {
-  id            String                @id @default(uuid()) @map("pie_id") @db.Uuid
-  nombre        String                @map("pie_nombre")
-  estado        Estado                @default(ACTIVO) @map("pie_estado")
-  createdAt     DateTime              @default(now()) @map("created_at")
-  updatedAt     DateTime              @updatedAt @map("updated_at")
-  deletedAt     DateTime?             @map("deleted_at")
-  createdBy     String?               @map("created_by") @db.Uuid
-  updatedBy     String?               @map("updated_by") @db.Uuid
-  deletedBy     String?               @map("deleted_by") @db.Uuid
-  inscripciones ProgramaInscripcion[]
-
-  @@map("programa_inscripcion_estado")
-}
-
-model ProgramaBaucher {
-  id            String              @id @default(uuid()) @map("pro_bau_id") @db.Uuid
-  imagen        String              @map("pro_bau_imagen")
-  nroDeposito   BigInt?             @map("pro_bau_nro_deposito")
-  monto         Int                 @map("pro_bau_monto")
-  fecha         DateTime            @map("pro_bau_fecha") @db.Date
-  tipoPago      String              @default("Baucher") @map("pro_bau_tipo_pago")
-  confirmado    Boolean?            @map("pro_bau_confirmado")
-  fechaConf     DateTime?           @map("pro_bau_fecha_conf")
-  inscripcionId String              @map("pi_id") @db.Uuid
-  estado        Estado              @default(ACTIVO) @map("pro_bau_estado")
-  createdAt     DateTime            @default(now()) @map("created_at")
-  updatedAt     DateTime            @updatedAt @map("updated_at")
-  deletedAt     DateTime?           @map("deleted_at")
-  createdBy     String?             @map("created_by") @db.Uuid
-  updatedBy     String?             @map("updated_by") @db.Uuid
-  deletedBy     String?             @map("deleted_by") @db.Uuid
-  inscripcion   ProgramaInscripcion @relation(fields: [inscripcionId], references: [id], onDelete: Cascade)
-
-  @@map("programa_baucher")
-}
-
-model ProgramaRestriccion {
-  id          String   @id @default(uuid()) @map("pr_id") @db.Uuid
-  descripcion String   @map("res_descripcion")
-  generoIds   String?  @map("gen_ids")
-  subIds      String?  @map("sub_ids")
-  nivIds      String?  @map("niv_ids")
-  espIds      String?  @map("esp_ids")
-  catIds      String?  @map("cat_ids")
-  carIds      String?  @map("car_ids")
-  estado      Estado   @default(ACTIVO) @map("pr_estado")
-  programaId  String   @unique @map("pro_id") @db.Uuid
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-  programa    Programa @relation(fields: [programaId], references: [id], onDelete: Cascade)
-
-  @@map("programa_restriccion")
-}
-
-model CalificacionParticipante {
-  id                  String               @id @default(uuid()) @map("cp_id") @db.Uuid
-  puntaje             Int                  @map("cp_puntaje")
-  estado              String               @default("aprobado") @map("cp_estado")
-  inscripcionId       String               @map("pi_id") @db.Uuid
-  moduloId            String               @map("pm_id") @db.Uuid
-  tipoCalifId         String               @map("pc_id") @db.Uuid
-  createdAt           DateTime             @default(now()) @map("created_at")
-  updatedAt           DateTime             @updatedAt @map("updated_at")
-  programaModalidadId String?              @db.Uuid
-  tipoCalif           ProgramaCalificacion @relation(fields: [tipoCalifId], references: [id], onDelete: Cascade)
-  inscripcion         ProgramaInscripcion  @relation(fields: [inscripcionId], references: [id], onDelete: Cascade)
-  modulo              ProgramaModulo       @relation(fields: [moduloId], references: [id], onDelete: Cascade)
-  programaModalidad   ProgramaModalidad?   @relation(fields: [programaModalidadId], references: [id])
-
-  @@map("calificacion_participante")
-}
-
-model ProgramaCalificacion {
-  id             String                     @id @default(uuid()) @map("pc_id") @db.Uuid
-  estado         Estado                     @default(ACTIVO) @map("pc_estado")
-  programaTipoId String                     @map("pro_tip_id") @db.Uuid
-  tipoId         String                     @map("ptc_id") @db.Uuid
-  createdAt      DateTime                   @default(now()) @map("created_at")
-  updatedAt      DateTime                   @updatedAt @map("updated_at")
-  calificaciones CalificacionParticipante[]
-  programaTipo   ProgramaTipo               @relation(fields: [programaTipoId], references: [id], onDelete: Cascade)
-  tipo           ProgramaTipoCalificacion   @relation(fields: [tipoId], references: [id], onDelete: Cascade)
-
-  @@map("programa_calificacion")
-}
-
-model ProgramaTipoCalificacion {
-  id             String                 @id @default(uuid()) @map("ptc_id") @db.Uuid
-  nombre         String                 @map("ptc_nombre")
-  nota           Int                    @map("ptc_nota")
-  estado         Estado                 @default(ACTIVO) @map("ptc_estado")
-  createdAt      DateTime               @default(now()) @map("created_at")
-  updatedAt      DateTime               @updatedAt @map("updated_at")
-  calificaciones ProgramaCalificacion[]
-
-  @@map("programa_tipo_calificacion")
-}
-
-model ActaConclusion {
-  id            String              @id @default(uuid()) @map("ac_id") @db.Uuid
-  titulo        String              @map("ac_titulo")
-  descripcion   String              @map("ac_descripcion")
-  url           String?             @map("ac_url")
-  mejor         Boolean?            @map("ac_mejor")
-  nota          Int?                @map("ac_nota")
-  documento     String?             @map("ac_documento")
-  depositoNum   BigInt?             @map("ac_deposito_num")
-  depositoFecha DateTime?           @map("ac_deposito_fecha") @db.Date
-  depositoMonto Int?                @map("ac_deposito_monto")
-  foto          Boolean?            @map("ac_foto")
-  inscripcionId String              @map("pi_id") @db.Uuid
-  createdAt     DateTime            @default(now()) @map("created_at")
-  updatedAt     DateTime            @updatedAt @map("updated_at")
-  estado        Estado              @default(ACTIVO) @map("ac_estado")
-  deletedAt     DateTime?           @map("deleted_at")
-  createdBy     String?             @map("created_by") @db.Uuid
-  updatedBy     String?             @map("updated_by") @db.Uuid
-  deletedBy     String?             @map("deleted_by") @db.Uuid
-  inscripcion   ProgramaInscripcion @relation(fields: [inscripcionId], references: [id], onDelete: Cascade)
-
-  @@map("acta_conclusion")
-}
-
-model Evento {
-  id            String               @id @default(uuid()) @map("eve_id") @db.Uuid
-  nombre        String               @map("eve_nombre")
-  codigo        String?              @map("eve_codigo")
-  descripcion   String               @map("eve_descripcion")
-  banner        String               @map("eve_banner")
-  afiche        String               @map("eve_afiche")
-  modulosIds    String               @map("pm_ids")
-  fecha         DateTime             @map("eve_fecha") @db.Date
-  inscripcion   Boolean              @default(true) @map("eve_inscripcion")
-  asistencia    Boolean?             @map("eve_asistencia")
-  lugar         String               @map("eve_lugar")
-  totalInscrito Int                  @map("eve_total_inscrito")
-  estado        Estado               @default(ACTIVO) @map("eve_estado")
-  tipoId        String               @map("et_id") @db.Uuid
-  tenantId      String?              @map("tenant_id") @db.Uuid
-  createdAt     DateTime             @default(now()) @map("created_at")
-  updatedAt     DateTime             @updatedAt @map("updated_at")
-  deletedAt     DateTime?            @map("deleted_at")
-  createdBy     String?              @map("created_by") @db.Uuid
-  updatedBy     String?              @map("updated_by") @db.Uuid
-  deletedBy     String?              @map("deleted_by") @db.Uuid
-  tipo          TipoEvento           @relation(fields: [tipoId], references: [id], onDelete: Cascade)
-  tenant        Departamento?        @relation(fields: [tenantId], references: [id])
-  cuestionarios EventoCuestionario[]
-  inscripciones EventoInscripcion[]
-  restriccion   EventoRestriccion?
-
-  @@map("evento")
+  @@map("sede")
 }
 
 model TipoEvento {
   id        String    @id @default(uuid()) @map("et_id") @db.Uuid
   nombre    String    @map("et_nombre")
-  estado    Estado    @default(ACTIVO) @map("et_estado")
+  estado    Estado    @default(activo) @map("et_estado")
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
   createdBy String?   @map("created_by") @db.Uuid
-  updatedBy String?   @map("updated_by") @db.Uuid
+  deletedAt DateTime? @map("deleted_at")
   deletedBy String?   @map("deleted_by") @db.Uuid
-  eventos   Evento[]
+  updatedBy String?   @map("updated_by") @db.Uuid
+
+  eventos Evento[]
 
   @@map("tipo_evento")
 }
 
-model EventoInscripcion {
-  id             String            @id @default(uuid()) @map("eve_ins_id") @db.Uuid
-  asistencia     Boolean           @default(false) @map("eve_ins_asistencia")
-  estado         Estado            @default(ACTIVO) @map("eve_ins_estado")
-  nroDeposito    String?           @map("eve_nro_deposito")
-  fechaDeposito  DateTime?         @map("eve_fecha_deposito") @db.Date
-  imagenDeposito String?           @map("eve_imagen_deposito")
-  eventoPersonId String            @map("eve_per_id") @db.Uuid
-  eventoId       String            @map("eve_id") @db.Uuid
-  departamentoId String            @map("dep_id") @db.Uuid
-  modalidadId    String            @map("pm_id") @db.Uuid
-  createdAt      DateTime          @default(now()) @map("created_at")
-  updatedAt      DateTime          @updatedAt @map("updated_at")
-  deletedAt      DateTime?         @map("deleted_at")
-  createdBy      String?           @map("created_by") @db.Uuid
-  updatedBy      String?           @map("updated_by") @db.Uuid
-  deletedBy      String?           @map("deleted_by") @db.Uuid
-  departamento   Departamento      @relation(fields: [departamentoId], references: [id], onDelete: Cascade)
-  evento         Evento            @relation(fields: [eventoId], references: [id], onDelete: Cascade)
-  eventoPerson   EventoPersona     @relation(fields: [eventoPersonId], references: [id], onDelete: Cascade)
-  modalidad      ProgramaModalidad @relation(fields: [modalidadId], references: [id], onDelete: Cascade)
-
-  @@map("evento_inscripcion_v2")
+model token_dispositivo {
+  id_token     Int      @id @default(autoincrement())
+  token        String?
+  tipo_usuario String?
+  created_at   DateTime @default(now())
+  updated_at   DateTime
 }
 
-model EventoPersona {
-  id            String              @id @default(uuid()) @map("eve_per_id") @db.Uuid
-  ci            BigInt              @map("eve_per_ci")
-  complemento   String              @map("eve_per_complemento")
-  expedido      String              @map("eve_per_expedido")
-  nombre1       String              @map("eve_per_nombre_1")
-  nombre2       String              @map("eve_per_nombre_2")
-  apellido1     String              @map("eve_per_apellido_1")
-  apellido2     String              @map("eve_per_apellido_2")
-  fechaNac      DateTime            @map("eve_per_fecha_nacimiento") @db.Date
-  correo        String              @map("eve_per_correo")
-  celular       String              @map("eve_per_celular")
-  generoId      BigInt              @map("gen_id")
-  createdAt     DateTime            @default(now()) @map("created_at")
-  updatedAt     DateTime            @updatedAt @map("updated_at")
-  deletedAt     DateTime?           @map("deleted_at")
-  createdBy     String?             @map("created_by") @db.Uuid
-  updatedBy     String?             @map("updated_by") @db.Uuid
-  deletedBy     String?             @map("deleted_by") @db.Uuid
-  inscripciones EventoInscripcion[]
-  genero        Genero              @relation(fields: [generoId], references: [id], onDelete: Cascade)
-  respuestas    EventoRespuesta[]
-
-  @@map("evento_personas")
-}
-
-model Genero {
-  id              BigInt          @id @default(autoincrement()) @map("gen_id")
-  nombre          String          @map("gen_nombre")
-  estado          Estado          @default(ACTIVO) @map("gen_estado")
-  createdAt       DateTime        @default(now()) @map("created_at")
-  updatedAt       DateTime        @updatedAt @map("updated_at")
-  deletedAt       DateTime?       @map("deleted_at")
-  createdBy       String?         @map("created_by") @db.Uuid
-  updatedBy       String?         @map("updated_by") @db.Uuid
-  deletedBy       String?         @map("deleted_by") @db.Uuid
-  eventosPersonas EventoPersona[]
-  mapPersonas     MapPersona[]
-
-  @@map("genero")
-}
-
-model EventoRestriccion {
-  id          String    @id @default(uuid()) @map("er_id") @db.Uuid
-  descripcion String    @map("er_descripcion")
-  genIds      String?   @map("gen_ids")
-  subIds      String?   @map("sub_ids")
-  nivIds      String?   @map("niv_ids")
-  espIds      String?   @map("esp_ids")
-  estado      Estado    @default(ACTIVO) @map("pr_estado")
-  eventoId    String    @unique @map("eve_id") @db.Uuid
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  deletedAt   DateTime? @map("deleted_at")
-  createdBy   String?   @map("created_by") @db.Uuid
-  updatedBy   String?   @map("updated_by") @db.Uuid
-  deletedBy   String?   @map("deleted_by") @db.Uuid
-  evento      Evento    @relation(fields: [eventoId], references: [id], onDelete: Cascade)
-
-  @@map("evento_restriccion")
-}
-
-model EventoCuestionario {
-  id          String           @id @default(uuid()) @map("eve_cue_id") @db.Uuid
-  titulo      String           @map("eve_cue_titulo")
-  descripcion String           @map("eve_cue_descripcion")
-  fechaIni    DateTime         @map("eve_cue_fecha_ini")
-  fechaFin    DateTime         @map("eve_cue_fecha_fin")
-  ptsMax      Int?             @map("eve_cue_pts_max")
-  estado      Estado           @default(ACTIVO) @map("eve_cue_estado")
-  eventoId    String           @map("eve_id") @db.Uuid
-  createdAt   DateTime         @default(now()) @map("created_at")
-  updatedAt   DateTime         @updatedAt @map("updated_at")
-  deletedAt   DateTime?        @map("deleted_at")
-  createdBy   String?          @map("created_by") @db.Uuid
-  updatedBy   String?          @map("updated_by") @db.Uuid
-  deletedBy   String?          @map("deleted_by") @db.Uuid
-  evento      Evento           @relation(fields: [eventoId], references: [id], onDelete: Cascade)
-  preguntas   EventoPregunta[]
-
-  @@map("evento_cuestionario")
-}
-
-model EventoPregunta {
-  id             String             @id @default(uuid()) @map("eve_pre_id") @db.Uuid
-  texto          String             @map("eve_pre_texto")
-  tipo           String             @map("eve_pre_tipo")
-  obligatorio    Boolean            @default(true) @map("eve_pre_obligatorio")
-  estado         Estado             @default(ACTIVO) @map("eve_pre_estado")
-  cuestionarioId String             @map("eve_cue_id") @db.Uuid
-  createdAt      DateTime           @default(now()) @map("created_at")
-  updatedAt      DateTime           @updatedAt @map("updated_at")
-  deletedAt      DateTime?          @map("deleted_at")
-  createdBy      String?            @map("created_by") @db.Uuid
-  updatedBy      String?            @map("updated_by") @db.Uuid
-  deletedBy      String?            @map("deleted_by") @db.Uuid
-  opciones       EventoOpcion[]
-  cuestionario   EventoCuestionario @relation(fields: [cuestionarioId], references: [id], onDelete: Cascade)
-  respuestas     EventoRespuesta[]
-
-  @@map("evento_pregunta")
-}
-
-model EventoOpcion {
-  id         String            @id @default(uuid()) @map("eve_opc_id") @db.Uuid
-  texto      String            @map("eve_opc_texto")
-  esCorrecta Boolean           @default(false) @map("eve_opc_es_correcta")
-  estado     Estado            @default(ACTIVO) @map("eve_opc_estado")
-  preguntaId String            @map("eve_pre_id") @db.Uuid
-  createdAt  DateTime          @default(now()) @map("created_at")
-  updatedAt  DateTime          @updatedAt @map("updated_at")
-  deletedAt  DateTime?         @map("deleted_at")
-  createdBy  String?           @map("created_by") @db.Uuid
-  updatedBy  String?           @map("updated_by") @db.Uuid
-  deletedBy  String?           @map("deleted_by") @db.Uuid
-  pregunta   EventoPregunta    @relation(fields: [preguntaId], references: [id], onDelete: Cascade)
-  respuestas EventoRespuesta[]
-
-  @@map("evento_opciones")
-}
-
-model EventoRespuesta {
-  id         BigInt         @id @default(autoincrement()) @map("eve_res_id")
-  texto      String         @map("eve_res_texto")
-  preguntaId String         @map("eve_pre_id") @db.Uuid
-  opcionId   String         @map("eve_opc_id") @db.Uuid
-  personaId  String         @map("eve_per_id") @db.Uuid
-  createdAt  DateTime       @default(now()) @map("created_at")
-  updatedAt  DateTime       @updatedAt @map("updated_at")
-  deletedAt  DateTime?      @map("deleted_at")
-  createdBy  String?        @map("created_by") @db.Uuid
-  updatedBy  String?        @map("updated_by") @db.Uuid
-  deletedBy  String?        @map("deleted_by") @db.Uuid
-  opcion     EventoOpcion   @relation(fields: [opcionId], references: [id], onDelete: Cascade)
-  persona    EventoPersona  @relation(fields: [personaId], references: [id], onDelete: Cascade)
-  pregunta   EventoPregunta @relation(fields: [preguntaId], references: [id], onDelete: Cascade)
-
-  @@map("evento_respuestas")
-}
-
-model MapPersona {
-  id                String      @id @default(uuid()) @map("per_id") @db.Uuid
-  rda               BigInt?     @map("per_rda")
-  ci                BigInt      @map("per_ci")
-  complemento       String?     @map("per_complemento")
-  nombre1           String?     @map("per_nombre1")
-  nombre2           String?     @map("per_nombre2")
-  apellido1         String?     @map("per_apellido1")
-  apellido2         String?     @map("per_apellido2")
-  fechaNac          DateTime    @map("per_fecha_nacimiento") @db.Date
-  celular           Int         @default(0) @map("per_celular")
-  correo            String      @default("sincorreo") @map("per_correo")
-  estado            Estado      @default(ACTIVO) @map("per_estado")
-  unidadEducativaId String?     @map("uni_edu_id") @db.Uuid
-  generoId          BigInt      @map("gen_id")
-  areaId            String      @map("area_id") @db.Uuid
-  createdAt         DateTime    @default(now()) @map("created_at")
-  updatedAt         DateTime    @updatedAt @map("updated_at")
-  deletedAt         DateTime?   @map("deleted_at")
-  createdBy         String?     @map("created_by") @db.Uuid
-  updatedBy         String?     @map("updated_by") @db.Uuid
-  deletedBy         String?     @map("deleted_by") @db.Uuid
-  area              AreaTrabajo @relation(fields: [areaId], references: [id], onDelete: Cascade)
-  genero            Genero      @relation(fields: [generoId], references: [id], onDelete: Cascade)
-
-  @@map("map_persona")
-}
-
-model AreaTrabajo {
-  id        String       @id @default(uuid()) @map("area_id") @db.Uuid
-  nombre    String       @map("area_nombre")
-  estado    Estado       @default(ACTIVO) @map("area_estado")
-  createdAt DateTime     @default(now()) @map("created_at")
-  updatedAt DateTime     @updatedAt @map("updated_at")
-  deletedAt DateTime?    @map("deleted_at")
-  createdBy String?      @map("created_by") @db.Uuid
-  updatedBy String?      @map("updated_by") @db.Uuid
-  deletedBy String?      @map("deleted_by") @db.Uuid
-  personas  MapPersona[]
-
-  @@map("area_trabajo")
-}
-
-model UnidadEducativa {
+model unidad_educativa {
   id         String    @id @default(uuid()) @map("uni_edu_id") @db.Uuid
   codigo     BigInt    @map("uni_edu_codigo")
   nombre     String    @map("uni_edu_nombre")
-  estado     Estado    @default(ACTIVO) @map("uni_edu_estado")
+  estado     Estado    @default(activo) @map("uni_edu_estado")
   distritoId String?   @map("dis_id") @db.Uuid
   createdAt  DateTime  @default(now()) @map("created_at")
   updatedAt  DateTime  @updatedAt @map("updated_at")
-  deletedAt  DateTime? @map("deleted_at")
   createdBy  String?   @map("created_by") @db.Uuid
-  updatedBy  String?   @map("updated_by") @db.Uuid
+  deletedAt  DateTime? @map("deleted_at")
   deletedBy  String?   @map("deleted_by") @db.Uuid
-  distrito   Distrito? @relation(fields: [distritoId], references: [id])
+  updatedBy  String?   @map("updated_by") @db.Uuid
 
   @@map("unidad_educativa")
 }
 
-model Blog {
-  id          String        @id @default(uuid()) @map("blog_id") @db.Uuid
-  imagenes    Json?         @map("blog_imagenes")
-  titulo      String        @map("blog_titulo")
-  descripcion String?       @map("blog_descripcion")
-  tipo        String?       @map("blog_tipo")
-  fecha       DateTime?     @map("blog_fecha") @db.Date
-  estado      Estado        @default(ACTIVO) @map("blog_estado")
-  tenantId    String?       @map("tenant_id") @db.Uuid
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @updatedAt @map("updated_at")
-  deletedAt   DateTime?     @map("deleted_at")
-  createdBy   String?       @map("created_by") @db.Uuid
-  updatedBy   String?       @map("updated_by") @db.Uuid
-  deletedBy   String?       @map("deleted_by") @db.Uuid
-  tenant      Departamento? @relation(fields: [tenantId], references: [id])
+model UserSede {
+  userId String @map("user_id") @db.Uuid
+  sedeId String @map("sede_id") @db.Uuid
 
-  @@map("blog")
-}
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sede Sede @relation(fields: [sedeId], references: [id], onDelete: Cascade)
 
-model Comunicado {
-  id          String        @id @default(uuid()) @map("comun_id") @db.Uuid
-  imagen      String        @map("comun_imagen")
-  nombre      String        @map("comun_nombre")
-  descripcion String        @map("comun_descripcion")
-  tipo        String?       @map("comun_tipo")
-  importancia String        @default("normal") @map("comun_importancia")
-  estado      Estado        @default(ACTIVO) @map("comun_estado")
-  tenantId    String?       @map("tenant_id") @db.Uuid
-  createdAt   DateTime      @default(now()) @map("created_at")
-  updatedAt   DateTime      @updatedAt @map("updated_at")
-  deletedAt   DateTime?     @map("deleted_at")
-  createdBy   String?       @map("created_by") @db.Uuid
-  updatedBy   String?       @map("updated_by") @db.Uuid
-  deletedBy   String?       @map("deleted_by") @db.Uuid
-  tenant      Departamento? @relation(fields: [tenantId], references: [id])
-
-  @@map("comunicado")
-}
-
-model Galeria {
-  id         String    @id @default(uuid()) @map("galeria_id") @db.Uuid
-  imagen     String    @map("galeria_imagen")
-  estado     Estado    @default(ACTIVO) @map("galeria_estado")
-  sedeId     String?   @map("sede_id") @db.Uuid
-  programaId String?   @map("pro_id") @db.Uuid
-  createdAt  DateTime  @default(now()) @map("created_at")
-  updatedAt  DateTime  @updatedAt @map("updated_at")
-  deletedAt  DateTime? @map("deleted_at")
-  createdBy  String?   @map("created_by") @db.Uuid
-  updatedBy  String?   @map("updated_by") @db.Uuid
-  deletedBy  String?   @map("deleted_by") @db.Uuid
-  sede       Sede?     @relation(fields: [sedeId], references: [id])
-
-  @@map("galeria")
+  @@id([userId, sedeId])
+  @@map("user_has_sedes")
 }
 
 model Video {
@@ -963,130 +1054,21 @@ model Video {
   tenantId  String?   @map("tenant_id") @db.Uuid
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
-  estado    Estado    @default(ACTIVO) @map("video_estado")
-  deletedAt DateTime? @map("deleted_at")
   createdBy String?   @map("created_by") @db.Uuid
-  updatedBy String?   @map("updated_by") @db.Uuid
+  deletedAt DateTime? @map("deleted_at")
   deletedBy String?   @map("deleted_by") @db.Uuid
+  updatedBy String?   @map("updated_by") @db.Uuid
+  estado    Estado    @default(activo) @map("video_estado")
 
   @@map("video")
 }
 
-model AuditLog {
-  id         String        @id @default(uuid()) @db.Uuid
-  action     String
-  resource   String
-  resourceId String?
-  userId     String?       @db.Uuid
-  details    Json?
-  ip         String?
-  userAgent  String?
-  timestamp  DateTime      @default(now())
-  tenantId   String?       @db.Uuid
-  tenant     Departamento? @relation(fields: [tenantId], references: [id])
-  user       User?         @relation(fields: [userId], references: [id])
-
-  @@map("audit_logs")
-}
-
-model Profe {
-  id            String    @id @default(uuid()) @map("profe_id") @db.Uuid
-  imagen        String    @map("profe_imagen")
-  nombre        String    @map("profe_nombre")
-  descripcion   String    @map("profe_descripcion")
-  sobreNosotros String    @map("profe_sobre_nosotros")
-  mision        String    @map("profe_mision")
-  vision        String    @map("profe_vision")
-  actividad     String    @map("profe_actividad")
-  fechaCreacion DateTime  @map("profe_fecha_creacion") @db.Date
-  correo        String?   @map("profe_correo")
-  celular       String?   @map("profe_celular")
-  telefono      String?   @map("profe_telefono")
-  pagina        String?   @map("profe_pagina")
-  facebook      String?   @map("profe_facebook")
-  tiktok        String?   @map("profe_tiktok")
-  youtube       String?   @map("profe_youtube")
-  ubicacion     String    @map("profe_ubicacion")
-  latitud       Decimal?  @map("profe_latitud") @db.Decimal(11, 8)
-  longitud      Decimal?  @map("profe_longitud") @db.Decimal(11, 8)
-  banner        String    @map("profe_banner")
-  afiche        String    @map("profe_afiche")
-  convocatoria  String    @map("profe_convocatoria")
-  estado        Estado    @default(ACTIVO) @map("profe_estado")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
-  deletedAt     DateTime? @map("deleted_at")
-  createdBy     String?   @map("created_by") @db.Uuid
-  updatedBy     String?   @map("updated_by") @db.Uuid
-  deletedBy     String?   @map("deleted_by") @db.Uuid
-
-  @@map("profe")
-}
-
-model Cargo {
-  id                 String             @id @default(uuid()) @map("car_id") @db.Uuid
-  nombre             String             @map("car_nombre")
-  estado             Estado             @default(ACTIVO) @map("car_estado")
-  createdAt          DateTime           @default(now()) @map("created_at")
-  updatedAt          DateTime           @updatedAt @map("updated_at")
-  deletedAt          DateTime?          @map("deleted_at")
-  createdBy          String?            @map("created_by") @db.Uuid
-  updatedBy          String?            @map("updated_by") @db.Uuid
-  deletedBy          String?            @map("deleted_by") @db.Uuid
-  bancoProfesionales BancoProfesional[]
-
-  @@map("cargo")
-}
-
-model BancoProfesional {
-  id                    String    @id @default(uuid()) @map("bp_id") @db.Uuid
-  ci                    BigInt    @map("bp_ci")
-  nombre                String    @map("bp_nombre")
-  fechaNac              DateTime  @map("bp_fecha_nacimiento") @db.Date
-  licUniversitaria      String?   @map("bp_lic_universitaria")
-  esMaestro             Boolean   @default(false) @map("bp_es_maestro")
-  categoria             String?   @map("bp_categoria") // 5ta, 4ta, 3ra, merito
-  postgrados            Json?     @map("bp_postgrados") // List of Diplomados, Especialidades, Maestria, Doctorado
-  produccionIntelectual Json?     @map("bp_produccion_intelectual") // List of { titulo, año, etc }
-  hojaDeVidaPdf         String?   @map("bp_hoja_vida_pdf")
-  cargoId               String    @map("car_id") @db.Uuid
-  estado                Estado    @default(ACTIVO) @map("bp_estado")
-  createdAt             DateTime  @default(now()) @map("created_at")
-  updatedAt             DateTime  @updatedAt @map("updated_at")
-  deletedAt             DateTime? @map("deleted_at")
-  createdBy             String?   @map("created_by") @db.Uuid
-  updatedBy             String?   @map("updated_by") @db.Uuid
-  deletedBy             String?   @map("deleted_by") @db.Uuid
-  cargo                 Cargo     @relation(fields: [cargoId], references: [id], onDelete: Cascade)
-
-  @@map("banco_professional")
-}
-
-model EvaluacionAdmins {
-  id                 String    @id @default(uuid()) @map("eva_id") @db.Uuid
-  userId             String    @map("model_id") @db.Uuid
-  gestion            String    @map("eva_gestion")
-  semestre           String?   @map("eva_semestre")
-  periodo            String    @map("eva_periodo") // "GESTIÓN 2022"
-  criterios          Json      @map("eva_criterios") // { asistencia: 10, rasgos: 10, etc }
-  puntajeTotal       Int       @map("eva_puntaje_total")
-  codigoVerificacion String    @unique @map("eva_codigo_verificacion")
-  qrCode             String?   @map("eva_qr_code")
-  estado             Estado    @default(ACTIVO) @map("eva_estado")
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
-  deletedAt          DateTime? @map("deleted_at")
-  createdBy          String?   @map("created_by") @db.Uuid
-  updatedBy          String?   @map("updated_by") @db.Uuid
-  deletedBy          String?   @map("deleted_by") @db.Uuid
-  user               User      @relation("UserEvaluations", fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("evaluacion_admins")
-}
-
 enum Estado {
-  ACTIVO    @map("activo")
-  INACTIVO  @map("inactivo")
-  ELIMINADO @map("eliminado")
-  VISTA     @map("vista")
+  activo
+  inactivo
+  eliminado
+  vista
+  pendiente
+  aprobado
+  inhabilitado
 }

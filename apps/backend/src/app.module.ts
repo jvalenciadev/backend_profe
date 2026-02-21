@@ -12,6 +12,7 @@ import { AuditModule } from '../../audit/src/audit.module';
 import { JobsModule } from '../../jobs/src/jobs.module';
 import { DatabaseModule } from '@app/database';
 import { APP_GUARD } from '@nestjs/core';
+import { Reflector } from '@nestjs/core';
 import { CaslModule, ApiKeyGuard, MailModule } from '@app/common';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
@@ -20,8 +21,8 @@ import { join } from 'path';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     DatabaseModule,
-    CaslModule, // Added global CASL module
-    MailModule, // Added global Mail module
+    CaslModule,
+    MailModule,
     AuthModule,
     TerritorialModule,
     UsersModule,
@@ -36,6 +37,7 @@ import { join } from 'path';
   controllers: [AppController],
   providers: [
     AppService,
+    Reflector,
     {
       provide: APP_GUARD,
       useClass: ApiKeyGuard,

@@ -21,7 +21,7 @@ export class CaslAbilityFactory {
                     include: {
                         role: {
                             include: {
-                                permissions: { include: { permission: true } }
+                                rolePermissions: { include: { permission: true } }
                             }
                         }
                     }
@@ -33,8 +33,7 @@ export class CaslAbilityFactory {
 
         // 2. Consolidar todos los permisos (RBAC dinámico)
         const allPermissionEntries = [
-            // ...(dbUser.role?.permissions || []),
-            ...dbUser.roles.flatMap(ur => ur.role.permissions)
+            ...dbUser.roles.flatMap(ur => ur.role.rolePermissions)
         ];
 
         // 3. Aplicar reglas con condiciones ABAC interpoladas
