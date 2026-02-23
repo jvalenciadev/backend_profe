@@ -24,7 +24,7 @@ async function main() {
     const roles: any = {};
     for (const r of rolesList) {
       roles[r.name] = await prisma.role.upsert({
-        where: { name: r.name },
+        where: { name: r.name } as any,
         update: {},
         create: { name: r.name, guardName: 'api' }, // Cambiado a 'api'
       });
@@ -47,7 +47,7 @@ async function main() {
     const perms: any = {};
     for (const p of permissionsData) {
       perms[p.name] = await prisma.permission.upsert({
-        where: { name: p.name },
+        where: { name: p.name } as any,
         update: {},
         create: {
           name: p.name,
@@ -90,11 +90,16 @@ async function main() {
       'Doctorado',
     ];
     for (const t of tipostPosgrado) {
-      const existing = await prisma.bpTipoPosgrado.findFirst({
-        where: { nombre: t },
+      const existing = await prisma.bp_tipo_posgrado.findFirst({
+        where: { btp_nombre: t },
       });
       if (!existing) {
-        await prisma.bpTipoPosgrado.create({ data: { nombre: t } });
+        await prisma.bp_tipo_posgrado.create({
+          data: {
+            btp_nombre: t,
+            updated_at: new Date()
+          }
+        });
       }
     }
 

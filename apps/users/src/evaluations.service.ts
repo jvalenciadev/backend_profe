@@ -18,7 +18,7 @@ export class EvaluationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly configService: ConfigService,
-  ) {}
+  ) { }
 
   // Cast a any: los nuevos modelos estarán tipados una vez que se ejecute `prisma generate`
   private get db(): any {
@@ -415,9 +415,9 @@ export class EvaluationsService {
     const evaluacionSelect =
       periodoId && isUuid(periodoId)
         ? {
-            where: { periodoId },
-            select: { id: true, puntajeTotal: true },
-          }
+          where: { periodoId },
+          select: { id: true, puntajeTotal: true },
+        }
         : false;
 
     return this.db.user.findMany({
@@ -441,10 +441,15 @@ export class EvaluationsService {
 
   async generatePDF(id: string): Promise<Buffer> {
     const evaluation = await this.findEvaluacion(id);
+    // Buscar al creador (responsable) para obtener su nombre y rol
+    const creator = await this.db.user.findUnique({
+      where: { id: evaluation.createdBy || '' },
+      include: { roles: { include: { role: true } } }
+    });
 
     return new Promise((resolve, reject) => {
       const doc = new PDFDocument({
-        margin: 50,
+        margin: 0, // Establecer a 0 para control total y evitar saltos de página automáticos por márgenes
         size: 'LETTER',
         bufferPages: true,
       });
@@ -453,8 +458,8 @@ export class EvaluationsService {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
-      const pageW = doc.page.width; // 612
-      const pageH = doc.page.height; // 792
+      const pageW = doc.page.width;
+      const pageH = doc.page.height;
       const margin = 50;
       const contentW = pageW - margin * 2;
 
@@ -462,6 +467,23 @@ export class EvaluationsService {
       const DARK_RED = '#8B0000';
       const BLACK = '#000000';
       const user = evaluation.user || {};
+      const creatorName = creator ? `${creator.nombre} ${creator.apellidos}` : 'Jhery Waldo Pinto Claro';
+      const isResponsable = creator?.roles?.some(r => r.role.name.includes('RESPONSABLE'));
+      const creatorRole = isResponsable ? 'Responsable Departamental' : 'Autoridad Nacional';
+
+      // ── BACKGROUND ──────────────────────────────────────
+      const bgPath = path.resolve(process.cwd(), '../frontend/public/fondo_doc.jpg');
+      if (fs.existsSync(bgPath)) {
+        try {
+          doc.save();
+          doc.image(bgPath, 0, 0, { width: 612, height: 792 });
+          doc.restore();
+        } catch (e) {
+          this.logger.error(`Error al dibujar fondo_doc: ${e.message}`);
+        }
+      } else {
+        this.logger.error(`No existe fondo_doc.jpg en: ${bgPath}`);
+      }
 
       // ── HEADER ──────────────────────────────────────────
       if (user.imagen) {
@@ -475,27 +497,6 @@ export class EvaluationsService {
         }
       }
 
-      doc
-        .fontSize(7)
-        .fillColor(BLACK)
-        .text('PRESIDENCIA DEL ESTADO', margin + (user.imagen ? 60 : 0), 30, {
-          width: 80,
-          align: 'center',
-        })
-        .text('PLURINACIONAL DE BOLIVIA', margin + (user.imagen ? 60 : 0), 38, {
-          width: 80,
-          align: 'center',
-        });
-
-      doc
-        .fontSize(20)
-        .fillColor(DARK_RED)
-        .text('UGPSEP-SI', 0, 28, { align: 'center' });
-      doc
-        .fontSize(7)
-        .fillColor(BLACK)
-        .text('UNIDAD DE GESTIÓN DE PERSONAL', 0, 52, { align: 'center' })
-        .text('DEL SEP Y SISTEMAS INFORMÁTICOS', 0, 61, { align: 'center' });
 
       // QR esquina superior derecha
       const qrX = pageW - margin - 70;
@@ -517,13 +518,7 @@ export class EvaluationsService {
           width: 80,
           align: 'center',
         });
-      doc
-        .fontSize(9)
-        .fillColor(BLACK)
-        .text('SIE: 00000999', qrX - 5, qrY + 90, {
-          width: 80,
-          align: 'center',
-        });
+
 
       // Línea roja separadora
       doc
@@ -533,58 +528,37 @@ export class EvaluationsService {
         .strokeColor(RED)
         .stroke();
 
-      // MINISTERIO DE EDUCACIÓN
-      doc
-        .fontSize(8)
-        .fillColor(RED)
-        .text('MINISTERIO', margin, 105, { width: 70, align: 'center' })
-        .text('DE EDUCACIÓN', margin, 114, { width: 70, align: 'center' });
+      const periodo = evaluation.periodoEval;
 
       // ── TÍTULO PRINCIPAL ──────────────────────────────────
-      doc.fontSize(22).fillColor(BLACK).text('HOJA DE CONCEPTO', 0, 108, {
+      doc.font('Helvetica-Bold').fontSize(16).fillColor(BLACK).text('HOJA DE CONCEPTO', 0, 130, {
         align: 'center',
-        characterSpacing: 1,
       });
-
-      doc
-        .moveTo(margin + 80, 135)
-        .lineTo(pageW - margin - 80, 135)
-        .lineWidth(1.5)
-        .strokeColor(RED)
-        .stroke();
-
-      const periodo = evaluation.periodoEval;
-      doc
-        .fontSize(11)
-        .fillColor(BLACK)
-        .text('ESFM TECNOLOGICO Y HUMANISTICO EL ALTO', 0, 142, {
-          align: 'center',
-        })
-        .text('- LA PAZ - BOLIVIA -', 0, 156, { align: 'center' })
-        .text(
-          `CORRESPONDIENTE A LA ${(periodo?.periodo || '').toUpperCase()}`,
-          0,
-          170,
-          { align: 'center' },
-        );
+      doc.fontSize(12).text(`CORRESPONDIENTE A LA GESTIÓN ${periodo?.gestion || '2025'}`, 0, 150, {
+        align: 'center',
+      });
 
       // ── CUERPO ────────────────────────────────────────────
       const nombreCompleto =
         `${user.nombre || ''} ${user.apellidos || ''}`.trim() ||
         'Personal Sin Nombre';
       const ci = user.ci ? String(user.ci) : user.username || 'N/A';
-      const cargoNombre = evaluation.cargo?.nombre || 'Personal';
 
-      doc.fontSize(10).fillColor(BLACK);
+      doc.fontSize(10).fillColor(BLACK).font('Helvetica');
       doc.text(
-        `El/La Señor(a) ${nombreCompleto}, como autoridad de la institución educativa ESFM TECNOLOGICO Y HUMANISTICO EL ALTO con SIE/RUE: 00000999, en uso de sus legitimas funciones y atribuciones, confiere la presente Hoja de Concepto a petición del interesado.`,
+        `El/La Señor(a) ${creatorName}, en su calidad de ${creatorRole} del Programa de Formación Especializada – PROFE, dependiente del Instituto de Investigaciones Pedagógicas Plurinacional del Ministerio de Educación, y en ejercicio de sus legítimas funciones y atribuciones, extiende la presente Hoja de Concepto a solicitud del interesado.`,
         margin,
         200,
         { width: contentW, align: 'justify', lineGap: 2 },
       );
       doc.moveDown(0.8);
       doc.text(
-        `Indicando que la persona: ${nombreCompleto}, con C.I. N° ${ci}, RDA 7389694, perteneciente a la institución educativa: ESFM TECNOLOGICO Y HUMANISTICO EL ALTO, con relación a condiciones personales hasta la presente gestión ${periodo?.gestion || ''}. Según el REGLAMENTO DEL ESCALAFÓN NACIONAL DE LA EDUCACIÓN BOLIVIANA, Decreto N° 04688 CAP. V. Art. 26. Sobre CONDICIONES PERSONALES, alcanza las siguientes calificaciones.`,
+        `Se deja constancia que el señor ${nombreCompleto}, con Cédula de Identidad N.° ${ci}, RDA N.° 7389694, ítem N.° 00670 y servicio N.° 05520634, perteneciente a la Escuela Superior de Formación de Maestros Santiago de Huata, desempeñó funciones como Personal Declarado en Comisión en dependencias del Ministerio de Educación, durante la gestión correspondiente el año ${periodo?.gestion || '2025'}.`,
+        { width: contentW, align: 'justify', lineGap: 2 },
+      );
+      doc.moveDown(0.8);
+      doc.text(
+        `En ese marco, y en lo referido a las Condiciones Personales, de conformidad con lo establecido en el Reglamento del Escalafón Nacional de la Educación Boliviana, Decreto Supremo N.° 04688, Capítulo V, Artículo 26, el mencionado servidor alcanza las siguientes calificaciones:`,
         { width: contentW, align: 'justify', lineGap: 2 },
       );
       doc.moveDown(1.2);
@@ -670,12 +644,8 @@ export class EvaluationsService {
 
       // ── FECHA Y TOTAL ─────────────────────────────────────
       rowY += 14;
-      const dateStr = new Date().toLocaleDateString('es-ES', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      });
-      doc.fontSize(10).fillColor(BLACK).text(dateStr, margin, rowY);
+      const dateText = `31 de diciembre de ${periodo?.gestion || '2025'}`;
+      doc.fontSize(10).fillColor(BLACK).text(dateText, margin, rowY);
       doc
         .font('Helvetica-Bold')
         .text('CALIFICACIÓN TOTAL:', colVal - 20, rowY, { continued: true })
@@ -694,21 +664,17 @@ export class EvaluationsService {
           { width: contentW, align: 'justify' },
         );
 
+
       // ── FOOTER ────────────────────────────────────────────
-      doc
-        .fontSize(11)
-        .fillColor(BLACK)
-        .text('2025 BICENTENARIO DE BOLIVIA', 0, pageH - 60, {
-          align: 'center',
-        });
-      doc.rect(0, pageH - 38, pageW, 38).fill(BLACK);
+
+      doc.rect(0, pageH - 30, pageW, 30).fill(BLACK);
       doc
         .fontSize(7)
         .fillColor('#FFFFFF')
         .text(
           'NOTA: El presente documento quedará invalidado en caso de tener raspaduras, enmiendas, sobreescritos y/o la falta de firmas de autoridades competentes.',
           margin,
-          pageH - 26,
+          pageH - 20,
           { width: contentW, align: 'center' },
         );
 

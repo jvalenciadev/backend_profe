@@ -33,7 +33,7 @@ export class PublicController {
         where: { estado: 'activo', ...(tenantId ? { tenantId } : {}) },
         take: 12,
         orderBy: { fecha: 'desc' },
-        include: { tipo: true },
+        include: { tipo: true, cuestionarios: { where: { estado: 'activo' } } },
       }),
       this.prisma.programaDos.findMany({
         where: {
