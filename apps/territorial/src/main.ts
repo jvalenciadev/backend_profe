@@ -19,7 +19,6 @@ async function bootstrap() {
     next();
   });
 
-
   setupBigIntSerialization();
   await app.listen(process.env.TERRITORIAL_PORT ?? 3002);
 }

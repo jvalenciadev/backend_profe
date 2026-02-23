@@ -11,7 +11,9 @@ describe('IntegrationController', () => {
       providers: [IntegrationService],
     }).compile();
 
-    integrationController = app.get<IntegrationController>(IntegrationController);
+    integrationController = app.get<IntegrationController>(
+      IntegrationController,
+    );
   });
 
   describe('root', () => {

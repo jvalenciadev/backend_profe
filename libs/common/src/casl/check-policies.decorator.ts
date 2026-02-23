@@ -4,7 +4,7 @@ import { SetMetadata } from '@nestjs/common';
 export type PolicyHandlerCallback = (ability: AppAbility) => boolean;
 
 export interface IPolicyHandler {
-    handle(ability: AppAbility): boolean;
+  handle(ability: AppAbility): boolean;
 }
 
 export type PolicyHandler = PolicyHandlerCallback | IPolicyHandler;
@@ -16,4 +16,4 @@ export const CHECK_POLICIES_KEY = 'check_policy';
  * Ej: @CheckPolicies((ability) => ability.can('read', 'User'))
  */
 export const CheckPolicies = (...handlers: PolicyHandler[]) =>
-    SetMetadata(CHECK_POLICIES_KEY, handlers);
+  SetMetadata(CHECK_POLICIES_KEY, handlers);

@@ -3,7 +3,7 @@ import { AuditService } from './audit.service';
 
 @Controller('audit-logs')
 export class AuditController {
-  constructor(private readonly auditService: AuditService) { }
+  constructor(private readonly auditService: AuditService) {}
 
   @Get()
   findAll(@Query('tenantId') tenantId: string) {

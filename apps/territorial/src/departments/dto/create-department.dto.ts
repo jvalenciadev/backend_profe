@@ -1,4 +1,4 @@
 export class CreateDepartmentDto {
-    nombre: string;
-    abreviacion: string;
+  nombre: string;
+  abreviacion: string;
 }

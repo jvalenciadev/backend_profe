@@ -28,4 +28,4 @@ import { CommonModule, UploadModule } from '@app/common';
   controllers: [AuthController, UploadController],
   providers: [AuthService, JwtStrategy],
 })
-export class AuthModule { }
+export class AuthModule {}

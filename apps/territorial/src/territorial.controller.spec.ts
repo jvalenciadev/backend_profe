@@ -11,7 +11,9 @@ describe('TerritorialController', () => {
       providers: [TerritorialService],
     }).compile();
 
-    territorialController = app.get<TerritorialController>(TerritorialController);
+    territorialController = app.get<TerritorialController>(
+      TerritorialController,
+    );
   });
 
   describe('root', () => {

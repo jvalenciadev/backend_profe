@@ -18,8 +18,6 @@ async function bootstrap() {
     prefix: '/uploads/',
   });
 
-
-
   setupBigIntSerialization();
   await app.listen(process.env.AUTH_PORT ?? 3001);
 }

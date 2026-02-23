@@ -22,7 +22,7 @@ export class JobsService extends WorkerHost {
       case 'send-email':
         console.log(`Processing notification for: ${job.data.email}`);
         // simulate work
-        await new Promise(res => setTimeout(res, 1000));
+        await new Promise((res) => setTimeout(res, 1000));
         console.log(`Notification sent to: ${job.data.email}`);
         return { success: true };
     }

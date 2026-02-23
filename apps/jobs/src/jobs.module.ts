@@ -23,4 +23,4 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
   controllers: [JobsController],
   providers: [JobsService],
 })
-export class JobsModule { }
+export class JobsModule {}

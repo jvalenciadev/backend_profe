@@ -4,11 +4,12 @@ import { TerritorialController } from './territorial.controller';
 import { TerritorialService } from './territorial.service';
 import { DepartmentsModule } from './departments/departments.module';
 import {
-  SedesController, SedesService,
-  DistritosController, DistritosService,
-  ProvinciasController, ProvinciasService,
-  UnidadEducativaController, UnidadEducativaService,
-  GaleriasController, GaleriasService
+  SedesController,
+  SedesService,
+  DistritosController,
+  DistritosService,
+  GaleriasController,
+  GaleriasService,
 } from './territorial-crud.controllers';
 
 @Module({
@@ -17,17 +18,13 @@ import {
     TerritorialController,
     SedesController,
     DistritosController,
-    ProvinciasController,
-    UnidadEducativaController,
-    GaleriasController
+    GaleriasController,
   ],
   providers: [
     TerritorialService,
     SedesService,
     DistritosService,
-    ProvinciasService,
-    UnidadEducativaService,
-    GaleriasService
+    GaleriasService,
   ],
 })
 export class TerritorialModule { }

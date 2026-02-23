@@ -8,4 +8,4 @@ import { DatabaseModule } from '@app/database';
   controllers: [AuditController],
   providers: [AuditService],
 })
-export class AuditModule { }
+export class AuditModule {}

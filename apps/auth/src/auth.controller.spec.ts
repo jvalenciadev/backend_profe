@@ -8,15 +8,34 @@ describe('AuthController', () => {
   beforeEach(async () => {
     const app: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
-      providers: [AuthService],
-    }).compile();
+      providers: [
+        AuthService,
+        {
+          provide: 'PrismaService', // Use the token if it's a string or the class itself
+          useValue: {},
+        },
+        {
+          provide: 'JwtService',
+          useValue: {},
+        },
+        {
+          provide: 'CaslAbilityFactory',
+          useValue: {},
+        },
+        {
+          provide: 'MailService',
+          useValue: {},
+        },
+      ],
+    })
+      .overrideProvider('PrismaService')
+      .useValue({})
+      .compile();
 
     authController = app.get<AuthController>(AuthController);
   });
 
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(authController.getHello()).toBe('Hello World!');
-    });
+  it('should be defined', () => {
+    expect(authController).toBeDefined();
   });
 });

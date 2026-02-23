@@ -8,4 +8,4 @@ import { DatabaseModule } from '@app/database';
   controllers: [DepartmentsController],
   providers: [DepartmentsService],
 })
-export class DepartmentsModule { }
+export class DepartmentsModule {}

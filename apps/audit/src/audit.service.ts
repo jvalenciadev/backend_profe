@@ -3,7 +3,7 @@ import { PrismaService } from '@app/database';
 
 @Injectable()
 export class AuditService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async getLogs(tenantId?: string) {
     const where: any = {};
@@ -12,7 +12,7 @@ export class AuditService {
     const logs = await this.prisma.auditLog.findMany({
       where,
       orderBy: { timestamp: 'desc' },
-      include: { user: true }
+      include: { user: true },
     });
     return this.serialize(logs);
   }
@@ -23,16 +23,18 @@ export class AuditService {
       where: {
         resource,
         resourceId,
-        action: 'UPDATE'
+        action: 'UPDATE',
       },
-      orderBy: { timestamp: 'desc' }
+      orderBy: { timestamp: 'desc' },
     });
     return this.serialize(logs);
   }
 
   private serialize(obj: any) {
-    return JSON.parse(JSON.stringify(obj, (key, value) =>
-      typeof value === 'bigint' ? value.toString() : value
-    ));
+    return JSON.parse(
+      JSON.stringify(obj, (key, value) =>
+        typeof value === 'bigint' ? value.toString() : value,
+      ),
+    );
   }
 }

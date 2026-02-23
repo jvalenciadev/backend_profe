@@ -1,4 +1,18 @@
-import { Controller, Get, Post, Body, Put, Param, Delete, UseGuards, Req, ParseUUIDPipe, HttpCode, HttpStatus, Patch } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Put,
+  Param,
+  Delete,
+  UseGuards,
+  Req,
+  ParseUUIDPipe,
+  HttpCode,
+  HttpStatus,
+  Patch,
+} from '@nestjs/common';
 import { DepartmentsService } from './departments.service';
 import { CreateDepartmentDto } from './dto/create-department.dto';
 import { UpdateDepartmentDto } from './dto/update-department.dto';
@@ -11,7 +25,7 @@ import { JwtAuthGuard, Public } from '@app/common';
  */
 @Controller('departments')
 export class DepartmentsController {
-  constructor(private readonly departmentsService: DepartmentsService) { }
+  constructor(private readonly departmentsService: DepartmentsService) {}
 
   /**
    * Crear departamento - REQUIERE AUTENTICACIÓN
@@ -50,7 +64,7 @@ export class DepartmentsController {
   updatePut(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateDepartmentDto: UpdateDepartmentDto,
-    @Req() req: any
+    @Req() req: any,
   ) {
     return this.departmentsService.update(id, updateDepartmentDto, req.user);
   }
@@ -61,7 +75,7 @@ export class DepartmentsController {
   updatePatch(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateDepartmentDto: UpdateDepartmentDto,
-    @Req() req: any
+    @Req() req: any,
   ) {
     return this.departmentsService.update(id, updateDepartmentDto, req.user);
   }

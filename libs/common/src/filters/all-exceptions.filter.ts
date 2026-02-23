@@ -1,10 +1,10 @@
 import {
-    ExceptionFilter,
-    Catch,
-    ArgumentsHost,
-    HttpException,
-    HttpStatus,
-    Logger,
+  ExceptionFilter,
+  Catch,
+  ArgumentsHost,
+  HttpException,
+  HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { Prisma } from '@prisma/client';
@@ -15,83 +15,99 @@ import { Prisma } from '@prisma/client';
  */
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
-    private readonly logger = new Logger(AllExceptionsFilter.name);
+  private readonly logger = new Logger(AllExceptionsFilter.name);
 
-    catch(exception: any, host: ArgumentsHost) {
-        const ctx = host.switchToHttp();
-        const response = ctx.getResponse<Response>();
-        const request = ctx.getRequest<Request>();
+  catch(exception: any, host: ArgumentsHost) {
+    const ctx = host.switchToHttp();
+    const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest<Request>();
 
-        let status = HttpStatus.INTERNAL_SERVER_ERROR;
-        let message = 'Error interno del servidor';
-        let details: any = null;
-        let errorCode: string | null = null;
+    let status = HttpStatus.INTERNAL_SERVER_ERROR;
+    let message = 'Error interno del servidor';
+    let details: any = null;
+    let errorCode: string | null = null;
 
-        // ==================== HTTP EXCEPTIONS ====================
-        if (exception instanceof HttpException) {
-            status = exception.getStatus();
-            const exceptionResponse = exception.getResponse() as any;
+    // ==================== HTTP EXCEPTIONS ====================
+    if (exception instanceof HttpException) {
+      status = exception.getStatus();
+      const exceptionResponse = exception.getResponse() as any;
 
-            if (typeof exceptionResponse === 'string') {
-                message = this.translateMessage(exceptionResponse);
-            } else {
-                if (Array.isArray(exceptionResponse.message)) {
-                    message = exceptionResponse.message
-                        .map((msg: string) => this.translateMessage(msg))
-                        .join(', ');
-                } else {
-                    message = this.translateMessage(exceptionResponse.message || message);
-                }
-                details = exceptionResponse.error || exceptionResponse.details || null;
-            }
+      if (typeof exceptionResponse === 'string') {
+        message = this.translateMessage(exceptionResponse);
+      } else {
+        if (Array.isArray(exceptionResponse.message)) {
+          message = exceptionResponse.message
+            .map((msg: string) => this.translateMessage(msg))
+            .join(', ');
+        } else {
+          message = this.translateMessage(exceptionResponse.message || message);
         }
-        // ==================== PRISMA EXCEPTIONS ====================
-        else if (exception && (exception as any).constructor.name === 'PrismaClientKnownRequestError') {
-            const prismaError = this.handlePrismaError(exception);
-            status = prismaError.status;
-            message = prismaError.message;
-            errorCode = (exception as any).code;
-            details = prismaError.details;
-        }
-        else if (exception && (exception as any).constructor.name === 'PrismaClientValidationError') {
-            status = HttpStatus.BAD_REQUEST;
-            message = 'Error de validación en los datos enviados';
-            details = this.extractPrismaValidationDetails((exception as any).message);
-        }
-        else if (exception && (exception as any).constructor.name === 'PrismaClientInitializationError') {
-            status = HttpStatus.SERVICE_UNAVAILABLE;
-            message = 'Error de conexión con la base de datos';
-            details = 'No se pudo establecer conexión con la base de datos';
-            this.logger.error('Database connection error:', exception);
-        }
-        else if (exception && (exception as any).constructor.name === 'PrismaClientUnknownRequestError') {
-            status = HttpStatus.INTERNAL_SERVER_ERROR;
-            message = 'Error desconocido en la base de datos';
-            details = (exception as any).message || null;
-            this.logger.error('Unknown Prisma error:', exception);
-        }
-        // ==================== GENERIC ERRORS ====================
-        else if (exception instanceof Error) {
-            message = this.translateMessage(exception.message);
-            details = exception.stack;
-            this.logger.error('Unhandled Error:', exception);
-        }
+        details = exceptionResponse.error || exceptionResponse.details || null;
+      }
+    }
+    // ==================== PRISMA EXCEPTIONS ====================
+    else if (
+      exception &&
+      exception.constructor.name === 'PrismaClientKnownRequestError'
+    ) {
+      const prismaError = this.handlePrismaError(exception);
+      status = prismaError.status;
+      message = prismaError.message;
+      errorCode = exception.code;
+      details = prismaError.details;
+    } else if (
+      exception &&
+      exception.constructor.name === 'PrismaClientValidationError'
+    ) {
+      status = HttpStatus.BAD_REQUEST;
+      message = 'Error de validación en los datos enviados';
+      details = this.extractPrismaValidationDetails(exception.message);
+    } else if (
+      exception &&
+      exception.constructor.name === 'PrismaClientInitializationError'
+    ) {
+      status = HttpStatus.SERVICE_UNAVAILABLE;
+      message = 'Error de conexión con la base de datos';
+      details = 'No se pudo establecer conexión con la base de datos';
+      this.logger.error('Database connection error:', exception);
+    } else if (
+      exception &&
+      exception.constructor.name === 'PrismaClientUnknownRequestError'
+    ) {
+      status = HttpStatus.INTERNAL_SERVER_ERROR;
+      message = 'Error desconocido en la base de datos';
+      details = exception.message || null;
+      this.logger.error('Unknown Prisma error:', exception);
+    }
+    // ==================== GENERIC ERRORS ====================
+    else if (exception instanceof Error) {
+      message = this.translateMessage(exception.message);
+      details = exception.stack;
+      this.logger.error('Unhandled Error:', exception);
+    }
 
-        // Determinar si es una solicitud de API (necesita JSON) o de navegador (puede recibir HTML)
-        const acceptHeader = request.headers.accept || '';
-        const isApiRequest = request.url.startsWith('/api') || !acceptHeader.includes('text/html');
+    // Determinar si es una solicitud de API (necesita JSON) o de navegador (puede recibir HTML)
+    const acceptHeader = request.headers.accept || '';
+    const isApiRequest =
+      request.url.startsWith('/api') || !acceptHeader.includes('text/html');
 
-        // Solo mostrar página de error creativa para 404 y 401 si se pide HTML explícitamente
-        // y NO es una petición AJAX (X-Requested-With no presente o no es XMLHttpRequest)
-        const isAjax = request.headers['x-requested-with'] === 'XMLHttpRequest';
-        const prefersHtml = acceptHeader.includes('text/html') && !acceptHeader.includes('application/json');
+    // Solo mostrar página de error creativa para 404 y 401 si se pide HTML explícitamente
+    // y NO es una petición AJAX (X-Requested-With no presente o no es XMLHttpRequest)
+    const isAjax = request.headers['x-requested-with'] === 'XMLHttpRequest';
+    const prefersHtml =
+      acceptHeader.includes('text/html') &&
+      !acceptHeader.includes('application/json');
 
-        if (prefersHtml && !isAjax && (status === HttpStatus.NOT_FOUND || status === HttpStatus.UNAUTHORIZED)) {
-            const isAuthError = status === HttpStatus.UNAUTHORIZED;
-            const bgColor = isAuthError ? '#fef2f2' : '#f0f9ff';
-            const titleColor = isAuthError ? '#991b1b' : '#075985';
+    if (
+      prefersHtml &&
+      !isAjax &&
+      (status === HttpStatus.NOT_FOUND || status === HttpStatus.UNAUTHORIZED)
+    ) {
+      const isAuthError = status === HttpStatus.UNAUTHORIZED;
+      const bgColor = isAuthError ? '#fef2f2' : '#f0f9ff';
+      const titleColor = isAuthError ? '#991b1b' : '#075985';
 
-            return response.status(status).send(`
+      return response.status(status).send(`
                 <!DOCTYPE html>
                 <html lang="es">
                 <head>
@@ -129,89 +145,96 @@ export class AllExceptionsFilter implements ExceptionFilter {
                 </body>
                 </html>
             `);
-        }
+    }
 
-        // Respuesta estructurada JSON (Serialización segura de BigInt)
-        const responseBody = {
-            success: false,
-            statusCode: status,
-            timestamp: new Date().toISOString(),
-            path: request.url,
-            method: request.method,
-            message: message,
-            errorCode: errorCode,
-            details: (process.env.NODE_ENV === 'production' && status !== 400) ? null : details,
+    // Respuesta estructurada JSON (Serialización segura de BigInt)
+    const responseBody = {
+      success: false,
+      statusCode: status,
+      timestamp: new Date().toISOString(),
+      path: request.url,
+      method: request.method,
+      message: message,
+      errorCode: errorCode,
+      details:
+        process.env.NODE_ENV === 'production' && status !== 400
+          ? null
+          : details,
+    };
+
+    const safeResponse = JSON.parse(
+      JSON.stringify(responseBody, (_, v) =>
+        typeof v === 'bigint' ? v.toString() : v,
+      ),
+    );
+
+    if (status >= 400) {
+      console.error(`[AllExceptionsFilter] Error ${status}: ${message}`, {
+        path: request.url,
+        method: request.method,
+        details: details,
+      });
+    }
+
+    response.status(status).json(safeResponse);
+  }
+
+  /**
+   * Traducción de mensajes comunes a español
+   */
+  private translateMessage(msg: string): string {
+    if (!msg) return 'Error desconocido';
+    const translations: Record<string, string> = {
+      Unauthorized: 'No autorizado - Inicie sesión nuevamente',
+      Forbidden: 'Acceso denegado - No tiene permisos suficientes',
+      'Not Found': 'Recurso no encontrado',
+      'Internal Server Error': 'Error interno del servidor',
+      'Bad Request': 'Solicitud incorrecta - Verifique los datos enviados',
+      'Cannot POST': 'Ruta no encontrada para el método POST',
+      'Cannot GET': 'Ruta no encontrada para el método GET',
+      'Cannot PUT': 'Ruta no encontrada para el método PUT',
+      'Cannot DELETE': 'Ruta no encontrada para el método DELETE',
+    };
+    return translations[msg] || msg;
+  }
+
+  /**
+   * Manejador de errores específicos de Prisma
+   */
+  private handlePrismaError(error: any) {
+    switch (error.code) {
+      case 'P2002': // Unique constraint violation
+        const target = error.meta?.target || 'campo';
+        return {
+          status: HttpStatus.CONFLICT,
+          message: `Ya existe un registro con este ${target}. Debe ser único.`,
+          details: error.meta,
         };
-
-        const safeResponse = JSON.parse(JSON.stringify(responseBody, (_, v) =>
-            typeof v === 'bigint' ? v.toString() : v
-        ));
-
-        if (status >= 400) {
-            console.error(`[AllExceptionsFilter] Error ${status}: ${message}`, {
-                path: request.url,
-                method: request.method,
-                details: details
-            });
-        }
-
-        response.status(status).json(safeResponse);
-    }
-
-    /**
-     * Traducción de mensajes comunes a español
-     */
-    private translateMessage(msg: string): string {
-        if (!msg) return 'Error desconocido';
-        const translations: Record<string, string> = {
-            'Unauthorized': 'No autorizado - Inicie sesión nuevamente',
-            'Forbidden': 'Acceso denegado - No tiene permisos suficientes',
-            'Not Found': 'Recurso no encontrado',
-            'Internal Server Error': 'Error interno del servidor',
-            'Bad Request': 'Solicitud incorrecta - Verifique los datos enviados',
-            'Cannot POST': 'Ruta no encontrada para el método POST',
-            'Cannot GET': 'Ruta no encontrada para el método GET',
-            'Cannot PUT': 'Ruta no encontrada para el método PUT',
-            'Cannot DELETE': 'Ruta no encontrada para el método DELETE',
+      case 'P2003': // Foreign key constraint violation
+        return {
+          status: HttpStatus.BAD_REQUEST,
+          message:
+            'Error de relación: Se está haciendo referencia a un registro que no existe.',
+          details: error.meta,
         };
-        return translations[msg] || msg;
+      case 'P2025': // Record not found
+        return {
+          status: HttpStatus.NOT_FOUND,
+          message:
+            'El registro solicitado no fue encontrado en la base de datos.',
+          details: error.meta,
+        };
+      default:
+        return {
+          status: HttpStatus.INTERNAL_SERVER_ERROR,
+          message: 'Error de base de datos (Prisma)',
+          details: error.message,
+        };
     }
+  }
 
-    /**
-     * Manejador de errores específicos de Prisma
-     */
-    private handlePrismaError(error: any) {
-        switch (error.code) {
-            case 'P2002': // Unique constraint violation
-                const target = error.meta?.target || 'campo';
-                return {
-                    status: HttpStatus.CONFLICT,
-                    message: `Ya existe un registro con este ${target}. Debe ser único.`,
-                    details: error.meta
-                };
-            case 'P2003': // Foreign key constraint violation
-                return {
-                    status: HttpStatus.BAD_REQUEST,
-                    message: 'Error de relación: Se está haciendo referencia a un registro que no existe.',
-                    details: error.meta
-                };
-            case 'P2025': // Record not found
-                return {
-                    status: HttpStatus.NOT_FOUND,
-                    message: 'El registro solicitado no fue encontrado en la base de datos.',
-                    details: error.meta
-                };
-            default:
-                return {
-                    status: HttpStatus.INTERNAL_SERVER_ERROR,
-                    message: 'Error de base de datos (Prisma)',
-                    details: error.message
-                };
-        }
-    }
-
-    private extractPrismaValidationDetails(message: string): string {
-        const lines = message.split('\n');
-        return lines.length > 0 ? lines[lines.length - 1].trim() : message;
-    }
+  private extractPrismaValidationDetails(message: string): string {
+    const lines = message.split('\n');
+    return lines.length > 0 ? lines[lines.length - 1].trim() : message;
+  }
 }

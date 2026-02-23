@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '@app/database';
 import { CaslPrismaService, AppAbility, MailService } from '@app/common';
 import * as bcrypt from 'bcryptjs';
@@ -13,16 +17,37 @@ export class UsersService {
   ) { }
 
   async create(data: any, currentUser: any) {
-    const { roles, sedes, email, password: providedPassword, ...userData } = data;
+    const {
+      roles,
+      sedes,
+      email,
+      password: providedPassword,
+      ...userData
+    } = data;
     const password = providedPassword || 'secret123';
     const hashedPassword = await bcrypt.hash(password, 12);
     const correo = email || data.correo;
 
     const allowedFields = [
-      'nombre', 'apellidos', 'imagen', 'genero', 'licenciatura',
-      'direccion', 'curriculum', 'fechaNacimiento', 'estadoCivil',
-      'facebook', 'tiktok', 'cargo', 'celular', 'tenantId', 'personaId',
-      'estado', 'username', 'cargoPostulacionId', 'ci'
+      'nombre',
+      'apellidos',
+      'imagen',
+      'genero',
+      'licenciatura',
+      'direccion',
+      'curriculum',
+      'fechaNacimiento',
+      'estadoCivil',
+      'facebook',
+      'tiktok',
+      'cargo',
+      'celular',
+      'tenantId',
+      'personaId',
+      'estado',
+      'username',
+      'cargoPostulacionId',
+      'ci',
     ];
 
     const createData: any = {
@@ -33,10 +58,15 @@ export class UsersService {
       createdBy: currentUser?.id || null,
     };
 
-    allowedFields.forEach(field => {
+    allowedFields.forEach((field) => {
       if (userData[field] !== undefined) {
         let value = userData[field];
-        if ((field === 'tenantId' || field === 'personaId') && value === '') {
+        if (
+          (field === 'tenantId' ||
+            field === 'personaId' ||
+            field === 'cargoPostulacionId') &&
+          value === ''
+        ) {
           value = null;
         }
 
@@ -44,7 +74,10 @@ export class UsersService {
           createData['cargoStr'] = value;
         } else if (field === 'ci') {
           createData['ci'] = value ? BigInt(value) : null;
-        } else if (createData[field] === undefined || (field === 'tenantId' && value !== null)) {
+        } else if (
+          createData[field] === undefined ||
+          (field === 'tenantId' && value !== null)
+        ) {
           createData[field] = value;
         }
       }
@@ -53,22 +86,30 @@ export class UsersService {
     const user = await this.prisma.user.create({
       data: {
         ...createData,
-        roles: roles ? {
-          create: roles.map((roleId: string) => ({
-            roleId,
-            modelType: 'App\\User'
-          }))
-        } : undefined,
-        sedes: sedes ? {
-          create: sedes.map((sedeId: string) => ({
-            sedeId
-          }))
-        } : undefined,
+        roles: roles
+          ? {
+            create: roles.map((roleId: string) => ({
+              roleId,
+              modelType: 'App\\User',
+            })),
+          }
+          : undefined,
+        sedes: sedes
+          ? {
+            create: sedes.map((sedeId: string) => ({
+              sedeId,
+            })),
+          }
+          : undefined,
       },
     });
 
     // Enviar correo de bienvenida al nuevo admin
-    await this.mailService.sendWelcomeEmail(user.correo, user.nombre, user.username);
+    await this.mailService.sendWelcomeEmail(
+      user.correo,
+      user.nombre,
+      user.username,
+    );
 
     return user;
   }
@@ -83,26 +124,30 @@ export class UsersService {
           { nombre: { contains: search, mode: 'insensitive' } },
           { apellidos: { contains: search, mode: 'insensitive' } },
           { username: { contains: search, mode: 'insensitive' } },
-          { correo: { contains: search, mode: 'insensitive' } }
-        ]
+          { correo: { contains: search, mode: 'insensitive' } },
+        ],
       };
     }
 
     const users = await this.prisma.user.findMany({
       where: {
-        AND: [
-          caslWhere,
-          searchWhere,
-          { estado: { not: 'eliminado' } }
-        ]
+        AND: [caslWhere, searchWhere, { estado: { not: 'eliminado' } }],
       },
       include: {
-        roles: { include: { role: true } },
+        roles: {
+          include: {
+            role: {
+              include: {
+                rolePermissions: { include: { permission: true } },
+              },
+            },
+          },
+        },
         sedes: { include: { sede: true } },
         tenant: true,
         cargoPostulacion: true,
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
 
     return users;
@@ -113,19 +158,27 @@ export class UsersService {
 
     const user = await this.prisma.user.findFirst({
       where: {
-        AND: [
-          caslWhere,
-          { id: id, estado: { not: 'eliminado' } }
-        ]
+        AND: [caslWhere, { id: id, estado: { not: 'eliminado' } }],
       },
       include: {
-        roles: { include: { role: true } },
+        roles: {
+          include: {
+            role: {
+              include: {
+                rolePermissions: { include: { permission: true } },
+              },
+            },
+          },
+        },
         sedes: { include: { sede: true } },
         tenant: true,
         cargoPostulacion: true,
       },
     });
-    if (!user) throw new NotFoundException(`Usuario no encontrado o no tiene permisos para verlo`);
+    if (!user)
+      throw new NotFoundException(
+        `Usuario no encontrado o no tiene permisos para verlo`,
+      );
     return user;
   }
 
@@ -133,20 +186,43 @@ export class UsersService {
     if (ability) {
       const caslWhere = this.caslPrisma.getWhere(ability, 'update', 'User');
       const targetUser = await this.prisma.user.findFirst({
-        where: { AND: [caslWhere, { id }] }
+        where: { AND: [caslWhere, { id }] },
       });
-      if (!targetUser) throw new ForbiddenException('No tiene permisos para actualizar este usuario');
+      if (!targetUser)
+        throw new ForbiddenException(
+          'No tiene permisos para actualizar este usuario',
+        );
     }
 
     const { roles, sedes, email, ...userData } = data;
 
     const allowedFields = [
-      'nombre', 'apellidos', 'imagen', 'genero', 'licenciatura',
-      'direccion', 'curriculum', 'fechaNacimiento', 'estadoCivil',
-      'facebook', 'tiktok', 'cargo', 'celular', 'tenantId', 'personaId',
-      'estado', 'username', 'password', 'verificationCode',
-      'resumenProfesional', 'habilidades', 'idiomas', 'experienciaLaboral', 'linkedinUrl',
-      'cargoPostulacionId', 'ci'
+      'nombre',
+      'apellidos',
+      'imagen',
+      'genero',
+      'licenciatura',
+      'direccion',
+      'curriculum',
+      'fechaNacimiento',
+      'estadoCivil',
+      'facebook',
+      'tiktok',
+      'cargo',
+      'celular',
+      'tenantId',
+      'personaId',
+      'estado',
+      'username',
+      'password',
+      'verificationCode',
+      'resumenProfesional',
+      'habilidades',
+      'idiomas',
+      'experienciaLaboral',
+      'linkedinUrl',
+      'cargoPostulacionId',
+      'ci',
     ];
 
     const updateData: any = {
@@ -165,10 +241,15 @@ export class UsersService {
       throw new ForbiddenException('El código de verificación es obligatorio');
     }
 
-    allowedFields.forEach(field => {
+    allowedFields.forEach((field) => {
       if (userData[field] !== undefined) {
         let value = userData[field];
-        if ((field === 'tenantId' || field === 'personaId') && value === '') {
+        if (
+          (field === 'tenantId' ||
+            field === 'personaId' ||
+            field === 'cargoPostulacionId') &&
+          value === ''
+        ) {
           value = null;
         }
 
@@ -176,7 +257,8 @@ export class UsersService {
           updateData['cargoStr'] = value;
         } else if (field === 'ci') {
           updateData['ci'] = value ? BigInt(value) : null;
-        } else if (field !== 'verificationCode') { // Filtramos el código de verificación
+        } else if (field !== 'verificationCode') {
+          // Filtramos el código de verificación
           updateData[field] = value;
         }
       }
@@ -197,8 +279,8 @@ export class UsersService {
         deleteMany: {},
         create: roles.map((roleId: string) => ({
           roleId,
-          modelType: 'App\\User'
-        }))
+          modelType: 'App\\User',
+        })),
       };
     }
 
@@ -206,8 +288,8 @@ export class UsersService {
       updateData.sedes = {
         deleteMany: {},
         create: sedes.map((sedeId: string) => ({
-          sedeId
-        }))
+          sedeId,
+        })),
       };
     }
 
@@ -215,11 +297,19 @@ export class UsersService {
       where: { id: id },
       data: updateData,
       include: {
-        roles: { include: { role: true } },
+        roles: {
+          include: {
+            role: {
+              include: {
+                rolePermissions: { include: { permission: true } },
+              },
+            },
+          },
+        },
         sedes: { include: { sede: true } },
         tenant: true,
-        cargoPostulacion: true
-      }
+        cargoPostulacion: true,
+      },
     });
 
     return user;
@@ -246,11 +336,15 @@ export class UsersService {
       where: { id },
       data: {
         resetPasswordToken: token,
-        resetPasswordExpires: expiryDate
-      }
+        resetPasswordExpires: expiryDate,
+      },
     });
 
-    await this.mailService.sendPasswordResetEmail(email, token, 'Usuario de Validación');
+    await this.mailService.sendPasswordResetEmail(
+      email,
+      token,
+      'Usuario de Validación',
+    );
     return { message: 'Código enviado correctamente' };
   }
 
@@ -271,11 +365,15 @@ export class UsersService {
         resetPasswordExpires: expiryDate,
         updatedBy: currentUser?.id || null,
         resetPasswordToken: token,
-      }
+      },
     });
 
     // Enviar correo al correo actual registrado
-    await this.mailService.sendPasswordResetEmail(user.correo, token, user.nombre);
+    await this.mailService.sendPasswordResetEmail(
+      user.correo,
+      token,
+      user.nombre,
+    );
 
     return user;
   }

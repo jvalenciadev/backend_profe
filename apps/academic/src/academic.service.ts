@@ -14,7 +14,7 @@ export class AcademicService extends GenericCrudService<any> {
   async crearVersionDesdeMaster(masterId: string, versionData: any, user: any) {
     const master = await this.prisma.programa.findUnique({
       where: { id: masterId },
-      include: { modulos: true }
+      include: { modulos: true },
     });
 
     if (!master) throw new NotFoundException('Programa Maestro no encontrado');
@@ -34,9 +34,15 @@ export class AcademicService extends GenericCrudService<any> {
         banner: rest.banner || master.banner,
         afiche: rest.afiche || master.afiche,
         convocatoria: rest.convocatoria || master.convocatoria,
-        fechaInicioInscripcion: rest.fechaInicioInscripcion ? new Date(rest.fechaInicioInscripcion) : master.fechaInicioInscripcion,
-        fechaFinInscripcion: rest.fechaFinInscripcion ? new Date(rest.fechaFinInscripcion) : master.fechaFinInscripcion,
-        fechaInicioClases: rest.fechaInicioClases ? new Date(rest.fechaInicioClases) : master.fechaInicioClases,
+        fechaInicioInscripcion: rest.fechaInicioInscripcion
+          ? new Date(rest.fechaInicioInscripcion)
+          : master.fechaInicioInscripcion,
+        fechaFinInscripcion: rest.fechaFinInscripcion
+          ? new Date(rest.fechaFinInscripcion)
+          : master.fechaFinInscripcion,
+        fechaInicioClases: rest.fechaInicioClases
+          ? new Date(rest.fechaInicioClases)
+          : master.fechaInicioClases,
         estadoInscripcion: rest.estadoInscripcion ?? master.estadoInscripcion,
         estado: rest.estado || master.estado,
 
@@ -52,7 +58,10 @@ export class AcademicService extends GenericCrudService<any> {
 
         // Snapshot of modules
         modulos: {
-          create: (modulos && modulos.length > 0 ? modulos : master.modulos).map((m: any) => ({
+          create: (modulos && modulos.length > 0
+            ? modulos
+            : master.modulos
+          ).map((m: any) => ({
             nombre: m.nombre,
             codigo: m.codigo,
             descripcion: m.descripcion,
@@ -61,21 +70,23 @@ export class AcademicService extends GenericCrudService<any> {
             fechaInicio: m.fechaInicio ? new Date(m.fechaInicio) : new Date(),
             fechaFin: m.fechaFin ? new Date(m.fechaFin) : new Date(),
             estado: m.estado || 'activo',
-            createdBy: user?.id || null
-          }))
+            createdBy: user?.id || null,
+          })),
         },
         // Setup turns for this offering
-        turnos: turnos ? {
-          create: turnos.map((t: any) => ({
-            turnoIds: t.turnoIds,
-            cupo: t.cupo,
-            cupoPre: t.cupoPre || 0,
-            estado: t.estado || 'activo',
-            createdBy: user?.id || null
-          }))
-        } : undefined
+        turnos: turnos
+          ? {
+              create: turnos.map((t: any) => ({
+                turnoIds: t.turnoIds,
+                cupo: t.cupo,
+                cupoPre: t.cupoPre || 0,
+                estado: t.estado || 'activo',
+                createdBy: user?.id || null,
+              })),
+            }
+          : undefined,
       },
-      include: { modulos: true, turnos: true }
+      include: { modulos: true, turnos: true },
     });
 
     return version;
@@ -86,9 +97,10 @@ export class AcademicService extends GenericCrudService<any> {
     let estadoInscripcionId = data.estadoInscripcionId;
 
     if (!estadoInscripcionId) {
-      const defaultState = await this.prisma.programa_inscripcion_estado.findFirst({
-        where: { nombre: { contains: 'INSCRITO', mode: 'insensitive' } }
-      });
+      const defaultState =
+        await this.prisma.programa_inscripcion_estado.findFirst({
+          where: { nombre: { contains: 'INSCRITO', mode: 'insensitive' } },
+        });
       estadoInscripcionId = defaultState?.id;
     }
 
@@ -100,7 +112,7 @@ export class AcademicService extends GenericCrudService<any> {
         turnoId: data.turnoId,
         estadoInscripcionId: estadoInscripcionId,
         createdBy: user?.id || null,
-      }
+      },
     });
     return inscripcion;
   }

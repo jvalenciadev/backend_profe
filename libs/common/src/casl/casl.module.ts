@@ -6,8 +6,8 @@ import { DatabaseModule } from '@app/database';
 
 @Global()
 @Module({
-    imports: [DatabaseModule],
-    providers: [CaslAbilityFactory, PoliciesGuard, CaslPrismaService],
-    exports: [CaslAbilityFactory, PoliciesGuard, CaslPrismaService],
+  imports: [DatabaseModule],
+  providers: [CaslAbilityFactory, PoliciesGuard, CaslPrismaService],
+  exports: [CaslAbilityFactory, PoliciesGuard, CaslPrismaService],
 })
-export class CaslModule { }
+export class CaslModule {}

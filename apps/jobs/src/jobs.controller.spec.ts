@@ -14,9 +14,10 @@ describe('JobsController', () => {
     jobsController = app.get<JobsController>(JobsController);
   });
 
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(jobsController.getHello()).toBe('Hello World!');
+  describe('notify', () => {
+    it('should return { status: "Queued" }', async () => {
+      const result = await jobsController.notify({ email: 'test@example.com' });
+      expect(result).toEqual({ status: 'Queued' });
     });
   });
 });

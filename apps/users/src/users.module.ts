@@ -3,11 +3,16 @@ import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
 import { DatabaseModule } from '@app/database';
 import {
-  RolesController, RolesService,
-  PermissionsController, PermissionsService,
-  PersonasController, PersonasService,
-  AreasController, AreasService,
-  GenerosController, GenerosService
+  RolesController,
+  RolesService,
+  PermissionsController,
+  PermissionsService,
+  PersonasController,
+  PersonasService,
+  AreasController,
+  AreasService,
+  GenerosController,
+  GenerosService,
 } from './users-crud.controllers';
 
 import { CommonModule } from '@app/common';
@@ -47,4 +52,4 @@ import { PublicBancoProfesionalController } from './public-banco-profesional.con
     ProfeService,
   ],
 })
-export class UsersModule { }
+export class UsersModule {}

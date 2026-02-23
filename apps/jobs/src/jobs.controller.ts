@@ -3,7 +3,7 @@ import { JobsService } from './jobs.service';
 
 @Controller('jobs')
 export class JobsController {
-  constructor(private readonly jobsService: JobsService) { }
+  constructor(private readonly jobsService: JobsService) {}
 
   @Post('notify')
   async notify(@Body() data: any) {

@@ -4,22 +4,22 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class MailService {
-    private readonly logger = new Logger(MailService.name);
+  private readonly logger = new Logger(MailService.name);
 
-    constructor(
-        private readonly mailerService: MailerService,
-        private readonly configService: ConfigService,
-    ) { }
+  constructor(
+    private readonly mailerService: MailerService,
+    private readonly configService: ConfigService,
+  ) {}
 
-    async sendPasswordResetEmail(email: string, token: string, name: string) {
-        // En un entorno real, esto sería una URL a tu frontend
-        const resetUrl = `${this.configService.get('FRONTEND_URL') || 'http://localhost:3000'}/dashboard/reset-password?token=${token}`;
+  async sendPasswordResetEmail(email: string, token: string, name: string) {
+    // En un entorno real, esto sería una URL a tu frontend
+    const resetUrl = `${this.configService.get('FRONTEND_URL') || 'http://localhost:3000'}/dashboard/reset-password?token=${token}`;
 
-        try {
-            await this.mailerService.sendMail({
-                to: email,
-                subject: '🔑 Recuperación de Contraseña - PROFE',
-                html: `
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: '🔑 Recuperación de Contraseña - PROFE',
+        html: `
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
                         <h2 style="color: #2c3e50; text-align: center;">Recuperación de Contraseña</h2>
                         <p>Hola <strong>${name}</strong>,</p>
@@ -32,21 +32,21 @@ export class MailService {
                         <p style="text-align: center; color: #bdc3c7; font-size: 10px;">&copy; 2026 PROFE - Ministerio de Educación de Bolivia</p>
                     </div>
                 `,
-            });
-            this.logger.log(`Email de recuperación enviado a: ${email}`);
-            return true;
-        } catch (error) {
-            this.logger.error(`Error enviando email a ${email}:`, error);
-            return false;
-        }
+      });
+      this.logger.log(`Email de recuperación enviado a: ${email}`);
+      return true;
+    } catch (error) {
+      this.logger.error(`Error enviando email a ${email}:`, error);
+      return false;
     }
+  }
 
-    async sendWelcomeEmail(email: string, name: string, username: string) {
-        try {
-            await this.mailerService.sendMail({
-                to: email,
-                subject: '🚀 Bienvenido al Sistema PROFE',
-                html: `
+  async sendWelcomeEmail(email: string, name: string, username: string) {
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: '🚀 Bienvenido al Sistema PROFE',
+        html: `
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 10px;">
                         <h2 style="color: #2c3e50; text-align: center;">¡Bienvenido a PROFE!</h2>
                         <p>Hola <strong>${name}</strong>,</p>
@@ -63,11 +63,11 @@ export class MailService {
                         <p style="text-align: center; color: #bdc3c7; font-size: 10px;">&copy; 2026 PROFE - Ministerio de Educación de Bolivia</p>
                     </div>
                 `,
-            });
-            return true;
-        } catch (error) {
-            this.logger.error(`Error enviando bienvenida a ${email}:`, error);
-            return false;
-        }
+      });
+      return true;
+    } catch (error) {
+      this.logger.error(`Error enviando bienvenida a ${email}:`, error);
+      return false;
     }
+  }
 }

@@ -4,10 +4,14 @@ import { GenericCrudService, PrismaService } from '@app/database';
 
 @Injectable()
 export class CargosService extends GenericCrudService<any> {
-    constructor(p: PrismaService) { super(p, 'cargo'); }
+  constructor(p: PrismaService) {
+    super(p, 'cargo');
+  }
 }
 
 @Controller('cargos')
 export class CargosController extends CrudControllerFactory('cargos') {
-    constructor(public service: CargosService) { super(service); }
+  constructor(public service: CargosService) {
+    super(service);
+  }
 }

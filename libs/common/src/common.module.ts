@@ -7,4 +7,4 @@ import { DatabaseModule } from '@app/database';
   providers: [CommonService],
   exports: [CommonService, DatabaseModule],
 })
-export class CommonModule { }
+export class CommonModule {}
