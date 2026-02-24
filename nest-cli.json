@@ -99,7 +99,10 @@
       "compilerOptions": {
         "tsConfigPath": "apps/users/tsconfig.app.json",
         "assets": [
-          "assets/*"
+          {
+            "include": "src/assets/**/*",
+            "watchAssets": true
+          }
         ],
         "watchAssets": true
       }

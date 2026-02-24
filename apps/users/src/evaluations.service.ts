@@ -480,15 +480,18 @@ export class EvaluationsService {
       // ── BACKGROUND ──────────────────────────────────────
       // Intentar encontrar el fondo en varias rutas posibles (Dev y Prod Docker)
       const possibleBgPaths = [
-        path.resolve(process.cwd(), 'apps/users/src/assets/fondo_doc.jpg'), // Dev
-        path.join(__dirname, 'assets/fondo_doc.jpg'),                      // Prod (NestJS assets)
-        path.resolve(process.cwd(), '../frontend/public/fondo_doc.jpg')    // Fallback local
+        path.join(process.cwd(), 'apps/users/src/assets/fondo_doc.jpg'), // Dev local
+        path.join(process.cwd(), 'dist/apps/users/src/assets/fondo_doc.jpg'), // Prod Docker (Nest path)
+        path.join(__dirname, 'assets/fondo_doc.jpg'),                        // Prod (Bundled path)
+        path.join(process.cwd(), 'uploads/fondo_doc.jpg'),                   // Ultimo recurso (Manual)
+        path.resolve(process.cwd(), '../frontend/public/fondo_doc.jpg')      // Fallback local dev
       ];
 
       let bgPath = '';
       for (const p of possibleBgPaths) {
         if (fs.existsSync(p)) {
           bgPath = p;
+          this.logger.log(`Fondo encontrado en: ${p}`);
           break;
         }
       }
@@ -502,7 +505,7 @@ export class EvaluationsService {
           this.logger.error(`Error al dibujar fondo_doc: ${e.message}`);
         }
       } else {
-        this.logger.error(`No se encontró fondo_doc.jpg en ninguna de las rutas: ${possibleBgPaths.join(', ')}`);
+        this.logger.error(`No se encontró fondo_doc.jpg. Rutas intentadas: ${possibleBgPaths.join(' | ')}`);
       }
 
       // ── HEADER ──────────────────────────────────────────
