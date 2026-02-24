@@ -235,7 +235,7 @@ export class EvaluationsService {
 
     // Generación dinámica del QR usando FRONTEND_URL de variables de entorno
     const frontendUrl =
-      this.configService.get('FRONTEND_URL') || 'http://localhost:5415';
+      this.configService.get('FRONTEND_URL') || 'http://161.132.39.123:5415';
     const verificationUrl = `${frontendUrl}/verificar-evaluacion?code=${codigoVerificacion}`;
     const qrCode = await QRCode.toDataURL(verificationUrl);
 
@@ -338,6 +338,7 @@ export class EvaluationsService {
             correo: true,
             imagen: true,
             ci: true,
+            sedes: { include: { sede: true } },
           },
         },
         cargo: true,
@@ -472,8 +473,22 @@ export class EvaluationsService {
       const creatorRole = isResponsable ? 'Responsable Departamental' : 'Autoridad Nacional';
 
       // ── BACKGROUND ──────────────────────────────────────
-      const bgPath = path.resolve(process.cwd(), '../frontend/public/fondo_doc.jpg');
-      if (fs.existsSync(bgPath)) {
+      // Intentar encontrar el fondo en varias rutas posibles (Dev y Prod Docker)
+      const possibleBgPaths = [
+        path.resolve(process.cwd(), 'apps/users/src/assets/fondo_doc.jpg'), // Dev
+        path.join(__dirname, 'assets/fondo_doc.jpg'),                      // Prod (NestJS assets)
+        path.resolve(process.cwd(), '../frontend/public/fondo_doc.jpg')    // Fallback local
+      ];
+
+      let bgPath = '';
+      for (const p of possibleBgPaths) {
+        if (fs.existsSync(p)) {
+          bgPath = p;
+          break;
+        }
+      }
+
+      if (bgPath) {
         try {
           doc.save();
           doc.image(bgPath, 0, 0, { width: 612, height: 792 });
@@ -482,7 +497,7 @@ export class EvaluationsService {
           this.logger.error(`Error al dibujar fondo_doc: ${e.message}`);
         }
       } else {
-        this.logger.error(`No existe fondo_doc.jpg en: ${bgPath}`);
+        this.logger.error(`No se encontró fondo_doc.jpg en ninguna de las rutas: ${possibleBgPaths.join(', ')}`);
       }
 
       // ── HEADER ──────────────────────────────────────────
@@ -552,8 +567,9 @@ export class EvaluationsService {
         { width: contentW, align: 'justify', lineGap: 2 },
       );
       doc.moveDown(0.8);
+      const sedeNombre = user.sedes?.[0]?.sede?.nombre || 'Sede no definida';
       doc.text(
-        `Se deja constancia que el señor ${nombreCompleto}, con Cédula de Identidad N.° ${ci}, RDA N.° 7389694, ítem N.° 00670 y servicio N.° 05520634, perteneciente a la Escuela Superior de Formación de Maestros Santiago de Huata, desempeñó funciones como Personal Declarado en Comisión en dependencias del Ministerio de Educación, durante la gestión correspondiente el año ${periodo?.gestion || '2025'}.`,
+        `Se deja constancia que el señor ${nombreCompleto}, con Cédula de Identidad N.° ${ci}, RDA N.° ${user.username || '---'}, perteneciente a la ${sedeNombre}.`,
         { width: contentW, align: 'justify', lineGap: 2 },
       );
       doc.moveDown(0.8);
