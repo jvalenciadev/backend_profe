@@ -235,7 +235,7 @@ export class EvaluationsService {
 
     // Generación dinámica del QR usando FRONTEND_URL de variables de entorno
     const frontendUrl =
-      this.configService.get('FRONTEND_URL') || 'http://161.132.39.123:5415';
+      this.configService.get('FRONTEND_URL') || 'https://aulaprofe.minedu.gob.bo';
     const verificationUrl = `${frontendUrl}/verificar-evaluacion?code=${codigoVerificacion}`;
     const qrCode = await QRCode.toDataURL(verificationUrl);
 
@@ -448,6 +448,11 @@ export class EvaluationsService {
       include: { roles: { include: { role: true } } }
     });
 
+    // REGENERAR QR al vuelo para asegurar que usa el dominio actual del servidor
+    const frontendUrl = this.configService.get('FRONTEND_URL') || 'https://aulaprofe.minedu.gob.bo';
+    const qrUrl = `${frontendUrl}/verificar-evaluacion?code=${evaluation.codigoVerificacion}`;
+    const freshQrCode = await QRCode.toDataURL(qrUrl).catch(() => evaluation.qrCode);
+
     return new Promise((resolve, reject) => {
       const doc = new PDFDocument({
         margin: 0, // Establecer a 0 para control total y evitar saltos de página automáticos por márgenes
@@ -516,8 +521,8 @@ export class EvaluationsService {
       // QR esquina superior derecha
       const qrX = pageW - margin - 70;
       const qrY = 25;
-      if (evaluation.qrCode) {
-        doc.image(evaluation.qrCode, qrX, qrY, { width: 65 });
+      if (freshQrCode) {
+        doc.image(freshQrCode, qrX, qrY, { width: 65 });
       }
       doc
         .fontSize(7)
