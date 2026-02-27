@@ -146,6 +146,12 @@ export class UsersService {
         sedes: { include: { sede: true } },
         tenant: true,
         cargoPostulacion: true,
+        bp_posgrado: {
+          include: {
+            bp_tipo_posgrado: true,
+          },
+        },
+        bp_produccion_intelectual: true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -173,6 +179,12 @@ export class UsersService {
         sedes: { include: { sede: true } },
         tenant: true,
         cargoPostulacion: true,
+        bp_posgrado: {
+          include: {
+            bp_tipo_posgrado: true,
+          },
+        },
+        bp_produccion_intelectual: true,
       },
     });
     if (!user)
