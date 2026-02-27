@@ -13,7 +13,7 @@ export class ApiKeyGuard implements CanActivate {
   constructor(
     private configService: ConfigService,
     private reflector: Reflector,
-  ) {}
+  ) { }
 
   canActivate(context: ExecutionContext): boolean {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
@@ -26,6 +26,11 @@ export class ApiKeyGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest();
+
+    // Permitir acceso público a archivos subidos
+    if (request.url.startsWith('/uploads')) {
+      return true;
+    }
 
     // SENIOR BYPASS: Si la petición ya trae un token de sesión (JWT), permitimos el paso.
     // El JwtAuthGuard se encargará de la validación del usuario después.

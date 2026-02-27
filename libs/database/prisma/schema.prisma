@@ -46,6 +46,9 @@ model User {
   licMescp                  String?                     @map("bp_lic_mescp")
   tieneProduccion           Boolean                     @default(false) @map("bp_tiene_produccion")
   hojaDeVidaPdf             String?                     @map("bp_hoja_vida_pdf")
+  rda                       BigInt?                     @map("per_rda")
+  rdaPdf                    String?                     @map("bp_rda_pdf")
+  categoriaId               String?                     @map("cat_id") @db.Uuid
   cargoPostulacionId        String?                     @map("car_id_postulacion") @db.Uuid
   resumenProfesional        String?                     @map("bp_resumen_profesional")
   habilidades               String?                     @map("bp_habilidades")
@@ -53,6 +56,7 @@ model User {
   experienciaLaboral        String?                     @map("bp_experiencia_laboral")
   linkedinUrl               String?                     @map("bp_linkedin_url")
   cargoPostulacion          Cargo?                      @relation(fields: [cargoPostulacionId], references: [id])
+  categoria                 MapCategoria?               @relation(fields: [categoriaId], references: [id])
   tenant                    Departamento?               @relation("UserTenant", fields: [tenantId], references: [id])
   auditLogs                 AuditLog[]
   bp_posgrado               bp_posgrado[]
@@ -1054,6 +1058,118 @@ model Video {
   estado    Estado    @default(activo) @map("video_estado")
 
   @@map("video")
+}
+
+model MapCargo {
+  id        String       @id @default(uuid()) @map("car_id") @db.Uuid
+  nombre    String       @map("car_nombre")
+  estado    Estado       @default(activo) @map("car_estado")
+  createdAt DateTime?    @default(now()) @map("created_at")
+  updatedAt DateTime?    @updatedAt @map("updated_at")
+  personas  MapPersona[]
+
+  @@map("map_cargo")
+}
+
+model MapCategoria {
+  id        String       @id @default(uuid()) @map("cat_id") @db.Uuid
+  nombre    String       @map("cat_nombre")
+  estado    Estado       @default(activo) @map("cat_estado")
+  createdAt DateTime?    @default(now()) @map("created_at")
+  updatedAt DateTime?    @updatedAt @map("updated_at")
+  personas  MapPersona[]
+  users     User[]
+
+  @@map("map_categoria")
+}
+
+model MapEspecialidad {
+  id        String       @id @default(uuid()) @map("esp_id") @db.Uuid
+  nombre    String       @map("esp_nombre")
+  estado    Estado       @default(activo) @map("esp_estado")
+  createdAt DateTime?    @default(now()) @map("created_at")
+  updatedAt DateTime?    @updatedAt @map("updated_at")
+  personas  MapPersona[]
+
+  @@map("map_especialidad")
+}
+
+model MapNivel {
+  id        String       @id @default(uuid()) @map("niv_id") @db.Uuid
+  nombre    String       @map("niv_nombre")
+  estado    Estado       @default(activo) @map("niv_estado")
+  createdAt DateTime?    @default(now()) @map("created_at")
+  updatedAt DateTime?    @updatedAt @map("updated_at")
+  personas  MapPersona[]
+
+  @@map("map_nivel")
+}
+
+model MapSubsistema {
+  id        String       @id @default(uuid()) @map("sub_id") @db.Uuid
+  nombre    String       @map("sub_nombre")
+  estado    Estado       @default(activo) @map("sub_estado")
+  createdAt DateTime?    @default(now()) @map("created_at")
+  updatedAt DateTime?    @updatedAt @map("updated_at")
+  personas  MapPersona[]
+
+  @@map("map_subsistema")
+}
+
+model MapPersona {
+  id              String          @id @default(uuid()) @map("per_id") @db.Uuid
+  rda             BigInt?         @map("per_rda")
+  dgesttla        BigInt?         @map("per_dgesttla")
+  didep           BigInt?         @map("per_didep")
+  ci              BigInt          @map("per_ci")
+  complemento     String?         @map("per_complemento")
+  nombre1         String?         @map("per_nombre1")
+  nombre2         String?         @map("per_nombre2")
+  apellido1       String?         @map("per_apellido1")
+  apellido2       String?         @map("per_apellido2")
+  fechaNacimiento DateTime        @map("per_fecha_nacimiento") @db.Date
+  celular         Int             @default(0) @map("per_celular")
+  correo          String          @default("sincorreo") @map("per_correo")
+  enFuncion       Boolean         @default(true) @map("per_en_funcion")
+  libretaMilitar  Boolean         @default(true) @map("per_libreta_militar")
+  uniEduId        Int?            @default(0) @map("uni_edu_id")
+  estado          Estado          @default(activo) @map("per_estado")
+  // FK externas (genero y area_trabajo no están en este schema Prisma)
+  genId           BigInt          @map("gen_id")
+  areaId          BigInt          @map("area_id")
+  // FK a catálogos map_* (UUID)
+  espId           String          @map("esp_id") @db.Uuid
+  catId           String          @map("cat_id") @db.Uuid
+  carId           String          @map("car_id") @db.Uuid
+  subId           String          @map("sub_id") @db.Uuid
+  nivId           String          @map("niv_id") @db.Uuid
+  createdAt       DateTime?       @default(now()) @map("created_at")
+  updatedAt       DateTime?       @updatedAt @map("updated_at")
+  especialidad    MapEspecialidad @relation(fields: [espId], references: [id], onDelete: Cascade)
+  categoria       MapCategoria    @relation(fields: [catId], references: [id], onDelete: Cascade)
+  cargo           MapCargo        @relation(fields: [carId], references: [id], onDelete: Cascade)
+  subsistema      MapSubsistema   @relation(fields: [subId], references: [id], onDelete: Cascade)
+  nivel           MapNivel        @relation(fields: [nivId], references: [id], onDelete: Cascade)
+
+  @@map("map_persona")
+}
+
+model MapPersonaNr {
+  id           String    @id @default(uuid()) @map("per_nr_id") @db.Uuid
+  nacProvincia String    @map("per_nac_provincia")
+  resProvincia String    @map("per_res_provincia")
+  nacMunicipio String    @map("per_nac_municipio")
+  resMunicipio String    @map("per_res_municipio")
+  nacLocalidad String    @map("per_nac_localidad")
+  resLocalidad String    @map("per_res_localidad")
+  resDireccion String    @map("per_res_direccion")
+  perId        String    @map("per_id") @db.Uuid
+  depNacId     BigInt    @map("dep_nac_id")
+  depResId     BigInt    @map("dep_res_id")
+  createdAt    DateTime? @default(now()) @map("created_at")
+  updatedAt    DateTime? @updatedAt @map("updated_at")
+
+  @@map("map_persona_nr")
 }
 
 enum Estado {

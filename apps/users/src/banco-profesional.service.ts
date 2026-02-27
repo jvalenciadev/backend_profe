@@ -21,17 +21,18 @@ export class BancoProfesionalService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly mailService: MailService,
-  ) {}
+  ) { }
 
   // ─── REGISTRO INICIAL (crea User en admins + ficha BancoProfesional) ─────────
   async requestVerification(email: string) {
+    const normalizedEmail = String(email).trim().toLowerCase();
     const code = crypto.randomInt(100000, 999999).toString();
     const expires = new Date();
-    expires.setMinutes(expires.getHours() + 15); // 15 minutos
+    expires.setMinutes(expires.getMinutes() + 15); // 15 minutos exactos
 
-    this.verificationCodes.set(email, { code, expires });
+    this.verificationCodes.set(normalizedEmail, { code, expires });
 
-    await this.mailService.sendPasswordResetEmail(email, code, 'Postulante');
+    await this.mailService.sendPasswordResetEmail(normalizedEmail, code, 'Postulante');
     return { message: 'Código enviado' };
   }
 
@@ -40,8 +41,8 @@ export class BancoProfesionalService {
 
     // 1. Normalización y Limpieza de Datos
     const ciRaw = String(data.ci || data.per_ci || data.bp_ci || '').trim();
+    const rdaRaw = String(data.rda || '').trim();
     const cargoIdValue = (data.cargoId || data.car_id || '').trim();
-    const categoriaIdValue = data.categoriaId || data.cat_id;
     const tenantIdValue =
       data.tenantId && String(data.tenantId).trim() !== ''
         ? String(data.tenantId).trim()
@@ -64,27 +65,37 @@ export class BancoProfesionalService {
       throw new BadRequestException('La contraseña es requerida.');
 
     // Validación de código de verificación
-    const verification = this.verificationCodes.get(data.correo);
+    const normalizedEmail = String(data.correo).trim().toLowerCase();
+    const verification = this.verificationCodes.get(normalizedEmail);
     if (
       !verification ||
-      verification.code !== data.verificationCode ||
+      String(verification.code) !== String(data.verificationCode).trim() ||
       verification.expires < new Date()
     ) {
       throw new BadRequestException(
-        'El código de verificación es incorrecto o ha expirado.',
+        'El código de verificación es incorrecto o ha expirado. Asegúrese de usar el último código enviado.',
       );
     }
-    this.verificationCodes.delete(data.correo); // Limpiar después de usar
 
     // 3. Conversión Segura a BigInt
     let ciBigInt: bigint;
     try {
-      // Eliminar cualquier caracter no numérico por seguridad
       ciBigInt = BigInt(ciRaw.replace(/\D/g, ''));
     } catch (e) {
       throw new BadRequestException(
         'El formato del CI no es válido (solo números).',
       );
+    }
+
+    let rdaBigInt: bigint | null = null;
+    if (rdaRaw) {
+      try {
+        rdaBigInt = BigInt(rdaRaw.replace(/\D/g, ''));
+      } catch (e) {
+        throw new BadRequestException(
+          'El formato del RDA no es válido (solo números).',
+        );
+      }
     }
 
     // 4. Verificaciones de Existencia (Evitar duplicados)
@@ -127,17 +138,10 @@ export class BancoProfesionalService {
     }
 
     const hashedPassword = await bcrypt.hash(data.password, 12);
-    const birthDate = new Date(data.fechaNac);
-    if (isNaN(birthDate.getTime())) {
-      throw new BadRequestException(
-        'La fecha de nacimiento es inválida o tiene un formato incorrecto.',
-      );
-    }
 
     // 7. Transacción Atómica de Registro
     try {
-      return await this.prisma.$transaction(async (tx) => {
-        // Crear Usuario Principal con todos los datos
+      const result = await this.prisma.$transaction(async (tx) => {
         const user = await tx.user.create({
           data: {
             correo: data.correo,
@@ -147,6 +151,9 @@ export class BancoProfesionalService {
             apellidos: String(data.apellidos).toUpperCase(),
             fechaNacimiento: data.fechaNac || null,
             ci: ciBigInt,
+            rda: rdaBigInt,
+            rdaPdf: data.rdaPdf || null,
+            categoriaId: data.categoriaId || null,
             tenantId: tenantIdValue,
             celular: data.celular || null,
             genero: data.genero || null,
@@ -161,6 +168,11 @@ export class BancoProfesionalService {
             cargoPostulacionId: cargoIdValue,
             imagen: data.imagen || null,
             estado: data.estado || 'pendiente',
+            idiomas: data.idiomas || null,
+            experienciaLaboral: data.experienciaLaboral || null,
+            habilidades: data.habilidades || null,
+            resumenProfesional: data.resumenProfesional || null,
+            linkedinUrl: data.linkedinUrl || null,
           },
           include: {
             cargoPostulacion: true,
@@ -172,17 +184,21 @@ export class BancoProfesionalService {
           ficha: this.serializeFicha(user),
         };
       });
+
+      this.verificationCodes.delete(normalizedEmail);
+      return result;
     } catch (error) {
       console.error('CRITICAL: Error in Registration Transaction:', error);
+      if (error instanceof ConflictException || error instanceof BadRequestException) {
+        throw error;
+      }
       throw new BadRequestException(
-        'No se pudo completar el registro. Verifique que todos los datos sean correctos.',
+        'No se pudo completar el registro. ' + (error.message || 'Verifique que todos los datos sean correctos.'),
       );
     }
   }
 
-  // ─── OBTENER MI FICHA (para el postulante logueado) ──────────────────────────
   async getMiFicha(userId: string) {
-    console.log(`Getting ficha for userId: ${userId}`);
     const ficha = await this.prisma.user.findFirst({
       where: { id: userId, estado: { not: 'eliminado' } },
       include: {
@@ -192,14 +208,10 @@ export class BancoProfesionalService {
         bp_produccion_intelectual: true,
       },
     });
-    if (!ficha) {
-      console.warn(`Ficha not found for user ${userId}`);
-      return null;
-    }
+    if (!ficha) return null;
     return this.serializeFicha(ficha);
   }
 
-  // ─── LISTAR TODOS (para admins) ───────────────────────────────────────────────
   async findAll(filter: { cargoId?: string; estado?: string } = {}) {
     const where: any = {
       estado: { not: 'eliminado' },
@@ -221,7 +233,6 @@ export class BancoProfesionalService {
     return fichas.map((f) => this.serializeFicha(f));
   }
 
-  // ─── OBTENER UNA FICHA POR ID ─────────────────────────────────────────────────
   async findOne(id: string) {
     const ficha = await this.prisma.user.findFirst({
       where: { id, estado: { not: 'eliminado' } },
@@ -236,36 +247,31 @@ export class BancoProfesionalService {
     return this.serializeFicha(ficha);
   }
 
-  // ─── ACTUALIZAR FICHA (postulante o admin) ────────────────────────────────────
   async update(id: string, data: any, currentUserId: string) {
-    console.log(
-      `Updating ficha for user ${id} with data:`,
-      JSON.stringify(data),
-    );
-
     try {
       const ficha = await this.prisma.user.findFirst({ where: { id } });
       if (!ficha) throw new NotFoundException('Ficha no encontrada');
 
       const updateData: any = { updatedBy: currentUserId };
-      // Campos de datos personales directos
       if (data.nombre) updateData.nombre = data.nombre;
       if (data.apellidos) updateData.apellidos = data.apellidos;
       if (data.fechaNac) updateData.fechaNacimiento = data.fechaNac;
       if (data.ci) updateData.ci = BigInt(data.ci);
+      if (data.rda) updateData.rda = BigInt(data.rda);
+
       if (data.correo && data.correo !== ficha.correo) {
-        // Validación de código de verificación para nuevo correo
-        const verification = this.verificationCodes.get(data.correo);
+        const normalizedEmail = String(data.correo).trim().toLowerCase();
+        const verification = this.verificationCodes.get(normalizedEmail);
         if (
           !verification ||
-          verification.code !== data.verificationCode ||
+          String(verification.code) !== String(data.verificationCode).trim() ||
           verification.expires < new Date()
         ) {
           throw new BadRequestException(
             'El código de verificación para el nuevo correo es incorrecto o ha expirado.',
           );
         }
-        this.verificationCodes.delete(data.correo);
+        this.verificationCodes.delete(normalizedEmail);
         updateData.correo = data.correo;
       }
       if (data.celular !== undefined) updateData.celular = data.celular || null;
@@ -278,22 +284,19 @@ export class BancoProfesionalService {
         'tieneProduccion',
         'hojaDeVidaPdf',
         'estado',
-        // Campos de perfil y datos personales que pueden ser actualizados
         'resumenProfesional',
         'habilidades',
         'idiomas',
         'experienciaLaboral',
         'linkedinUrl',
-        'celular',
-        'genero',
         'direccion',
         'estadoCivil',
         'imagen',
+        'rdaPdf'
       ];
 
       allowedFields.forEach((f) => {
         if (data[f] !== undefined) {
-          // Conversión explícita de booleanos si vienen como string
           if (f === 'esMaestro' || f === 'tieneProduccion') {
             updateData[f] = data[f] === true || data[f] === 'true';
           } else {
@@ -302,18 +305,15 @@ export class BancoProfesionalService {
         }
       });
 
+      if (data.password) {
+        updateData.password = await bcrypt.hash(data.password, 12);
+      }
+
       if (data.cargoId !== undefined) {
         const cargoId = String(data.cargoId).trim();
         updateData.cargoPostulacionId =
           cargoId && cargoId !== 'null' ? cargoId : null;
       }
-
-      console.log(
-        'Update Data Prepared:',
-        JSON.stringify(updateData, (_, v) =>
-          typeof v === 'bigint' ? v.toString() : v,
-        ),
-      );
 
       const updated = await this.prisma.user.update({
         where: { id },
@@ -335,7 +335,6 @@ export class BancoProfesionalService {
     }
   }
 
-  // ─── ELIMINAR FICHA ───────────────────────────────────────────────────────────
   async remove(id: string, currentUserId: string) {
     return this.prisma.user.update({
       where: { id },
@@ -347,17 +346,12 @@ export class BancoProfesionalService {
     });
   }
 
-  // ─── ACTUALIZAR ESTADO Y ASIGNAR ROL (APROBAR o DAR DE BAJA) ──────────────────
   async aprobar(
     id: string,
     data: { roleId: string; tenantId?: string; status?: string },
     currentUserId: string,
   ) {
     const targetStatus = (data.status || 'activo').toLowerCase();
-    console.log(
-      `Updating professional ${id} to status: ${targetStatus} with roleId: ${data.roleId}`,
-    );
-
     const user = await this.prisma.user.findUnique({
       where: { id },
       include: { roles: true },
@@ -366,7 +360,6 @@ export class BancoProfesionalService {
     if (!user) throw new NotFoundException('Usuario no encontrado');
 
     return await this.prisma.$transaction(async (tx) => {
-      // 1. Actualizar estado y opcionalmente tenant
       const tenantId =
         data.tenantId && data.tenantId.trim() !== ''
           ? data.tenantId
@@ -381,14 +374,8 @@ export class BancoProfesionalService {
         },
       });
 
-      // 2. Eliminar rol de postulante y asignar nuevo rol
-      // Buscamos si ya tiene el rol deseado para no duplicar
       const hasRole = user.roles.some((r) => r.roleId === data.roleId);
-
       if (!hasRole) {
-        // Eliminamos roles previos si se desea una limpieza total,
-        // o solo el de POSTULACION_PROFE si existiera.
-        // En este caso, reemplazaremos los roles para que tenga EL nuevo rol asignado.
         await tx.userRole.deleteMany({
           where: { userId: id },
         });
@@ -417,18 +404,12 @@ export class BancoProfesionalService {
     },
     currentUserId: string,
   ) {
-    console.log('DEBUG: addPosgrado called with:', {
-      userId,
-      tipoPosgradoId: data.tipoPosgradoId,
-      titulo: data.titulo,
-      currentUserId,
-    });
-
     if (!userId)
       throw new BadRequestException('El ID de usuario es requerido.');
     if (!data.tipoPosgradoId)
       throw new BadRequestException('El tipo de postgrado es requerido.');
     if (!data.titulo) throw new BadRequestException('El título es requerido.');
+
     let posgradoDate = new Date();
     if (data.fecha) {
       const parsedDate = new Date(data.fecha);
@@ -438,22 +419,17 @@ export class BancoProfesionalService {
     }
 
     let tipoId = data.tipoPosgradoId;
-    const isUuid =
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        tipoId,
-      );
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tipoId);
 
     if (!isUuid) {
-      // Smart lookup: si no es UUID, buscamos por nombre (ej. 'FORMACION SUPERIOR')
       const found = await this.prisma.bp_tipo_posgrado.findFirst({
         where: { btp_nombre: tipoId, btp_estado: { not: 'eliminado' } as any },
       });
       if (found) {
         tipoId = found.btp_id;
       } else {
-        // Si no existe, lo creamos dinámicamente o lanzamos error. Mejor lanzamos error descriptivo.
         throw new BadRequestException(
-          `El tipo de postgrado '${tipoId}' no es válido. Seleccione uno de la lista.`,
+          `El tipo de postgrado '${tipoId}' no es válido.`,
         );
       }
     }
@@ -473,15 +449,7 @@ export class BancoProfesionalService {
         include: { bp_tipo_posgrado: true },
       });
     } catch (error) {
-      console.error('DATABASE ERROR in addPosgrado:', error);
-      if (error.code === 'P2003') {
-        throw new BadRequestException(
-          'El tipo de postgrado o usuario no existe.',
-        );
-      }
-      throw new BadRequestException(
-        `Error al guardar el postgrado: ${error.message}`,
-      );
+      throw new BadRequestException(`Error al guardar el postgrado: ${error.message}`);
     }
   }
 
@@ -521,10 +489,7 @@ export class BancoProfesionalService {
   // ─── PRODUCCIÓN INTELECTUAL CRUD ──────────────────────────────────────────────
   async addProduccion(
     userId: string,
-    data: {
-      titulo: string;
-      anioPublicacion: number;
-    },
+    data: { titulo: string; anioPublicacion: number },
     currentUserId: string,
   ) {
     if (!userId)
@@ -545,10 +510,7 @@ export class BancoProfesionalService {
         },
       });
     } catch (error) {
-      console.error('DATABASE ERROR in addProduccion:', error);
-      throw new BadRequestException(
-        `Error al guardar la producción: ${error.message}`,
-      );
+      throw new BadRequestException(`Error al guardar la producción: ${error.message}`);
     }
   }
 
@@ -581,7 +543,6 @@ export class BancoProfesionalService {
     });
   }
 
-  // ─── TIPOS DE POSGRADO CRUD ───────────────────────────────────────────────────
   async getTiposPosgrado() {
     const tipos = await this.prisma.bp_tipo_posgrado.findMany({
       where: { btp_estado: { not: 'eliminado' } as any },
@@ -595,66 +556,24 @@ export class BancoProfesionalService {
 
   async createTipoPosgrado(data: { nombre: string }) {
     const created = await this.prisma.bp_tipo_posgrado.create({
-      data: {
-        btp_nombre: data.nombre,
-        updated_at: new Date(),
-      },
+      data: { btp_nombre: data.nombre, updated_at: new Date() },
     });
     return { ...created, id: created.btp_id, nombre: created.btp_nombre };
   }
 
-  async updateTipoPosgrado(
-    id: string,
-    data: { nombre?: string; estado?: string },
-  ) {
-    const updateData: any = {};
-    if (data.nombre) updateData.btp_nombre = data.nombre;
-    if (data.estado) updateData.btp_estado = data.estado as Estado;
-
-    const updated = await this.prisma.bp_tipo_posgrado.update({
-      where: { btp_id: id },
-      data: updateData,
-    });
-    return { ...updated, id: updated.btp_id, nombre: updated.btp_nombre };
-  }
-
-  async removeTipoPosgrado(id: string) {
-    return this.prisma.bp_tipo_posgrado.update({
-      where: { btp_id: id },
-      data: { btp_estado: 'eliminado' as any },
-    });
-  }
-
-  // ─── CATEGORIAS (Dummy por desuso de MapCategoria) ───────────────────────────
   async getCategorias() {
-    return [];
+    return this.prisma.mapCategoria.findMany({
+      where: { estado: { not: 'eliminado' } },
+      orderBy: { nombre: 'asc' },
+    });
   }
 
-  // ─── CARGOS CRUD ──────────────────────────────────────────────────────────────
   async getCargos() {
     return this.prisma.cargo.findMany({
       where: { estado: { not: 'eliminado' } },
     });
   }
 
-  async createCargo(data: { nombre: string }) {
-    return this.prisma.cargo.create({ data: { nombre: data.nombre } });
-  }
-
-  async updateCargo(id: string, data: { nombre?: string; estado?: string }) {
-    const updateData: any = { ...data };
-    if (data.estado) updateData.estado = data.estado as Estado;
-    return this.prisma.cargo.update({ where: { id }, data: updateData });
-  }
-
-  async removeCargo(id: string) {
-    return this.prisma.cargo.update({
-      where: { id },
-      data: { estado: 'eliminado', deletedAt: new Date() },
-    });
-  }
-
-  // ─── HELPER: serializar BigInt y Estructura ──────────────────────────────────
   private serializeFicha(data: any) {
     if (!data) return null;
 
@@ -664,12 +583,10 @@ export class BancoProfesionalService {
       ),
     );
 
-    // Mapear cargoPostulacionId a cargoId para consistencia con frontend
     if (obj.cargoPostulacionId && !obj.cargoId) {
       obj.cargoId = obj.cargoPostulacionId;
     }
 
-    // Si el objeto es un User, asegurar que tenga la propiedad 'user' para el frontend
     if (obj.id && obj.username && !obj.user) {
       obj.user = {
         id: obj.id,
@@ -678,6 +595,7 @@ export class BancoProfesionalService {
         correo: obj.correo,
         username: obj.username,
         ci: obj.ci,
+        rda: obj.rda, // Incluido RDA
         fechaNacimiento: obj.fechaNacimiento,
         celular: obj.celular,
         genero: obj.genero,
@@ -688,7 +606,6 @@ export class BancoProfesionalService {
       };
     }
 
-    // Mapear campos de posgrados
     if (obj.bp_posgrado && Array.isArray(obj.bp_posgrado)) {
       obj.postgrados = obj.bp_posgrado.map((p: any) => ({
         ...p,
@@ -699,28 +616,22 @@ export class BancoProfesionalService {
         tipoPosgradoId: p.btp_id,
         tipoPosgrado: p.bp_tipo_posgrado
           ? {
-              ...p.bp_tipo_posgrado,
-              id: p.bp_tipo_posgrado.btp_id,
-              nombre: p.bp_tipo_posgrado.btp_nombre,
-            }
+            ...p.bp_tipo_posgrado,
+            id: p.bp_tipo_posgrado.btp_id,
+            nombre: p.bp_tipo_posgrado.btp_nombre,
+          }
           : null,
       }));
       delete obj.bp_posgrado;
     }
 
-    // Mapear campos de producción intelectual
-    if (
-      obj.bp_produccion_intelectual &&
-      Array.isArray(obj.bp_produccion_intelectual)
-    ) {
-      obj.produccionIntelectual = obj.bp_produccion_intelectual.map(
-        (p: any) => ({
-          ...p,
-          id: p.bpi_id,
-          titulo: p.bpi_titulo,
-          anioPublicacion: p.bpi_anio_publicacion,
-        }),
-      );
+    if (obj.bp_produccion_intelectual && Array.isArray(obj.bp_produccion_intelectual)) {
+      obj.produccionIntelectual = obj.bp_produccion_intelectual.map((p: any) => ({
+        ...p,
+        id: p.bpi_id,
+        titulo: p.bpi_titulo,
+        anioPublicacion: p.bpi_anio_publicacion,
+      }));
       delete obj.bp_produccion_intelectual;
     }
 

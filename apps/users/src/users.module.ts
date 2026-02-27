@@ -16,7 +16,22 @@ import {
 } from './users-crud.controllers';
 
 import { CommonModule } from '@app/common';
-import { CargosController, CargosService } from './hr-crud.controllers';
+import {
+  CargosController,
+  CargosService,
+  MapCargosController,
+  MapCargosService,
+  MapCategoriasController,
+  MapCategoriasService,
+  MapEspecialidadesController,
+  MapEspecialidadesService,
+  MapNivelesController,
+  MapNivelesService,
+  MapSubsistemasController,
+  MapSubsistemasService,
+  MapPersonasController,
+  MapPersonasService,
+} from './hr-crud.controllers';
 import { EvaluationsController } from './evaluations.controller';
 import { EvaluationsService } from './evaluations.service';
 import { ProfeController, ProfeService } from './profe.controller';
@@ -34,6 +49,12 @@ import { PublicBancoProfesionalController } from './public-banco-profesional.con
     AreasController,
     GenerosController,
     CargosController,
+    MapCargosController,
+    MapCategoriasController,
+    MapEspecialidadesController,
+    MapNivelesController,
+    MapSubsistemasController,
+    MapPersonasController,
     BancoProfesionalController,
     EvaluationsController,
     ProfeController,
@@ -47,9 +68,15 @@ import { PublicBancoProfesionalController } from './public-banco-profesional.con
     AreasService,
     GenerosService,
     CargosService,
+    MapCargosService,
+    MapCategoriasService,
+    MapEspecialidadesService,
+    MapNivelesService,
+    MapSubsistemasService,
+    MapPersonasService,
     BancoProfesionalService,
     EvaluationsService,
     ProfeService,
   ],
 })
-export class UsersModule {}
+export class UsersModule { }

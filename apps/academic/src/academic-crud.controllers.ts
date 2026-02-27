@@ -546,6 +546,49 @@ export class EventosInscripcionesService extends GenericCrudService<any> {
   constructor(p: PrismaService) {
     super(p, 'eventoInscripcion', true, true);
   }
+
+  async findAll(filter: any = {}, ability?: any) {
+    let where: any = { ...filter };
+    if (this.hasStatus) where.estado = { not: 'eliminado' };
+    if (ability) {
+      const caslWhere = this.getCaslWhere(ability, 'read');
+      where = { AND: [where, caslWhere] };
+    }
+
+    // Traer todos con sus datos de la persona vinculada (muy útil para buscar por ci, nombre, etc. en el front)
+    const inscripciones = await this.prisma.eventoInscripcion.findMany({
+      where,
+      include: { persona: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Anidar estado de evaluación a vuelo rasante (Super rápido sin saturar la DB)
+    const eventoId = filter.eventoId;
+    if (eventoId && inscripciones.length > 0) {
+      const cuestionarios = await this.prisma.eventoCuestionario.findMany({
+        where: { eventoId, estado: { not: 'eliminado' } },
+        select: { id: true },
+      });
+      const cuestionarioIds = cuestionarios.map((c) => c.id);
+
+      let personasConRespuestas = new Set<string>();
+      if (cuestionarioIds.length > 0) {
+        const respuestas = await this.prisma.evento_respuestas.findMany({
+          where: { cuestionarioId: { in: cuestionarioIds } },
+          select: { personaId: true },
+          distinct: ['personaId'],
+        });
+        respuestas.forEach((r) => personasConRespuestas.add(r.personaId));
+      }
+
+      return inscripciones.map((ins: any) => ({
+        ...ins,
+        evaluaciones: personasConRespuestas.has(ins.personaId),
+      }));
+    }
+
+    return inscripciones;
+  }
 }
 
 @Injectable()

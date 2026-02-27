@@ -9,6 +9,7 @@ import {
     ConflictException,
     ForbiddenException,
 } from '@nestjs/common';
+// ForbiddenException se mantiene para las validaciones de asistencia y cuestionario
 import { PrismaService } from '@app/database';
 import { Public } from '@app/common';
 
@@ -167,10 +168,6 @@ export class EventosPublicoController {
         if (existente)
             throw new ConflictException('Ya estás inscrito en este evento');
 
-        // Verificar cupo
-        if (evento.totalInscritos <= 0)
-            throw new ForbiddenException('No hay cupos disponibles');
-
         // Crear inscripción
         const inscripcion = await this.prisma.eventoInscripcion.create({
             data: {
@@ -183,10 +180,10 @@ export class EventosPublicoController {
             },
         });
 
-        // Decrementar cupo
+        // Incrementar contador de inscritos
         await this.prisma.evento.update({
             where: { id: eventoId },
-            data: { totalInscritos: { decrement: 1 } },
+            data: { totalInscritos: { increment: 1 } },
         });
 
         return {

@@ -103,4 +103,12 @@ export class PublicController {
       select: { id: true, nombre: true },
     });
   }
+
+  @Get('tipos-evento')
+  async getTiposEvento() {
+    return this.prisma.tipoEvento.findMany({
+      where: { estado: 'activo' },
+      select: { id: true, nombre: true },
+    });
+  }
 }
