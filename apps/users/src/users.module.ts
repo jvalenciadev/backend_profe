@@ -1,82 +1,63 @@
 import { Module } from '@nestjs/common';
-import { UsersController } from './users.controller';
-import { UsersService } from './users.service';
+import { ConfigModule } from '@nestjs/config';
+import { BancoProfesionalModule } from './bancoProfesional/banco-profesional.module';
+import { UserModule } from './user/user.module';
+import { RoleModule } from './roles-crud/roles-crud.module';
+import { PermissionsCrudModule as PermissionModule } from './permissions-crud/permissions-crud.module';
+import { ProfeModule } from './profe/profe.module';
+import { CargosModule } from './cargos/cargos.module';
+import { EvaluationsModule } from './evaluations/evaluations.module';
+import { CaslModule, MailModule } from '@app/common';
 import { DatabaseModule } from '@app/database';
-import {
-  RolesController,
-  RolesService,
-  PermissionsController,
-  PermissionsService,
-  PersonasController,
-  PersonasService,
-  AreasController,
-  AreasService,
-  GenerosController,
-  GenerosService,
-} from './users-crud.controllers';
 
-import { CommonModule } from '@app/common';
+// 🚀 Módulos con Clean Architecture Completa (Nuevos/Migrados)
+// 🚀 Módulos con Clean Architecture Completa (Nuevos/Migrados)
+import { AreaModule } from './areas-crud/areas-crud.module';
+import { GeneroModule } from './generos-crud/generos-crud.module';
+import { MapPersonasModule } from './map-personas/map-personas.module';
+
+
+// Controllers y Casos de Uso del Usuario
+import { UsersController } from './users.controller';
 import {
-  CargosController,
-  CargosService,
-  MapCargosController,
-  MapCargosService,
-  MapCategoriasController,
-  MapCategoriasService,
-  MapEspecialidadesController,
-  MapEspecialidadesService,
-  MapNivelesController,
-  MapNivelesService,
-  MapSubsistemasController,
-  MapSubsistemasService,
-  MapPersonasController,
-  MapPersonasService,
-} from './hr-crud.controllers';
-import { EvaluationsController } from './evaluations.controller';
-import { EvaluationsService } from './evaluations.service';
-import { ProfeController, ProfeService } from './profe.controller';
-import { BancoProfesionalController } from './banco-profesional.controller';
-import { BancoProfesionalService } from './banco-profesional.service';
-import { PublicBancoProfesionalController } from './public-banco-profesional.controller';
+  CreateUserUseCase, FindAllUsersUseCase, FindUserByIdUseCase,
+  UpdateUserUseCase, DeleteUserUseCase, ResetUserPasswordUseCase,
+  RequestEmailVerificationUseCase,
+} from './user/application/use-cases/user.use-cases';
 
 @Module({
-  imports: [DatabaseModule, CommonModule],
+  imports: [
+    ConfigModule,
+    DatabaseModule,
+    CaslModule,
+    MailModule,
+
+    // Core Modules
+    UserModule,
+    RoleModule,
+    PermissionModule,
+    ProfeModule,
+    EvaluationsModule,
+    BancoProfesionalModule,
+
+    // HR and Support Modules
+    CargosModule,
+    AreaModule,
+    GeneroModule,
+    MapPersonasModule,
+  ],
   controllers: [
     UsersController,
-    RolesController,
-    PermissionsController,
-    PersonasController,
-    AreasController,
-    GenerosController,
-    CargosController,
-    MapCargosController,
-    MapCategoriasController,
-    MapEspecialidadesController,
-    MapNivelesController,
-    MapSubsistemasController,
-    MapPersonasController,
-    BancoProfesionalController,
-    EvaluationsController,
-    ProfeController,
-    PublicBancoProfesionalController,
   ],
   providers: [
-    UsersService,
-    RolesService,
-    PermissionsService,
-    PersonasService,
-    AreasService,
-    GenerosService,
-    CargosService,
-    MapCargosService,
-    MapCategoriasService,
-    MapEspecialidadesService,
-    MapNivelesService,
-    MapSubsistemasService,
-    MapPersonasService,
-    BancoProfesionalService,
-    EvaluationsService,
-    ProfeService,
+    // Re-exportar use cases del UserModule para el UsersController
+    CreateUserUseCase,
+    FindAllUsersUseCase,
+    FindUserByIdUseCase,
+    UpdateUserUseCase,
+    DeleteUserUseCase,
+    ResetUserPasswordUseCase,
+    RequestEmailVerificationUseCase,
   ],
 })
 export class UsersModule { }

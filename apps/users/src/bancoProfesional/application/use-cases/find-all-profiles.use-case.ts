@@ -1,0 +1,28 @@
+import { Injectable, Inject } from '@nestjs/common';
+import { type IBancoProfesionalRepository } from '../../domain/repositories/banco-profesional.repository.interface';
+import { BancoProfesional } from '../../domain/entities/banco-profesional.entity';
+
+@Injectable()
+export class FindAllProfilesUseCase {
+    constructor(
+        @Inject('BANCO_PROFESIONAL_REPOSITORY')
+        private readonly repository: IBancoProfesionalRepository
+    ) { }
+
+    async execute(filter: any = {}): Promise<BancoProfesional[]> {
+        // Solo listamos POSTULACION_PROFE y que NO estén inactivos ni eliminados
+        const queryFilter = {
+            ...filter,
+            cargoPostulacionId: { not: null },
+            estado: 'activo',
+            roles: {
+                some: {
+                    role: {
+                        name: 'POSTULACION_PROFE'
+                    }
+                }
+            }
+        };
+        return this.repository.findAll(queryFilter);
+    }
+}

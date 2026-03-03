@@ -1,11 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService, GenericCrudService } from '@app/database';
+import { PrismaService } from '@app/database';
 
 @Injectable()
-export class AcademicService extends GenericCrudService<any> {
-  constructor(prisma: PrismaService) {
-    super(prisma, 'programa'); // Default model is Programa (Master)
-  }
+export class AcademicService {
+  constructor(private readonly prisma: PrismaService) { }
 
   /**
    * Crea una versión operativa (ProgramaDos) a partir de un maestro (Programa)
@@ -76,14 +74,14 @@ export class AcademicService extends GenericCrudService<any> {
         // Setup turns for this offering
         turnos: turnos
           ? {
-              create: turnos.map((t: any) => ({
-                turnoIds: t.turnoIds,
-                cupo: t.cupo,
-                cupoPre: t.cupoPre || 0,
-                estado: t.estado || 'activo',
-                createdBy: user?.id || null,
-              })),
-            }
+            create: turnos.map((t: any) => ({
+              turnoIds: t.turnoIds,
+              cupo: t.cupo,
+              cupoPre: t.cupoPre || 0,
+              estado: t.estado || 'activo',
+              createdBy: user?.id || null,
+            })),
+          }
           : undefined,
       },
       include: { modulos: true, turnos: true },

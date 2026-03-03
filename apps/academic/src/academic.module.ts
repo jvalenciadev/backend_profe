@@ -1,111 +1,80 @@
 import { Module } from '@nestjs/common';
+import { DatabaseModule } from '@app/database';
+import { CaslModule } from '@app/common';
+
+// ✅ Módulos con Clean Architecture Completa
+import { ComunicadoModule } from './comunicado/comunicado.module';
+import { EvaluacionPeriodoModule } from './evaluacionPeriodo/evaluacionPeriodo.module';
+import { ProgramaModule } from './programa/programa.module';
+import { InscripcionModule } from './inscripcion/inscripcion.module';
+import { OfertaModule } from './oferta/oferta.module';
+import { EventoModule } from './evento/evento.module';
+import { BlogModule } from './blog/blog.module';
+
+// ✅ Módulos Generados Automáticamente (Clean Architecture)
+import { DuracionModule } from './duracion/duracion.module';
+import { VersionModule } from './version/version.module';
+import { TipoModule } from './tipo/tipo.module';
+import { ModalidadModule } from './modalidad/modalidad.module';
+import { ModuloMaestroModule } from './modulo-maestro/modulo-maestro.module';
+import { ProgramaVersionModule } from './programa-version/programa-version.module';
+import { ProgramaModuloVersionModule } from './programa-modulo-version/programa-modulo-version.module';
+import { TurnoModule } from './turno/turno.module';
+import { BaucherModule } from './baucher/baucher.module';
+import { CalificacionModule } from './calificacion/calificacion.module';
+import { EventoTipoModule } from './evento-tipo/evento-tipo.module';
+import { EventoInscripcionModule } from './evento-inscripcion/evento-inscripcion.module';
+import { EventoPersonaModule } from './evento-persona/evento-persona.module';
+import { EstadoInscripcionModule } from './estado-inscripcion/estado-inscripcion.module';
+import { EventoCuestionarioModule } from './evento-cuestionario/evento-cuestionario.module';
+import { EventoPreguntaModule } from './evento-pregunta/evento-pregunta.module';
+import { AsignacionFacilitadorModule } from './asignacion-facilitador/asignacion-facilitador.module';
+
 import { AcademicController } from './academic.controller';
 import { AcademicService } from './academic.service';
-import { DatabaseModule } from '@app/database';
-import {
-  DuracionesController,
-  DuracionesService,
-  VersionesController,
-  VersionesService,
-  TiposController,
-  TiposService,
-  ModalidadesController,
-  ModalidadesService,
-  TurnosController,
-  TurnosService,
-  InscripcionesController,
-  InscripcionesService,
-  BauchersController,
-  BauchersService,
-  CalificacionesController,
-  CalificacionesService,
-  EventosController,
-  EventosService,
-  EventosTiposController,
-  EventosTiposService,
-  EventosInscripcionesController,
-  EventosInscripcionesService,
-  EventosPersonasController,
-  EventosPersonasService,
-  EstadosInscripcionController,
-  EstadosInscripcionService,
-  EventoCuestionariosController,
-  EventoCuestionariosService,
-  EventoPreguntasController,
-  EventoPreguntasService,
-  ProgramasController,
-  ProgramasService,
-  ModulosController,
-  ModulosService,
-  ProgramaDosController,
-  ProgramaDosService,
-  ProgramaModuloDosController,
-  ProgramaModuloDosService,
-  ProgramaBaseController,
-  AsignacionesController,
-  AsignacionesService,
-  BlogsController,
-  BlogsService,
-  ComunicadosController,
-  ComunicadosService,
-} from './academic-crud.controllers';
 import { PublicController } from './public.controller';
 import { EventosPublicoController } from './eventos-publico.controller';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [
+    DatabaseModule,
+    CaslModule,
+
+    // Módulos Completos
+    ComunicadoModule,
+    EvaluacionPeriodoModule,
+    ProgramaModule,
+    InscripcionModule,
+    OfertaModule,
+    EventoModule,
+    BlogModule,
+
+    // Módulos Generados
+    DuracionModule,
+    VersionModule,
+    TipoModule,
+    ModalidadModule,
+    ModuloMaestroModule,
+    ProgramaVersionModule,
+    ProgramaModuloVersionModule,
+    TurnoModule,
+    BaucherModule,
+    CalificacionModule,
+    EventoTipoModule,
+    EventoInscripcionModule,
+    EventoPersonaModule,
+    EstadoInscripcionModule,
+    EventoCuestionarioModule,
+    EventoPreguntaModule,
+    AsignacionFacilitadorModule,
+  ],
   controllers: [
     AcademicController,
-    ProgramasController,
-    ModulosController,
-    ProgramaDosController,
-    ProgramaBaseController,
-    ProgramaModuloDosController,
-    DuracionesController,
-    VersionesController,
-    TiposController,
-    ModalidadesController,
-    TurnosController,
-    InscripcionesController,
-    BauchersController,
-    CalificacionesController,
-    EventosController,
-    EventosTiposController,
-    EventosInscripcionesController,
-    EventosPersonasController,
-    EstadosInscripcionController,
-    EventoCuestionariosController,
-    EventoPreguntasController,
-    AsignacionesController,
-    BlogsController,
-    ComunicadosController,
     PublicController,
     EventosPublicoController,
   ],
   providers: [
     AcademicService,
-    ProgramasService,
-    ModulosService,
-    ProgramaDosService,
-    ProgramaModuloDosService,
-    DuracionesService,
-    VersionesService,
-    TiposService,
-    ModalidadesService,
-    TurnosService,
-    InscripcionesService,
-    BauchersService,
-    CalificacionesService,
-    EventosService,
-    EventosTiposService,
-    EventosInscripcionesService,
-    EventosPersonasService,
-    EstadosInscripcionService,
-    EventoCuestionariosService,
-    EventoPreguntasService,
-    AsignacionesService,
-    BlogsService,
-    ComunicadosService,
   ],
 })
 export class AcademicModule { }

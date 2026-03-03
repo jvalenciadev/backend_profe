@@ -6,18 +6,17 @@ import {
   Param,
   UseGuards,
   BadRequestException,
-  Req,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { JwtAuthGuard, UploadConfigService } from '@app/common';
+import { JwtAuthGuard, UploadConfigService, CurrentUser } from '@app/common';
 import { memoryStorage } from 'multer';
 import * as path from 'path';
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 
 @Controller('upload')
 @UseGuards(JwtAuthGuard)
 export class UploadController {
-  constructor(private readonly uploadConfig: UploadConfigService) {}
+  constructor(private readonly uploadConfig: UploadConfigService) { }
 
   @Post(':tableName')
   @UseInterceptors(
@@ -28,17 +27,17 @@ export class UploadController {
   async uploadFile(
     @UploadedFile() file: any,
     @Param('tableName') tableName: string,
-    @Req() req: any,
+    @CurrentUser() user: any,
   ) {
     if (!file)
-      throw new BadRequestException('No se ha subido ning\u00FAn archivo');
+      throw new BadRequestException('No se ha subido ningún archivo');
 
     // Validar dinámicamente según BD
     await this.uploadConfig.validateImage(tableName, file);
 
     // Obtener ruta dinámica
     const finalPath = await this.uploadConfig.getDynamicPath(
-      req.user,
+      user,
       tableName,
     );
 
@@ -48,8 +47,8 @@ export class UploadController {
     const filename = `${timestamp}${fileExt}`;
     const fullPath = path.join(finalPath, filename);
 
-    // Guardar archivo
-    fs.writeFileSync(fullPath, file.buffer);
+    // Guardar archivo asincrónicamente
+    await fs.writeFile(fullPath, file.buffer);
 
     // Construir URL relativa correcta desde la carpeta uploads
     const uploadsRoot = path.join(process.cwd(), 'uploads');

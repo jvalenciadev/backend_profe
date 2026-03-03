@@ -1,0 +1,28 @@
+export class Sede {
+  constructor(
+    public id: string,
+    public nombre: string,
+    public departamentoId: string,
+    public latitud: number,
+    public longitud: number,
+    public estado: string,
+    public nombreAbre?: string | null,
+    public descripcion?: string | null,
+    public imagen?: string | null,
+    public nombreResp1?: string | null,
+    public cargoResp1?: string | null,
+    public imagenResp1?: string | null,
+    public nombreResp2?: string | null,
+    public cargoResp2?: string | null,
+    public imagenResp2?: string | null,
+    public contacto1?: number,
+    public contacto2?: number | null,
+    public facebook?: string | null,
+    public tiktok?: string | null,
+    public whatsapp?: string | null,
+    public horario?: string | null,
+    public turno?: string | null,
+    public ubicacion?: string | null,
+    public departamento?: any
+  ) { }
+}

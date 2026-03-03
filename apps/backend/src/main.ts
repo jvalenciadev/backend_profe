@@ -9,6 +9,11 @@ async function bootstrap() {
 
   app.useGlobalFilters(new AllExceptionsFilter());
 
+  // Aumentar límites de tamaño del body (necesario para importaciones masivas)
+  const express = require('express');
+  app.use(express.json({ limit: '100mb' }));
+  app.use(express.urlencoded({ limit: '100mb', extended: true }));
+
   // Basic configurations
   app.enableCors();
   app.useGlobalPipes(new ValidationPipe({ transform: true }));

@@ -46,7 +46,7 @@ model User {
   licMescp                  String?                     @map("bp_lic_mescp")
   tieneProduccion           Boolean                     @default(false) @map("bp_tiene_produccion")
   hojaDeVidaPdf             String?                     @map("bp_hoja_vida_pdf")
-  rda                       BigInt?                     @map("per_rda")
+  rda                       BigInt?                     @unique @map("per_rda")
   rdaPdf                    String?                     @map("bp_rda_pdf")
   categoriaId               String?                     @map("cat_id") @db.Uuid
   cargoPostulacionId        String?                     @map("car_id_postulacion") @db.Uuid
@@ -142,8 +142,9 @@ model bp_tipo_posgrado {
   btp_id      String        @id @default(uuid()) @db.Uuid
   btp_nombre  String
   btp_estado  Estado        @default(activo)
+  btp_orden   Int           @default(0)
   created_at  DateTime      @default(now())
-  updated_at  DateTime
+  updated_at  DateTime      @updatedAt
   bp_posgrado bp_posgrado[]
 }
 
@@ -218,18 +219,19 @@ model Departamento {
 }
 
 model distrito {
-  id             String       @id @default(uuid()) @map("dis_id") @db.Uuid
-  codigo         Int          @map("dis_codigo")
-  nombre         String       @map("dis_nombre")
-  estado         Estado       @default(activo) @map("dis_estado")
-  departamentoId String       @map("dep_id") @db.Uuid
-  createdAt      DateTime     @default(now()) @map("created_at")
-  updatedAt      DateTime     @updatedAt @map("updated_at")
-  deletedAt      DateTime?    @map("deleted_at")
-  createdBy      String?      @map("created_by") @db.Uuid
-  updatedBy      String?      @map("updated_by") @db.Uuid
-  deletedBy      String?      @map("deleted_by") @db.Uuid
-  departamento   Departamento @relation(fields: [departamentoId], references: [id])
+  id               String             @id @default(uuid()) @map("dis_id") @db.Uuid
+  codigo           Int                @map("dis_codigo")
+  nombre           String             @map("dis_nombre")
+  estado           Estado             @default(activo) @map("dis_estado")
+  departamentoId   String             @map("dep_id") @db.Uuid
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+  deletedAt        DateTime?          @map("deleted_at")
+  createdBy        String?            @map("created_by") @db.Uuid
+  updatedBy        String?            @map("updated_by") @db.Uuid
+  deletedBy        String?            @map("deleted_by") @db.Uuid
+  departamento     Departamento       @relation(fields: [departamentoId], references: [id])
+  unidadEducativas unidad_educativa[]
 
   @@map("distrito")
 }
@@ -485,21 +487,40 @@ model evento_restriccion {
 }
 
 model Galeria {
-  id         String    @id @default(uuid()) @map("galeria_id") @db.Uuid
-  imagen     String    @map("galeria_imagen")
-  estado     Estado    @default(activo) @map("galeria_estado")
-  sedeId     String?   @map("sede_id") @db.Uuid
-  programaId String?   @map("pro_id") @db.Uuid
-  createdAt  DateTime  @default(now()) @map("created_at")
-  updatedAt  DateTime  @updatedAt @map("updated_at")
-  createdBy  String?   @map("created_by") @db.Uuid
-  deletedAt  DateTime? @map("deleted_at")
-  deletedBy  String?   @map("deleted_by") @db.Uuid
-  updatedBy  String?   @map("updated_by") @db.Uuid
-  programa   Programa? @relation(fields: [programaId], references: [id])
-  sede       Sede?     @relation(fields: [sedeId], references: [id])
+  id          String    @id @default(uuid()) @map("galeria_id") @db.Uuid
+  titulo      String    @map("galeria_titulo")
+  descripcion String?   @map("galeria_descripcion")
+  imagen      String    @map("galeria_imagen")
+  estado      Estado    @default(activo) @map("galeria_estado")
+  sedeId      String?   @map("sede_id") @db.Uuid
+  programaId  String?   @map("pro_id") @db.Uuid
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  createdBy   String?   @map("created_by") @db.Uuid
+  deletedAt   DateTime? @map("deleted_at")
+  deletedBy   String?   @map("deleted_by") @db.Uuid
+  updatedBy   String?   @map("updated_by") @db.Uuid
+  programa    Programa? @relation(fields: [programaId], references: [id])
+  sede        Sede?     @relation(fields: [sedeId], references: [id])
 
   @@map("galeria")
+}
+
+model UploadConfig {
+  id                String   @id @default(uuid()) @map("uc_id") @db.Uuid
+  tableName         String   @unique @map("uc_table_name")
+  maxSizeMB         Float    @default(5) @map("uc_max_size_mb")
+  allowedExtensions String   @default("jpg,jpeg,png,webp") @map("uc_allowed_extensions")
+  minWidth          Int?     @map("uc_min_width")
+  maxWidth          Int?     @map("uc_max_width")
+  minHeight         Int?     @map("uc_min_height")
+  maxHeight         Int?     @map("uc_max_height")
+  aspectRatio       String?  @map("uc_aspect_ratio")
+  estado            Estado   @default(activo) @map("uc_estado")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@map("upload_configs")
 }
 
 model UserRole {
@@ -1019,17 +1040,19 @@ model token_dispositivo {
 }
 
 model unidad_educativa {
-  id         String    @id @default(uuid()) @map("uni_edu_id") @db.Uuid
-  codigo     BigInt    @map("uni_edu_codigo")
-  nombre     String    @map("uni_edu_nombre")
-  estado     Estado    @default(activo) @map("uni_edu_estado")
-  distritoId String?   @map("dis_id") @db.Uuid
-  createdAt  DateTime  @default(now()) @map("created_at")
-  updatedAt  DateTime  @updatedAt @map("updated_at")
-  createdBy  String?   @map("created_by") @db.Uuid
-  deletedAt  DateTime? @map("deleted_at")
-  deletedBy  String?   @map("deleted_by") @db.Uuid
-  updatedBy  String?   @map("updated_by") @db.Uuid
+  id         String       @id @default(uuid()) @map("uni_edu_id") @db.Uuid
+  codigo     BigInt       @map("uni_edu_codigo")
+  nombre     String       @map("uni_edu_nombre")
+  estado     Estado       @default(activo) @map("uni_edu_estado")
+  distritoId String?      @map("dis_id") @db.Uuid
+  createdAt  DateTime     @default(now()) @map("created_at")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
+  createdBy  String?      @map("created_by") @db.Uuid
+  deletedAt  DateTime?    @map("deleted_at")
+  deletedBy  String?      @map("deleted_by") @db.Uuid
+  updatedBy  String?      @map("updated_by") @db.Uuid
+  distrito   distrito?    @relation(fields: [distritoId], references: [id])
+  personas   MapPersona[]
 
   @@map("unidad_educativa")
 }
@@ -1062,7 +1085,7 @@ model Video {
 
 model MapCargo {
   id        String       @id @default(uuid()) @map("car_id") @db.Uuid
-  nombre    String       @map("car_nombre")
+  nombre    String       @unique @map("car_nombre")
   estado    Estado       @default(activo) @map("car_estado")
   createdAt DateTime?    @default(now()) @map("created_at")
   updatedAt DateTime?    @updatedAt @map("updated_at")
@@ -1073,7 +1096,7 @@ model MapCargo {
 
 model MapCategoria {
   id        String       @id @default(uuid()) @map("cat_id") @db.Uuid
-  nombre    String       @map("cat_nombre")
+  nombre    String       @unique @map("cat_nombre")
   estado    Estado       @default(activo) @map("cat_estado")
   createdAt DateTime?    @default(now()) @map("created_at")
   updatedAt DateTime?    @updatedAt @map("updated_at")
@@ -1085,7 +1108,7 @@ model MapCategoria {
 
 model MapEspecialidad {
   id        String       @id @default(uuid()) @map("esp_id") @db.Uuid
-  nombre    String       @map("esp_nombre")
+  nombre    String       @unique @map("esp_nombre")
   estado    Estado       @default(activo) @map("esp_estado")
   createdAt DateTime?    @default(now()) @map("created_at")
   updatedAt DateTime?    @updatedAt @map("updated_at")
@@ -1096,7 +1119,7 @@ model MapEspecialidad {
 
 model MapNivel {
   id        String       @id @default(uuid()) @map("niv_id") @db.Uuid
-  nombre    String       @map("niv_nombre")
+  nombre    String       @unique @map("niv_nombre")
   estado    Estado       @default(activo) @map("niv_estado")
   createdAt DateTime?    @default(now()) @map("created_at")
   updatedAt DateTime?    @updatedAt @map("updated_at")
@@ -1107,7 +1130,7 @@ model MapNivel {
 
 model MapSubsistema {
   id        String       @id @default(uuid()) @map("sub_id") @db.Uuid
-  nombre    String       @map("sub_nombre")
+  nombre    String       @unique @map("sub_nombre")
   estado    Estado       @default(activo) @map("sub_estado")
   createdAt DateTime?    @default(now()) @map("created_at")
   updatedAt DateTime?    @updatedAt @map("updated_at")
@@ -1117,40 +1140,55 @@ model MapSubsistema {
 }
 
 model MapPersona {
-  id              String          @id @default(uuid()) @map("per_id") @db.Uuid
-  rda             BigInt?         @map("per_rda")
-  dgesttla        BigInt?         @map("per_dgesttla")
-  didep           BigInt?         @map("per_didep")
-  ci              BigInt          @map("per_ci")
-  complemento     String?         @map("per_complemento")
-  nombre1         String?         @map("per_nombre1")
-  nombre2         String?         @map("per_nombre2")
-  apellido1       String?         @map("per_apellido1")
-  apellido2       String?         @map("per_apellido2")
-  fechaNacimiento DateTime        @map("per_fecha_nacimiento") @db.Date
-  celular         Int             @default(0) @map("per_celular")
-  correo          String          @default("sincorreo") @map("per_correo")
-  enFuncion       Boolean         @default(true) @map("per_en_funcion")
-  libretaMilitar  Boolean         @default(true) @map("per_libreta_militar")
-  uniEduId        Int?            @default(0) @map("uni_edu_id")
-  estado          Estado          @default(activo) @map("per_estado")
-  // FK externas (genero y area_trabajo no están en este schema Prisma)
-  genId           BigInt          @map("gen_id")
-  areaId          BigInt          @map("area_id")
-  // FK a catálogos map_* (UUID)
-  espId           String          @map("esp_id") @db.Uuid
-  catId           String          @map("cat_id") @db.Uuid
-  carId           String          @map("car_id") @db.Uuid
-  subId           String          @map("sub_id") @db.Uuid
-  nivId           String          @map("niv_id") @db.Uuid
-  createdAt       DateTime?       @default(now()) @map("created_at")
-  updatedAt       DateTime?       @updatedAt @map("updated_at")
-  especialidad    MapEspecialidad @relation(fields: [espId], references: [id], onDelete: Cascade)
-  categoria       MapCategoria    @relation(fields: [catId], references: [id], onDelete: Cascade)
-  cargo           MapCargo        @relation(fields: [carId], references: [id], onDelete: Cascade)
-  subsistema      MapSubsistema   @relation(fields: [subId], references: [id], onDelete: Cascade)
-  nivel           MapNivel        @relation(fields: [nivId], references: [id], onDelete: Cascade)
+  id              String            @id @default(uuid()) @map("per_id") @db.Uuid
+  rda             BigInt?           @map("per_rda")
+  dgesttla        BigInt?           @map("per_dgesttla")
+  didep           BigInt?           @map("per_didep")
+  ci              String            @map("per_ci")
+  complemento     String?           @map("per_complemento")
+  nombre1         String?           @map("per_nombre1")
+  nombre2         String?           @map("per_nombre2")
+  apellido1       String?           @map("per_apellido1")
+  apellido2       String?           @map("per_apellido2")
+  fechaNacimiento DateTime          @map("per_fecha_nacimiento") @db.Date
+  celular         Int               @default(0) @map("per_celular")
+  correo          String            @default("") @map("per_correo")
+  enFuncion       Boolean           @default(true) @map("per_en_funcion")
+  libretaMilitar  Boolean           @default(true) @map("per_libreta_militar")
+  uniEduId        String?           @map("uni_edu_id") @db.Uuid
+  estado          Estado            @default(activo) @map("per_estado")
+  // FK a catálogos MAP (UUID)
+  genId           String?           @map("gen_id") @db.Uuid
+  areaId          String?           @map("area_id") @db.Uuid
+  espId           String?           @map("esp_id") @db.Uuid
+  catId           String?           @map("cat_id") @db.Uuid
+  carId           String?           @map("car_id") @db.Uuid
+  subId           String?           @map("sub_id") @db.Uuid
+  nivId           String?           @map("niv_id") @db.Uuid
+  createdAt       DateTime?         @default(now()) @map("created_at")
+  updatedAt       DateTime?         @updatedAt @map("updated_at")
+  createdBy       String?           @map("created_by") @db.Uuid
+  updatedBy       String?           @map("updated_by") @db.Uuid
+  deletedAt       DateTime?         @map("deleted_at")
+  deletedBy       String?           @map("deleted_by") @db.Uuid
+  genero          MapGenero?        @relation(fields: [genId], references: [id], onDelete: Restrict)
+  area            MapArea?          @relation(fields: [areaId], references: [id], onDelete: Restrict)
+  especialidad    MapEspecialidad?  @relation(fields: [espId], references: [id], onDelete: Cascade)
+  categoria       MapCategoria?     @relation(fields: [catId], references: [id], onDelete: Cascade)
+  cargo           MapCargo?         @relation(fields: [carId], references: [id], onDelete: Cascade)
+  subsistema      MapSubsistema?    @relation(fields: [subId], references: [id], onDelete: Cascade)
+  nivel           MapNivel?         @relation(fields: [nivId], references: [id], onDelete: Cascade)
+  unidadEducativa unidad_educativa? @relation(fields: [uniEduId], references: [id])
 
+  @@unique([ci, complemento], name: "map_persona_ci_complemento_unique")
+  @@index([genId])
+  @@index([areaId])
+  @@index([espId])
+  @@index([catId])
+  @@index([carId])
+  @@index([subId])
+  @@index([nivId])
+  @@index([createdAt])
   @@map("map_persona")
 }
 
@@ -1170,6 +1208,28 @@ model MapPersonaNr {
   updatedAt    DateTime? @updatedAt @map("updated_at")
 
   @@map("map_persona_nr")
+}
+
+model MapGenero {
+  id        String       @id @default(uuid()) @map("gen_id") @db.Uuid
+  nombre    String       @unique @map("gen_nombre")
+  estado    Estado       @default(activo) @map("gen_estado")
+  createdAt DateTime?    @default(now()) @map("created_at")
+  updatedAt DateTime?    @updatedAt @map("updated_at")
+  personas  MapPersona[]
+
+  @@map("map_genero")
+}
+
+model MapArea {
+  id        String       @id @default(uuid()) @map("area_id") @db.Uuid
+  nombre    String       @unique @map("area_nombre")
+  estado    Estado       @default(activo) @map("area_estado")
+  createdAt DateTime?    @default(now()) @map("created_at")
+  updatedAt DateTime?    @updatedAt @map("updated_at")
+  personas  MapPersona[]
+
+  @@map("map_area")
 }
 
 enum Estado {
