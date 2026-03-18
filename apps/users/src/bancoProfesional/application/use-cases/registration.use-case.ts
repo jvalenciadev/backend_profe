@@ -45,8 +45,8 @@ export class RegistrationUseCase {
         const activeConflict = conflicts.find(c => c.estado !== 'inactivo' && c.estado !== 'eliminado');
         if (activeConflict) {
             if (activeConflict.correo === data.correo) throw new ConflictException('Este correo ya está registrado en una cuenta activa.');
-            if (activeConflict.username === data.username) throw new ConflictException('Este nombre de usuario ya está ocupado.');
             if (activeConflict.ci === ciBigInt) throw new ConflictException('Este número de CI ya está registrado en una cuenta activa.');
+            if (activeConflict.username === data.username && data.username) throw new ConflictException('Este nombre de usuario ya está ocupado.');
         }
 
         // 4. Role Assignment preparation
@@ -60,6 +60,29 @@ export class RegistrationUseCase {
         }
 
         const hashedPassword = await bcrypt.hash(data.password, 12);
+        const finalUsername = data.username ? data.username : ci;
+        
+        const userDataToSave = {
+            correo: data.correo,
+            username: finalUsername,
+            password: hashedPassword,
+            nombre: String(data.nombre).toUpperCase(),
+            apellidos: String(data.apellidos).toUpperCase(),
+            ci: ciBigInt,
+            rda: rdaBigInt,
+            cargoPostulacionId: data.cargoId,
+            tenantId: data.tenantId || null,
+            imagen: data.imagen || null,
+            celular: String(data.celular || ''),
+            fechaNacimiento: data.fechaNac || data.fechaNacimiento || null,
+            esMaestro: Boolean(data.esMaestro),
+            rdaPdf: data.rdaPdf || null,
+            categoriaId: data.categoriaId || null,
+            idiomas: data.idiomas || null,
+            resumenProfesional: data.resumenProfesional || null,
+            habilidades: data.habilidades || null,
+            estado: 'pendiente' as any
+        };
 
         // 5. Transaction
         return this.prisma.$transaction(async (tx) => {
@@ -72,39 +95,19 @@ export class RegistrationUseCase {
                 user = await tx.user.update({
                     where: { id: inactiveConflict.id },
                     data: {
-                        correo: data.correo,
-                        username: data.username,
-                        password: hashedPassword,
-                        nombre: String(data.nombre).toUpperCase(),
-                        apellidos: String(data.apellidos).toUpperCase(),
-                        ci: ciBigInt,
-                        rda: rdaBigInt,
-                        cargoPostulacionId: data.cargoId,
-                        tenantId: data.tenantId || null,
+                        ...userDataToSave,
                         roles: {
                             deleteMany: {},
                             create: [{ roleId: role.id, modelType: 'App\\User' }]
-                        },
-                        imagen: data.imagen || null,
-                        estado: 'pendiente' // Restablecemos el estado
+                        }
                     }
                 });
             } else {
                 // Registro normal desde cero
                 user = await tx.user.create({
                     data: {
-                        correo: data.correo,
-                        username: data.username,
-                        password: hashedPassword,
-                        nombre: String(data.nombre).toUpperCase(),
-                        apellidos: String(data.apellidos).toUpperCase(),
-                        ci: ciBigInt,
-                        rda: rdaBigInt,
-                        cargoPostulacionId: data.cargoId,
-                        tenantId: data.tenantId || null,
+                        ...userDataToSave,
                         roles: { create: [{ roleId: role.id, modelType: 'App\\User' }] },
-                        imagen: data.imagen || null,
-                        estado: 'pendiente',
                     }
                 });
             }

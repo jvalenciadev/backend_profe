@@ -29,11 +29,10 @@ import { EstadoInscripcionModule } from './estado-inscripcion/estado-inscripcion
 import { EventoCuestionarioModule } from './evento-cuestionario/evento-cuestionario.module';
 import { EventoPreguntaModule } from './evento-pregunta/evento-pregunta.module';
 import { AsignacionFacilitadorModule } from './asignacion-facilitador/asignacion-facilitador.module';
+import { AulaCategoriaModule } from './aula-categoria/aula-categoria.module';
 
 import { AcademicController } from './academic.controller';
 import { AcademicService } from './academic.service';
-import { PublicController } from './public.controller';
-import { EventosPublicoController } from './eventos-publico.controller';
 
 @Module({
   imports: [
@@ -67,11 +66,10 @@ import { EventosPublicoController } from './eventos-publico.controller';
     EventoCuestionarioModule,
     EventoPreguntaModule,
     AsignacionFacilitadorModule,
+    AulaCategoriaModule,
   ],
   controllers: [
     AcademicController,
-    PublicController,
-    EventosPublicoController,
   ],
   providers: [
     AcademicService,

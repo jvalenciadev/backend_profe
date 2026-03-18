@@ -16,7 +16,7 @@ export class RequestVerificationUseCase {
 
         this.verificationCodes.set(normalizedEmail, { code, expires });
 
-        await this.mailService.sendPasswordResetEmail(normalizedEmail, code, 'Postulante');
+        await this.mailService.sendVerificationCodeEmail(normalizedEmail, code, 'Postulante');
         return { message: 'Código enviado' };
     }
 

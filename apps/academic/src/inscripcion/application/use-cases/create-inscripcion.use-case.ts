@@ -40,11 +40,12 @@ export class CreateInscripcionUseCase {
         }
 
         try {
-            // 5. Create enrollment
+            // 5. Create enrollment with forced Sede integrity from Offer
             const inscripcion = await this.repository.create({
                 ...dto,
+                sedeId: oferta.sedeId, // Force Sede from Offer
                 createdBy: currentUserId,
-                estadoInscripcionId: 'PENDIENTE',
+                estadoInscripcionId: dto.estadoInscripcionId,
             });
             return inscripcion;
         } catch (error) {

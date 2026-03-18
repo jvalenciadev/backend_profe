@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard, PoliciesGuard, CheckPolicies } from '@app/common';
 import {
-  GetEventoCuestionariosUseCase, GetEventoCuestionarioByIdUseCase, CreateEventoCuestionarioUseCase, UpdateEventoCuestionarioUseCase, DeleteEventoCuestionarioUseCase
+  GetEventoCuestionariosUseCase, GetEventoCuestionarioByIdUseCase, CreateEventoCuestionarioUseCase, UpdateEventoCuestionarioUseCase, DeleteEventoCuestionarioUseCase, GetEventoProgressUseCase
 } from '../../application/use-cases/evento-cuestionario.use-cases';
 
 @Controller('evento-cuestionarios')
@@ -13,7 +13,14 @@ export class EventoCuestionarioController {
     private readonly createEventoCuestionarioUseCase: CreateEventoCuestionarioUseCase,
     private readonly updateEventoCuestionarioUseCase: UpdateEventoCuestionarioUseCase,
     private readonly deleteEventoCuestionarioUseCase: DeleteEventoCuestionarioUseCase,
-  ) {}
+    private readonly getEventoProgressUseCase: GetEventoProgressUseCase,
+  ) { }
+
+  @Get('progress/:eventoId/:personaId')
+  @CheckPolicies((ability: any) => ability.can('read', 'EventoCuestionario'))
+  findProgress(@Param('eventoId') eventoId: string, @Param('personaId') personaId: string) {
+    return this.getEventoProgressUseCase.execute(eventoId, personaId);
+  }
 
   @Get()
   @CheckPolicies((ability: any) => ability.can('read', 'EventoCuestionario'))

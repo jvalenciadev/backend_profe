@@ -82,6 +82,24 @@
         "tsConfigPath": "apps/jobs/tsconfig.app.json"
       }
     },
+    "lms": {
+      "type": "application",
+      "root": "apps/lms",
+      "entryFile": "main",
+      "sourceRoot": "apps/lms/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/lms/tsconfig.app.json"
+      }
+    },
+    "views": {
+      "type": "application",
+      "root": "apps/views",
+      "entryFile": "main",
+      "sourceRoot": "apps/views/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/views/tsconfig.app.json"
+      }
+    },
     "territorial": {
       "type": "application",
       "root": "apps/territorial",

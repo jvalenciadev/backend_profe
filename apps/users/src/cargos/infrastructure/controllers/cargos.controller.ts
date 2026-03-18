@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
 import { JwtAuthGuard, PoliciesGuard, CheckPolicies } from '@app/common';
 import { GetCargosUseCase, GetCargoByIdUseCase } from '../../application/use-cases/get-cargos.use-case';
 import { CreateCargoUseCase } from '../../application/use-cases/create-cargo.use-case';
@@ -17,7 +17,7 @@ export class CargosController {
 
     @Get()
     @CheckPolicies((ability) => ability.can('read', 'Cargo'))
-    async findAll(@Query() query: any) {
+    async findAll(@Query() query: any, @Req() req: any) {
         const page = query.page ? Number(query.page) : 1;
         const limit = query.limit ? Number(query.limit) : 20;
 
@@ -26,7 +26,7 @@ export class CargosController {
             estado: query.estado,
             page,
             limit,
-        });
+        }, req.ability);
 
         return {
             data: result.data,

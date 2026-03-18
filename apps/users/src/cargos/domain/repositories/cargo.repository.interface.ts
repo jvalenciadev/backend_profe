@@ -11,8 +11,8 @@ export interface CargoFilters {
 
 export interface ICargoRepository {
     create(cargo: Omit<Cargo, 'id'>): Promise<Cargo>;
-    findById(id: string): Promise<Cargo | null>;
-    findAll(filters?: CargoFilters): Promise<{ data: Cargo[]; total: number }>;
+    findById(id: string, ability?: any): Promise<Cargo | null>;
+    findAll(filters?: CargoFilters, ability?: any): Promise<{ data: Cargo[]; total: number }>;
     update(id: string, cargo: Partial<Cargo>): Promise<Cargo>;
     delete(id: string): Promise<boolean>;
 }

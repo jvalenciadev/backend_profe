@@ -40,7 +40,10 @@ model User {
   deletedBy                 String?                     @map("deleted_by") @db.Uuid
   sedeIds                   String?                     @map("sede_ids")
   proIds                    String?                     @map("pro_ids")
+  // ── Identificación ───────────────────────────────────────────────────────
   ci                        BigInt?                     @map("per_ci")
+  complemento               String?                     @map("per_complemento")
+  // ── Banco Profesional ────────────────────────────────────────────────────
   esMaestro                 Boolean                     @default(false) @map("bp_es_maestro")
   licUniversitaria          String?                     @map("bp_lic_universitaria")
   licMescp                  String?                     @map("bp_lic_mescp")
@@ -65,7 +68,20 @@ model User {
   roles                     UserRole[]
   programaDosFacilitadors   ProgramaDosFacilitador[]
   sedes                     UserSede[]
+  // LMS Moodle Relations
+  mod_foro_posts            mod_foro_post[]
+  mod_tarea_entregas        mod_entrega[]
+  mod_cuestionario_intentos mod_intento[]
+  mod_asistencia_regs       mod_asistencia_reg[]
+  mod_nota_actividades      mod_nota_actividad[]
+  mod_nota_finales          mod_nota_final[]
+  mod_insignias             mod_insignia_user[]
+  mod_notificaciones        mod_notificacion[]
+  modulosMaestrosAsignados  ProgramaModulo[]
+  inscripciones             ProgramaInscripcion[]       @relation("InscripcionesUser")
 
+  @@index([ci])
+  @@index([ci, complemento])
   @@map("admins")
 }
 
@@ -146,19 +162,6 @@ model bp_tipo_posgrado {
   created_at  DateTime      @default(now())
   updated_at  DateTime      @updatedAt
   bp_posgrado bp_posgrado[]
-}
-
-model CalificacionParticipante {
-  id             String   @id @default(uuid()) @map("cp_id") @db.Uuid
-  puntaje        Int      @map("cp_puntaje")
-  estado         String   @default("aprobado") @map("cp_estado")
-  programaId     String   @map("pi_id") @db.Uuid
-  modalidadId    String   @map("pm_id") @db.Uuid
-  calificacionId String   @map("pc_id") @db.Uuid
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
-
-  @@map("calificacion_participante")
 }
 
 model Cargo {
@@ -311,7 +314,7 @@ model Evento {
   id                 String               @id @default(uuid()) @map("eve_id") @db.Uuid
   nombre             String               @map("eve_nombre")
   codigo             String?              @map("eve_codigo")
-  descripcion        String               @map("eve_descripcion")
+  descripcion        String               @map("eve_descripcion") @db.Text
   banner             String               @map("eve_banner")
   afiche             String               @map("eve_afiche")
   modalidadIds       String               @map("pm_ids")
@@ -320,6 +323,7 @@ model Evento {
   asistencia         Boolean?             @map("eve_asistencia")
   codigoAsistencia   String?              @map("eve_codigo_asistencia")
   lugar              String               @map("eve_lugar")
+  urlVideo           String?              @map("eve_url_video") // YouTube URL o ID para eventos virtuales
   totalInscritos     Int                  @default(0) @map("eve_total_inscrito")
   estado             Estado               @default(activo) @map("eve_estado")
   tipoId             String               @map("et_id") @db.Uuid
@@ -334,51 +338,62 @@ model Evento {
   tenant             Departamento?        @relation(fields: [tenantId], references: [id])
   cuestionarios      EventoCuestionario[]
   eventoInscripcions EventoInscripcion[]
+  camposExtras       EventoCampoExtra[]
 
   @@map("evento")
 }
 
 model EventoCuestionario {
-  id            String            @id @default(uuid()) @map("eve_cue_id") @db.Uuid
-  titulo        String            @map("eve_cue_titulo")
-  descripcion   String            @map("eve_cue_descripcion")
-  fechaInicio   DateTime          @map("eve_cue_fecha_ini")
-  fechaFin      DateTime          @map("eve_cue_fecha_fin")
-  tiempoMaximo  Int?              @map("eve_cue_tiempo_max") // en minutos
-  puntosMaximos Int?              @map("eve_cue_pts_max")
-  estado        Estado            @default(activo) @map("eve_cue_estado")
-  eventoId      String            @map("eve_id") @db.Uuid
-  createdAt     DateTime          @default(now()) @map("created_at")
-  updatedAt     DateTime          @updatedAt @map("updated_at")
-  createdBy     String?           @map("created_by") @db.Uuid
-  deletedAt     DateTime?         @map("deleted_at")
-  deletedBy     String?           @map("deleted_by") @db.Uuid
-  updatedBy     String?           @map("updated_by") @db.Uuid
-  evento        Evento            @relation(fields: [eventoId], references: [id])
-  preguntas     evento_pregunta[]
+  id                String                      @id @default(uuid()) @map("eve_cue_id") @db.Uuid
+  titulo            String                      @map("eve_cue_titulo")
+  descripcion       String                      @map("eve_cue_descripcion") @db.Text
+  fechaInicio       DateTime                    @map("eve_cue_fecha_ini")
+  fechaFin          DateTime                    @map("eve_cue_fecha_fin")
+  tiempoMaximo      Int?                        @map("eve_cue_tiempo_max") // en minutos
+  puntosMaximos     Int?                        @map("eve_cue_pts_max")
+  puntajeMinimo     Int                         @default(0) @map("eve_cue_pts_min")
+  cantidadPreguntas Int?                        @map("eve_cue_cantidad_preg") // Cuántas preguntas mostrar
+  esAleatorio       Boolean                     @default(false) @map("eve_cue_es_aleatorio") // Mezclar preguntas
+  limiteIntentos    Int?                        @map("eve_cue_limite_intentos") // null = sin límite de intentos
+  urlVideo          String?                     @map("eve_cue_url_video") // ID o URL del video de YouTube a ver antes
+  orden             Int                         @default(0) @map("eve_cue_orden")
+  esObligatorio     Boolean                     @default(true) @map("eve_cue_es_obligatorio")
+  esEvaluativo      Boolean                     @default(true) @map("eve_cue_es_evaluativo")
+  estado            Estado                      @default(activo) @map("eve_cue_estado")
+  eventoId          String                      @map("eve_id") @db.Uuid
+  createdAt         DateTime                    @default(now()) @map("created_at")
+  updatedAt         DateTime                    @updatedAt @map("updated_at")
+  createdBy         String?                     @map("created_by") @db.Uuid
+  deletedAt         DateTime?                   @map("deleted_at")
+  deletedBy         String?                     @map("deleted_by") @db.Uuid
+  updatedBy         String?                     @map("updated_by") @db.Uuid
+  evento            Evento                      @relation(fields: [eventoId], references: [id])
+  preguntas         evento_pregunta[]
+  intentos          EventoCuestionarioIntento[]
 
   @@map("evento_cuestionario")
 }
 
 model EventoInscripcion {
-  id             String        @id @default(uuid()) @map("eve_ins_id") @db.Uuid
-  asistencia     Boolean       @default(false) @map("eve_ins_asistencia")
-  estado         Estado        @default(activo) @map("eve_ins_estado")
-  nroDeposito    String?       @map("eve_nro_deposito")
-  fechaDeposito  DateTime?     @map("eve_fecha_deposito") @db.Date
-  imagenDeposito String?       @map("eve_imagen_deposito")
-  personaId      String        @map("eve_per_id") @db.Uuid
-  eventoId       String        @map("eve_id") @db.Uuid
-  departamentoId String        @map("dep_id") @db.Uuid
-  modalidadId    String        @map("pm_id") @db.Uuid
-  createdAt      DateTime      @default(now()) @map("created_at")
-  updatedAt      DateTime      @updatedAt @map("updated_at")
-  createdBy      String?       @map("created_by") @db.Uuid
-  deletedAt      DateTime?     @map("deleted_at")
-  deletedBy      String?       @map("deleted_by") @db.Uuid
-  updatedBy      String?       @map("updated_by") @db.Uuid
-  evento         Evento        @relation(fields: [eventoId], references: [id])
-  persona        EventoPersona @relation(fields: [personaId], references: [id])
+  id               String                      @id @default(uuid()) @map("eve_ins_id") @db.Uuid
+  asistencia       Boolean                     @default(false) @map("eve_ins_asistencia")
+  estado           Estado                      @default(activo) @map("eve_ins_estado")
+  nroDeposito      String?                     @map("eve_nro_deposito")
+  fechaDeposito    DateTime?                   @map("eve_fecha_deposito") @db.Date
+  imagenDeposito   String?                     @map("eve_imagen_deposito")
+  personaId        String                      @map("eve_per_id") @db.Uuid
+  eventoId         String                      @map("eve_id") @db.Uuid
+  departamentoId   String                      @map("dep_id") @db.Uuid
+  modalidadId      String                      @map("pm_id") @db.Uuid
+  createdAt        DateTime                    @default(now()) @map("created_at")
+  updatedAt        DateTime                    @updatedAt @map("updated_at")
+  createdBy        String?                     @map("created_by") @db.Uuid
+  deletedAt        DateTime?                   @map("deleted_at")
+  deletedBy        String?                     @map("deleted_by") @db.Uuid
+  updatedBy        String?                     @map("updated_by") @db.Uuid
+  evento           Evento                      @relation(fields: [eventoId], references: [id])
+  persona          EventoPersona               @relation(fields: [personaId], references: [id])
+  respuestasExtras EventoCampoExtraRespuesta[]
 
   @@map("evento_inscripcion_v2")
 }
@@ -402,25 +417,26 @@ model evento_opciones {
 }
 
 model EventoPersona {
-  id              String              @id @default(uuid()) @map("eve_per_id") @db.Uuid
-  ci              BigInt              @map("eve_per_ci")
-  complemento     String              @map("eve_per_complemento")
-  expedido        String              @map("eve_per_expedido")
-  nombre1         String              @map("eve_per_nombre_1")
-  nombre2         String              @map("eve_per_nombre_2")
-  apellido1       String              @map("eve_per_apellido_1")
-  apellido2       String              @map("eve_per_apellido_2")
-  fechaNacimiento DateTime            @map("eve_per_fecha_nacimiento") @db.Date
-  correo          String              @map("eve_per_correo")
-  celular         String              @map("eve_per_celular")
-  generoId        BigInt              @map("gen_id")
-  createdAt       DateTime            @default(now()) @map("created_at")
-  updatedAt       DateTime            @updatedAt @map("updated_at")
-  createdBy       String?             @map("created_by") @db.Uuid
-  deletedAt       DateTime?           @map("deleted_at")
-  deletedBy       String?             @map("deleted_by") @db.Uuid
-  updatedBy       String?             @map("updated_by") @db.Uuid
-  inscripciones   EventoInscripcion[]
+  id                         String                      @id @default(uuid()) @map("eve_per_id") @db.Uuid
+  ci                         BigInt                      @map("eve_per_ci")
+  complemento                String                      @map("eve_per_complemento")
+  expedido                   String                      @map("eve_per_expedido")
+  nombre1                    String                      @map("eve_per_nombre_1")
+  nombre2                    String                      @map("eve_per_nombre_2")
+  apellido1                  String                      @map("eve_per_apellido_1")
+  apellido2                  String                      @map("eve_per_apellido_2")
+  fechaNacimiento            DateTime                    @map("eve_per_fecha_nacimiento") @db.Date
+  correo                     String                      @map("eve_per_correo")
+  celular                    String                      @map("eve_per_celular")
+  generoId                   BigInt                      @map("gen_id")
+  createdAt                  DateTime                    @default(now()) @map("created_at")
+  updatedAt                  DateTime                    @updatedAt @map("updated_at")
+  createdBy                  String?                     @map("created_by") @db.Uuid
+  deletedAt                  DateTime?                   @map("deleted_at")
+  deletedBy                  String?                     @map("deleted_by") @db.Uuid
+  updatedBy                  String?                     @map("updated_by") @db.Uuid
+  inscripciones              EventoInscripcion[]
+  eventoCuestionarioIntentos EventoCuestionarioIntento[]
 
   @@map("evento_personas")
 }
@@ -484,6 +500,65 @@ model evento_restriccion {
   updatedBy       String?   @map("updated_by") @db.Uuid
 
   @@map("evento_restriccion")
+}
+
+// ---------------------------------------------------------
+// MODELOS PARA SEGUIMIENTO DE CUESTIONARIOS Y CAMPOS EXTRAS
+// ---------------------------------------------------------
+
+model EventoCuestionarioIntento {
+  id              String    @id @default(uuid()) @map("eci_id") @db.Uuid
+  cuestionarioId  String    @map("eve_cue_id") @db.Uuid
+  personaId       String    @map("eve_per_id") @db.Uuid
+  puntaje         Float     @default(0) @map("eci_puntaje")
+  estado          String    @default("in_progress") @map("eci_estado") // in_progress, finished
+  numeroIntentos  Int       @default(0) @map("eci_numero_intentos") // Cuántas veces intentó el cuestionario
+  videoCompletado Boolean   @default(false) @map("eci_video_completado") // Verificamos si ya vio el video
+  iniciadoEn      DateTime  @default(now()) @map("created_at")
+  finalizadoEn    DateTime? @map("finalizado_at")
+
+  cuestionario EventoCuestionario @relation(fields: [cuestionarioId], references: [id])
+  persona      EventoPersona      @relation(fields: [personaId], references: [id])
+
+  @@unique([cuestionarioId, personaId], name: "unique_persona_cuestionario")
+  @@map("evento_cuestionario_intento")
+}
+
+model EventoCampoExtra {
+  id            String                      @id @default(uuid()) @map("ece_id") @db.Uuid
+  eventoId      String                      @map("eve_id") @db.Uuid
+  label         String                      @map("ece_label")
+  tipo          EventoTipoCampoExtra        @map("ece_tipo")
+  opciones      Json?                       @map("ece_opciones") // Para selecciones múltiples/simples
+  esObligatorio Boolean                     @default(false) @map("ece_obligatorio")
+  orden         Int                         @default(0) @map("ece_orden")
+  estado        Estado                      @default(activo) @map("ece_estado")
+  createdAt     DateTime                    @default(now()) @map("created_at")
+  updatedAt     DateTime                    @updatedAt @map("updated_at")
+  deletedAt     DateTime?                   @map("deleted_at")
+  evento        Evento                      @relation(fields: [eventoId], references: [id])
+  respuestas    EventoCampoExtraRespuesta[]
+
+  @@map("evento_campo_extra")
+}
+
+model EventoCampoExtraRespuesta {
+  id            String            @id @default(uuid()) @map("ecer_id") @db.Uuid
+  campoExtraId  String            @map("ece_id") @db.Uuid
+  inscripcionId String            @map("eve_ins_id") @db.Uuid
+  valor         String            @map("ecer_valor") @db.Text
+  createdAt     DateTime          @default(now()) @map("created_at")
+  campoExtra    EventoCampoExtra  @relation(fields: [campoExtraId], references: [id])
+  inscripcion   EventoInscripcion @relation(fields: [inscripcionId], references: [id])
+
+  @@map("evento_campo_extra_respuesta")
+}
+
+enum EventoTipoCampoExtra {
+  TEXTO
+  BOOLEAN
+  MULTIPLE_SELECT
+  SINGLE_SELECT
 }
 
 model Galeria {
@@ -630,34 +705,24 @@ model Programa {
 }
 
 model ProgramaBaucher {
-  id                String    @id @default(uuid()) @map("pro_bau_id") @db.Uuid
-  imagen            String    @map("pro_bau_imagen")
-  nroDeposito       BigInt?   @map("pro_bau_nro_deposito")
-  monto             Int       @map("pro_bau_monto")
-  fecha             DateTime  @map("pro_bau_fecha") @db.Date
-  tipoPago          String    @default("Baucher") @map("pro_bau_tipo_pago")
-  confirmado        Boolean?  @map("pro_bau_confirmado")
-  fechaConfirmacion DateTime? @map("pro_bau_fecha_conf")
-  inscripcionId     String    @map("pi_id") @db.Uuid
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
-  createdBy         String?   @map("created_by") @db.Uuid
-  deletedAt         DateTime? @map("deleted_at")
-  estado            Estado    @default(activo) @map("pro_bau_estado")
-  updatedBy         String?   @map("updated_by") @db.Uuid
+  id                String              @id @default(uuid()) @map("pro_bau_id") @db.Uuid
+  imagen            String              @map("pro_bau_imagen")
+  nroDeposito       BigInt?             @map("pro_bau_nro_deposito")
+  monto             Int                 @map("pro_bau_monto")
+  fecha             DateTime            @map("pro_bau_fecha") @db.Date
+  tipoPago          String              @default("Baucher") @map("pro_bau_tipo_pago")
+  confirmado        Boolean?            @map("pro_bau_confirmado")
+  fechaConfirmacion DateTime?           @map("pro_bau_fecha_conf")
+  inscripcionId     String              @map("pi_id") @db.Uuid
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+  createdBy         String?             @map("created_by") @db.Uuid
+  deletedAt         DateTime?           @map("deleted_at")
+  estado            Estado              @default(activo) @map("pro_bau_estado")
+  updatedBy         String?             @map("updated_by") @db.Uuid
+  inscripcion       ProgramaInscripcion @relation(fields: [inscripcionId], references: [id])
 
   @@map("programa_baucher")
-}
-
-model programa_calificacion {
-  id        String   @id @default(uuid()) @map("pc_id") @db.Uuid
-  estado    Estado   @default(activo) @map("pc_estado")
-  tipoId    String   @map("pro_tip_id") @db.Uuid
-  ptcId     String   @map("ptc_id") @db.Uuid
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("programa_calificacion")
 }
 
 model ProgramaDos {
@@ -699,44 +764,52 @@ model ProgramaDos {
   programaDosFacilitadors ProgramaDosFacilitador[]
   turnos                  ProgramaDosTurno[]
   modulos                 ProgramaModuloDos[]
+  inscripciones           ProgramaInscripcion[]
 
   @@map("programa_dos")
 }
 
 model ProgramaDosFacilitador {
-  id            String            @id @default(uuid()) @map("pdf_id") @db.Uuid
-  programaDosId String            @map("pro_id") @db.Uuid
-  modalidadId   String            @map("pm_id") @db.Uuid
-  moduloId      String            @map("pdt_id") @db.Uuid
-  facilitadorId String            @map("fac_id") @db.Uuid
-  estado        Estado            @default(activo) @map("pdf_estado")
-  createdAt     DateTime          @default(now()) @map("created_at")
-  updatedAt     DateTime          @updatedAt @map("updated_at")
-  deletedAt     DateTime?         @map("deleted_at")
-  createdBy     String?           @map("created_by") @db.Uuid
-  updatedBy     String?           @map("updated_by") @db.Uuid
-  deletedBy     String?           @map("deleted_by") @db.Uuid
-  facilitador   User              @relation(fields: [facilitadorId], references: [id])
-  modulo        ProgramaModuloDos @relation(fields: [moduloId], references: [id])
-  programaDos   ProgramaDos       @relation(fields: [programaDosId], references: [id])
+  id              String             @id @default(uuid()) @map("pdf_id") @db.Uuid
+  programaDosId   String             @map("pro_id") @db.Uuid
+  moduloId        String?            @map("pm_id") @db.Uuid
+  moduloMaestroId String?            @map("pm_id_maestro") @db.Uuid
+  turnoId         String             @map("pdt_id") @db.Uuid
+  facilitadorId   String             @map("fac_id") @db.Uuid
+  estado          Estado             @default(activo) @map("pdf_estado")
+  createdAt       DateTime           @default(now()) @map("created_at")
+  updatedAt       DateTime           @updatedAt @map("updated_at")
+  deletedAt       DateTime?          @map("deleted_at")
+  createdBy       String?            @map("created_by") @db.Uuid
+  updatedBy       String?            @map("updated_by") @db.Uuid
+  deletedBy       String?            @map("deleted_by") @db.Uuid
+  facilitador     User               @relation(fields: [facilitadorId], references: [id])
+  modulo          ProgramaModuloDos? @relation(fields: [moduloId], references: [id])
+  moduloMaestro   ProgramaModulo?    @relation(fields: [moduloMaestroId], references: [id])
+  turno           ProgramaDosTurno   @relation(fields: [turnoId], references: [id])
+  programaDos     ProgramaDos        @relation(fields: [programaDosId], references: [id])
 
+  @@unique([programaDosId, moduloId, moduloMaestroId, turnoId], name: "unique_slot_assignment")
   @@map("programa_dos_facilitador")
 }
 
 model ProgramaDosTurno {
-  id            String      @id @default(uuid()) @map("pdt_id") @db.Uuid
-  programaDosId String      @map("pro_id") @db.Uuid
-  turnoIds      String      @map("pro_tur_ids")
-  cupo          Int         @map("pro_cupo")
-  cupoPre       Int         @map("pro_cupo_preinscrito")
-  estado        Estado      @default(activo) @map("pdt_estado")
-  createdAt     DateTime    @default(now()) @map("created_at")
-  updatedAt     DateTime    @updatedAt @map("updated_at")
-  deletedAt     DateTime?   @map("deleted_at")
-  createdBy     String?     @map("created_by") @db.Uuid
-  updatedBy     String?     @map("updated_by") @db.Uuid
-  deletedBy     String?     @map("deleted_by") @db.Uuid
-  programaDos   ProgramaDos @relation(fields: [programaDosId], references: [id])
+  id                      String                   @id @default(uuid()) @map("pdt_id") @db.Uuid
+  programaDosId           String                   @map("pro_id") @db.Uuid
+  turnoId                 String                   @map("pro_tur_ids") @db.Uuid
+  cupo                    Int                      @map("pro_cupo")
+  cupoPre                 Int                      @map("pro_cupo_preinscrito")
+  estado                  Estado                   @default(activo) @map("pdt_estado")
+  createdAt               DateTime                 @default(now()) @map("created_at")
+  updatedAt               DateTime                 @updatedAt @map("updated_at")
+  deletedAt               DateTime?                @map("deleted_at")
+  createdBy               String?                  @map("created_by") @db.Uuid
+  updatedBy               String?                  @map("updated_by") @db.Uuid
+  deletedBy               String?                  @map("deleted_by") @db.Uuid
+  programaDos             ProgramaDos              @relation(fields: [programaDosId], references: [id])
+  turnoConfig             ProgramaTurno?           @relation(fields: [turnoId], references: [id])
+  programaDosFacilitadors ProgramaDosFacilitador[]
+  inscripciones           ProgramaInscripcion[]
 
   @@map("programa_dos_turno")
 }
@@ -773,10 +846,15 @@ model ProgramaInscripcion {
   materia             String?   @map("pi_materia")
   observacion         String?   @map("pi_observacion")
   estado              Estado    @default(activo) @map("pi_estado")
+  // FK → ProgramaDos (el programa al que se inscribe)
   programaId          String    @map("pro_id") @db.Uuid
-  turnoId             String    @map("pro_tur_id") @db.Uuid
+  // FK → ProgramaDosTurno (el turno habilitado en ese programa)
+  turnoId             String?   @map("pro_tur_id") @db.Uuid
+  // FK → Sede (la sede habilitada)
   sedeId              String    @map("sede_id") @db.Uuid
+  // FK → programa_inscripcion_estado
   estadoInscripcionId String    @map("pie_id") @db.Uuid
+  // FK → User (admins) — el participante inscrito
   personaId           String    @map("per_id") @db.Uuid
   tenantId            String?   @map("tenant_id") @db.Uuid
   createdAt           DateTime  @default(now()) @map("created_at")
@@ -786,19 +864,28 @@ model ProgramaInscripcion {
   updatedBy           String?   @map("updated_by") @db.Uuid
   deletedBy           String?   @map("deleted_by") @db.Uuid
 
+  // Relaciones
+  programa          ProgramaDos                 @relation(fields: [programaId], references: [id])
+  turno             ProgramaDosTurno?           @relation(fields: [turnoId], references: [id])
+  sede              Sede                        @relation("InscripcionesSede", fields: [sedeId], references: [id])
+  estadoInscripcion programa_inscripcion_estado @relation(fields: [estadoInscripcionId], references: [id])
+  persona           User                        @relation("InscripcionesUser", fields: [personaId], references: [id])
+  baucher           ProgramaBaucher[]
+
   @@map("programa_inscripcion")
 }
 
 model programa_inscripcion_estado {
-  id        String    @id @default(uuid()) @map("pie_id") @db.Uuid
-  nombre    String    @map("pie_nombre")
-  estado    Estado    @default(activo) @map("pie_estado")
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
-  deletedAt DateTime? @map("deleted_at")
-  createdBy String?   @map("created_by") @db.Uuid
-  deletedBy String?   @map("deleted_by") @db.Uuid
-  updatedBy String?   @map("updated_by") @db.Uuid
+  id            String                @id @default(uuid()) @map("pie_id") @db.Uuid
+  nombre        String                @map("pie_nombre")
+  estado        Estado                @default(activo) @map("pie_estado")
+  createdAt     DateTime              @default(now()) @map("created_at")
+  updatedAt     DateTime              @updatedAt @map("updated_at")
+  deletedAt     DateTime?             @map("deleted_at")
+  createdBy     String?               @map("created_by") @db.Uuid
+  deletedBy     String?               @map("deleted_by") @db.Uuid
+  updatedBy     String?               @map("updated_by") @db.Uuid
+  inscripciones ProgramaInscripcion[]
 
   @@map("programa_inscripcion_estado")
 }
@@ -820,42 +907,62 @@ model ProgramaModalidad {
 }
 
 model ProgramaModulo {
-  id          String    @id @default(uuid()) @map("pm_id") @db.Uuid
-  codigo      String?   @map("pm_codigo")
-  nombre      String    @map("pm_nombre")
-  descripcion String    @map("pm_descripcion")
-  notaMinima  Int       @default(69) @map("pm_nota_minima")
-  estado      Estado    @default(activo) @map("pm_estado")
-  programaId  String    @map("pro_id") @db.Uuid
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  createdBy   String?   @map("created_by") @db.Uuid
-  deletedAt   DateTime? @map("deleted_at")
-  deletedBy   String?   @map("deleted_by") @db.Uuid
-  updatedBy   String?   @map("updated_by") @db.Uuid
-  programa    Programa  @relation(fields: [programaId], references: [id])
+  id            String    @id @default(uuid()) @map("pm_id") @db.Uuid
+  codigo        String?   @map("pm_codigo")
+  nombre        String    @map("pm_nombre")
+  descripcion   String    @map("pm_descripcion")
+  esGlobal      Boolean   @default(false) @map("pm_es_global")
+  orden         Int       @default(0) @map("pm_orden")
+  estado        Estado    @default(activo) @map("pm_estado")
+  programaId    String    @map("pro_id") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  createdBy     String?   @map("created_by") @db.Uuid
+  deletedAt     DateTime? @map("deleted_at")
+  deletedBy     String?   @map("deleted_by") @db.Uuid
+  updatedBy     String?   @map("updated_by") @db.Uuid
+  facilitadorId String?   @map("fac_id") @db.Uuid
+  programa      Programa  @relation(fields: [programaId], references: [id])
+  facilitador   User?     @relation(fields: [facilitadorId], references: [id])
+
+  // LMS: Permite que un modulo maestro tenga contenido directo (Modulo 0)
+  mod_unidades         mod_unidad_tematica[]
+  mod_asistencias      mod_asistencia[]
+  mod_notas_finales    mod_nota_final[]
+  moduloVersiones      ProgramaModuloDos[]
+  facilitadores        ProgramaDosFacilitador[]
+  mod_categorias_calif mod_categoria_calificacion[]
 
   @@map("programa_modulo")
 }
 
 model ProgramaModuloDos {
-  id            String                   @id @default(uuid()) @map("pm_id") @db.Uuid
-  codigo        String?                  @map("pm_codigo")
-  nombre        String                   @map("pm_nombre")
-  descripcion   String                   @map("pm_descripcion")
-  notaMinima    Int                      @default(69) @map("pm_nota_minima")
-  fechaInicio   DateTime                 @map("pm_fecha_inicio") @db.Date
-  fechaFin      DateTime                 @map("pm_fecha_fin") @db.Date
-  estado        Estado                   @default(activo) @map("pm_estado")
-  programaDosId String                   @map("pro_id") @db.Uuid
-  createdAt     DateTime                 @default(now()) @map("created_at")
-  updatedAt     DateTime                 @updatedAt @map("updated_at")
-  deletedAt     DateTime?                @map("deleted_at")
-  createdBy     String?                  @map("created_by") @db.Uuid
-  updatedBy     String?                  @map("updated_by") @db.Uuid
-  deletedBy     String?                  @map("deleted_by") @db.Uuid
-  facilitadores ProgramaDosFacilitador[]
-  programaDos   ProgramaDos              @relation(fields: [programaDosId], references: [id])
+  id              String                   @id @default(uuid()) @map("pm_id") @db.Uuid
+  codigo          String?                  @map("pm_codigo")
+  nombre          String                   @map("pm_nombre")
+  descripcion     String                   @map("pm_descripcion")
+  fechaInicio     DateTime                 @map("pm_fecha_inicio") @db.Date
+  fechaFin        DateTime                 @map("pm_fecha_fin") @db.Date
+  esGlobal        Boolean                  @default(false) @map("pm_es_global")
+  orden           Int                      @default(1) @map("pm_orden")
+  estado          Estado                   @default(activo) @map("pm_estado")
+  programaDosId   String                   @map("pro_id") @db.Uuid
+  moduloMaestroId String?                  @map("pm_id_maestro") @db.Uuid
+  createdAt       DateTime                 @default(now()) @map("created_at")
+  updatedAt       DateTime                 @updatedAt @map("updated_at")
+  deletedAt       DateTime?                @map("deleted_at")
+  createdBy       String?                  @map("created_by") @db.Uuid
+  updatedBy       String?                  @map("updated_by") @db.Uuid
+  deletedBy       String?                  @map("deleted_by") @db.Uuid
+  facilitadores   ProgramaDosFacilitador[]
+  programaDos     ProgramaDos              @relation(fields: [programaDosId], references: [id])
+  moduloMaestro   ProgramaModulo?          @relation(fields: [moduloMaestroId], references: [id])
+
+  // LMS Moodle: Un modulo tiene unidades temáticas (semanas)
+  mod_unidades         mod_unidad_tematica[]
+  mod_asistencias      mod_asistencia[]
+  mod_notas_finales    mod_nota_final[]
+  mod_categorias_calif mod_categoria_calificacion[]
 
   @@map("programa_modulo_dos")
 }
@@ -878,8 +985,13 @@ model programa_restriccion {
 }
 
 model ProgramaTipo {
-  id           String        @id @default(uuid()) @map("pro_tip_id") @db.Uuid
-  nombre       String        @map("pro_tip_nombre")
+  id              String @id @default(uuid()) @map("pro_tip_id") @db.Uuid
+  nombre          String @map("pro_tip_nombre")
+  // Configuración académica por defecto
+  notaMaxima      Int    @default(100) @map("pro_tip_nota_max")
+  notaReprobacion Int    @default(69) @map("pro_tip_nota_min") // Hasta esta nota es reprobado
+
+  // Ej: "DIPLOMADO", "ESPECIALIDAD", "CICLO_FORMATIVO"
   estado       Estado        @default(activo) @map("pro_tip_estado")
   createdAt    DateTime      @default(now()) @map("created_at")
   updatedAt    DateTime      @updatedAt @map("updated_at")
@@ -890,31 +1002,25 @@ model ProgramaTipo {
   programas    Programa[]
   programasDos ProgramaDos[] @relation("ProgramaDosToTipo")
 
+  // LMS Moodle: Configuración de categorías de calificación por tipo de programa
+  // Ej: Diplomado -> 80% Producto Académico + 20% Producto Final
+  mod_tipos_calificacion mod_tipo_calificacion_config[]
+
   @@map("programa_tipo")
 }
 
-model programa_tipo_calificacion {
-  id        String   @id @default(uuid()) @map("ptc_id") @db.Uuid
-  nombre    String   @map("ptc_nombre")
-  nota      Int      @map("ptc_nota")
-  estado    Estado   @default(activo) @map("ptc_estado")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("programa_tipo_calificacion")
-}
-
 model ProgramaTurno {
-  id          String    @id @default(uuid()) @map("pro_tur_id") @db.Uuid
-  nombre      String    @map("pro_tur_nombre")
-  descripcion String?   @map("pro_tur_descripcion")
-  estado      Estado    @default(activo) @map("pro_tur_estado")
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-  deletedAt   DateTime? @map("deleted_at")
-  createdBy   String?   @map("created_by") @db.Uuid
-  deletedBy   String?   @map("deleted_by") @db.Uuid
-  updatedBy   String?   @map("updated_by") @db.Uuid
+  id                String             @id @default(uuid()) @map("pro_tur_id") @db.Uuid
+  nombre            String             @map("pro_tur_nombre")
+  descripcion       String?            @map("pro_tur_descripcion")
+  estado            Estado             @default(activo) @map("pro_tur_estado")
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
+  deletedAt         DateTime?          @map("deleted_at")
+  createdBy         String?            @map("created_by") @db.Uuid
+  deletedBy         String?            @map("deleted_by") @db.Uuid
+  updatedBy         String?            @map("updated_by") @db.Uuid
+  programaDosTurnos ProgramaDosTurno[]
 
   @@map("programa_turno")
 }
@@ -979,39 +1085,40 @@ model Role {
 }
 
 model Sede {
-  id                 String        @id @default(uuid()) @map("sede_id") @db.Uuid
-  imagen             String?       @map("sede_imagen")
-  nombre             String        @map("sede_nombre")
-  nombreAbreviado    String?       @map("sede_nombre_abre")
-  descripcion        String        @map("sede_descripcion")
-  imagenResponsable1 String?       @map("sede_imagen_responsable1")
-  nombreResponsable1 String?       @map("sede_nombre_responsable1")
-  cargoResponsable1  String?       @map("sede_cargo_responsable1")
-  imagenResponsable2 String?       @map("sede_imagen_responsable2")
-  nombreResponsable2 String?       @map("sede_nombre_responsable2")
-  cargoResponsable2  String?       @map("sede_cargo_responsable2")
-  contacto1          Int           @map("sede_contacto_1")
-  contacto2          Int?          @map("sede_contacto_2")
-  facebook           String?       @map("sede_facebook")
-  tiktok             String?       @map("sede_tiktok")
-  grupoWhatsapp      String?       @map("sede_grupo_whatsapp")
-  horario            String        @map("sede_horario")
-  turno              String        @map("sede_turno")
-  ubicacion          String        @map("sede_ubicacion")
-  latitud            Decimal?      @map("sede_latitud") @db.Decimal(11, 8)
-  longitud           Decimal?      @map("sede_longitud") @db.Decimal(11, 8)
-  estado             Estado        @default(activo) @map("sede_estado")
-  departamentoId     String        @map("dep_id") @db.Uuid
-  createdAt          DateTime      @default(now()) @map("created_at")
-  updatedAt          DateTime      @updatedAt @map("updated_at")
-  deletedAt          DateTime?     @map("deleted_at")
-  createdBy          String?       @map("created_by") @db.Uuid
-  updatedBy          String?       @map("updated_by") @db.Uuid
-  deletedBy          String?       @map("deleted_by") @db.Uuid
+  id                 String                @id @default(uuid()) @map("sede_id") @db.Uuid
+  imagen             String?               @map("sede_imagen")
+  nombre             String                @map("sede_nombre")
+  nombreAbreviado    String?               @map("sede_nombre_abre")
+  descripcion        String                @map("sede_descripcion")
+  imagenResponsable1 String?               @map("sede_imagen_responsable1")
+  nombreResponsable1 String?               @map("sede_nombre_responsable1")
+  cargoResponsable1  String?               @map("sede_cargo_responsable1")
+  imagenResponsable2 String?               @map("sede_imagen_responsable2")
+  nombreResponsable2 String?               @map("sede_nombre_responsable2")
+  cargoResponsable2  String?               @map("sede_cargo_responsable2")
+  contacto1          Int                   @map("sede_contacto_1")
+  contacto2          Int?                  @map("sede_contacto_2")
+  facebook           String?               @map("sede_facebook")
+  tiktok             String?               @map("sede_tiktok")
+  grupoWhatsapp      String?               @map("sede_grupo_whatsapp")
+  horario            String                @map("sede_horario")
+  turno              String                @map("sede_turno")
+  ubicacion          String                @map("sede_ubicacion")
+  latitud            Decimal?              @map("sede_latitud") @db.Decimal(11, 8)
+  longitud           Decimal?              @map("sede_longitud") @db.Decimal(11, 8)
+  estado             Estado                @default(activo) @map("sede_estado")
+  departamentoId     String                @map("dep_id") @db.Uuid
+  createdAt          DateTime              @default(now()) @map("created_at")
+  updatedAt          DateTime              @updatedAt @map("updated_at")
+  deletedAt          DateTime?             @map("deleted_at")
+  createdBy          String?               @map("created_by") @db.Uuid
+  updatedBy          String?               @map("updated_by") @db.Uuid
+  deletedBy          String?               @map("deleted_by") @db.Uuid
   galerias           Galeria[]
   programasDos       ProgramaDos[]
-  departamento       Departamento  @relation(fields: [departamentoId], references: [id])
+  departamento       Departamento          @relation(fields: [departamentoId], references: [id])
   users              UserSede[]
+  inscripciones      ProgramaInscripcion[] @relation("InscripcionesSede")
 
   @@map("sede")
 }
@@ -1242,4 +1349,464 @@ enum Estado {
   inhabilitado
   cancelado
   finalizado
+}
+
+// =============================================================
+// 🎓 LMS MOODLE SYSTEM — Prefijo: mod_
+// Sistema académico completo tipo Moodle, integrado a ProgramaDos
+// =============================================================
+
+// ---------------------------------------------------------
+// 1. CONFIGURACIÓN DE CALIFICACIONES POR TIPO DE PROGRAMA
+//    Ej: Diplomado → 80% Producto Académico + 20% Producto Final
+// ---------------------------------------------------------
+
+/// Define las categorías de calificación para cada tipo de programa.
+/// Ej: ProgramaTipo "Diplomado" → [Producto Académico 80%, Producto Final 20%]
+model mod_tipo_calificacion_config {
+  id             String   @id @default(uuid()) @db.Uuid
+  tipoProgramaId String   @map("pro_tip_id") @db.Uuid
+  nombre         String   @map("mod_tcc_nombre") // "Producto Académico", "Producto Final"
+  peso           Int      @map("mod_tcc_peso") // 80, 20
+  esEvalFinal    Boolean  @default(false) @map("mod_tcc_es_eval_final") // true = el examen final
+  orden          Int      @default(0) @map("mod_tcc_orden")
+  estado         Estado   @default(activo) @map("mod_tcc_estado")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  tipoPrograma ProgramaTipo @relation(fields: [tipoProgramaId], references: [id])
+
+  // Una vez configurado, cada módulo instancia estas categorías
+  mod_categorias mod_categoria_calificacion[]
+
+  @@map("mod_tipo_calificacion_config")
+}
+
+/// Instancia real de una categoría en un módulo concreto.
+/// Permite que cada módulo tenga su propia configuración heredada del tipo.
+model mod_categoria_calificacion {
+  id              String   @id @default(uuid()) @db.Uuid
+  moduloId        String?  @map("pm_id") @db.Uuid
+  moduloMaestroId String?  @map("pm_id_maestro") @db.Uuid
+  configId        String   @map("mod_tcc_id") @db.Uuid
+  estado          Estado   @default(activo) @map("mod_cc_estado")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  turnoId         String?  @map("pdt_id") @db.Uuid
+
+  modulo        ProgramaModuloDos?           @relation(fields: [moduloId], references: [id])
+  moduloMaestro ProgramaModulo?              @relation(fields: [moduloMaestroId], references: [id])
+  config        mod_tipo_calificacion_config @relation(fields: [configId], references: [id])
+
+  // Actividades que pertenecen a esta categoría
+  actividades mod_actividad[]
+
+  @@map("mod_categoria_calificacion")
+}
+
+// ---------------------------------------------------------
+// 2. UNIDADES TEMÁTICAS (Semanas del módulo)
+//    Calculadas desde fechaInicio + pd_semana de ProgramaDuracion
+// ---------------------------------------------------------
+
+/// Una unidad temática representa una semana de clase dentro de un módulo.
+/// Se generan automáticamente al calcular: fechaInicio + N semanas de duración.
+model mod_unidad_tematica {
+  id              String   @id @default(uuid()) @db.Uuid
+  moduloId        String?  @map("pm_id") @db.Uuid
+  moduloMaestroId String?  @map("pm_id_maestro") @db.Uuid
+  titulo          String   @map("mod_ut_titulo") // "Semana 1: Introducción"
+  descripcion     String?  @map("mod_ut_descripcion") @db.Text
+  semana          Int      @map("mod_ut_semana") // Número de semana: 1, 2, 3...
+  fechaInicio     DateTime @map("mod_ut_fecha_inicio") @db.Date
+  fechaFin        DateTime @map("mod_ut_fecha_fin") @db.Date
+  orden           Int      @default(0) @map("mod_ut_orden")
+  estado          Estado   @default(activo) @map("mod_ut_estado")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  turnoId         String?  @map("pdt_id") @db.Uuid
+
+  modulo        ProgramaModuloDos? @relation(fields: [moduloId], references: [id])
+  moduloMaestro ProgramaModulo?    @relation(fields: [moduloMaestroId], references: [id])
+
+  // Actividades de la semana
+  actividades mod_actividad[]
+  // Recursos de apoyo de la semana
+  recursos    mod_recurso[]
+
+  @@map("mod_unidad_tematica")
+}
+
+// ---------------------------------------------------------
+// 3. ACTIVIDADES (el corazón del LMS)
+//    Una actividad puede ser: FORO, TAREA, CUESTIONARIO,
+//    FORMULARIO (sin nota), RECURSO (solo lectura)
+// ---------------------------------------------------------
+
+enum ModTipoActividad {
+  FORO
+  TAREA
+  CUESTIONARIO
+  FORMULARIO // Como cuestionario pero SIN valor en registro de calificaciones
+  RECURSO // Solo material de apoyo
+}
+
+/// Actividad académica dentro de una unidad temática.
+/// Cada actividad pertenece a una categoría de calificación (o es FORMULARIO/RECURSO sin nota).
+model mod_actividad {
+  id            String           @id @default(uuid()) @db.Uuid
+  unidadId      String           @map("mod_ut_id") @db.Uuid
+  categoriaId   String?          @map("mod_cc_id") @db.Uuid // null si es FORMULARIO o RECURSO
+  tipo          ModTipoActividad @map("mod_act_tipo")
+  titulo        String           @map("mod_act_titulo")
+  instrucciones String?          @map("mod_act_instrucciones") @db.Text
+  puntajeMax    Int              @default(100) @map("mod_act_puntaje_max")
+  esCalificable Boolean          @default(true) @map("mod_act_es_calificable")
+  // false = FORMULARIO (el alumno puede ver su nota pero NO entra en el registro)
+  fechaInicio   DateTime         @map("mod_act_fecha_inicio")
+  fechaFin      DateTime         @map("mod_act_fecha_fin")
+  orden         Int              @default(0) @map("mod_act_orden")
+  estado        Estado           @default(activo) @map("mod_act_estado")
+  createdAt     DateTime         @default(now()) @map("created_at")
+  updatedAt     DateTime         @updatedAt @map("updated_at")
+
+  unidad    mod_unidad_tematica         @relation(fields: [unidadId], references: [id])
+  categoria mod_categoria_calificacion? @relation(fields: [categoriaId], references: [id])
+
+  // Tipos específicos (relación 1:1 opcional)
+  foro         mod_foro?
+  tarea        mod_tarea?
+  cuestionario mod_cuestionario?
+
+  // Notas individuales de alumnos para esta actividad
+  notas mod_nota_actividad[]
+
+  @@map("mod_actividad")
+}
+
+// ---------------------------------------------------------
+// 4. FOROS (con hilos y respuestas)
+// ---------------------------------------------------------
+
+model mod_foro {
+  id            String          @id @default(uuid()) @db.Uuid
+  actividadId   String          @unique @map("mod_act_id") @db.Uuid
+  permitirFiles Boolean         @default(true) @map("mod_foro_permit_files")
+  maxArchivos   Int             @default(3) @map("mod_foro_max_arch")
+  actividad     mod_actividad   @relation(fields: [actividadId], references: [id])
+  posts         mod_foro_post[]
+
+  @@map("mod_foro")
+}
+
+/// Publicación en el foro. Soporta threading (padreId para respuestas).
+model mod_foro_post {
+  id         String   @id @default(uuid()) @db.Uuid
+  foroId     String   @map("mod_foro_id") @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  padreId    String?  @map("mod_post_padre_id") @db.Uuid // null = post raíz
+  mensaje    String   @map("mod_post_mensaje") @db.Text
+  archivoUrl String?  @map("mod_post_archivo")
+  editado    Boolean  @default(false) @map("mod_post_editado")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  foro       mod_foro        @relation(fields: [foroId], references: [id])
+  user       User            @relation(fields: [userId], references: [id])
+  padre      mod_foro_post?  @relation("ForoHilos", fields: [padreId], references: [id])
+  respuestas mod_foro_post[] @relation("ForoHilos")
+
+  @@map("mod_foro_post")
+}
+
+// ---------------------------------------------------------
+// 5. TAREAS (con entregas de archivos y/o texto)
+// ---------------------------------------------------------
+
+model mod_tarea {
+  id          String        @id @default(uuid()) @db.Uuid
+  actividadId String        @unique @map("mod_act_id") @db.Uuid
+  allowFiles  Boolean       @default(true) @map("mod_tar_allow_files")
+  allowText   Boolean       @default(true) @map("mod_tar_allow_text")
+  maxArchivos Int           @default(1) @map("mod_tar_max_arch")
+  tiposArch   String        @default("pdf,doc,docx,jpg,png") @map("mod_tar_tipos_arch")
+  actividad   mod_actividad @relation(fields: [actividadId], references: [id])
+  entregas    mod_entrega[]
+
+  @@map("mod_tarea")
+}
+
+/// Entrega de un alumno para una tarea específica.
+model mod_entrega {
+  id                String   @id @default(uuid()) @db.Uuid
+  tareaId           String   @map("mod_tar_id") @db.Uuid
+  userId            String   @map("user_id") @db.Uuid
+  archivoUrl        String?  @map("mod_ent_archivo")
+  texto             String?  @map("mod_ent_texto") @db.Text
+  calificada        Boolean  @default(false) @map("mod_ent_calificada")
+  nota              Float?   @map("mod_ent_nota")
+  retroalimentacion String?  @map("mod_ent_retroalim") @db.Text
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  tarea mod_tarea @relation(fields: [tareaId], references: [id])
+  user  User      @relation(fields: [userId], references: [id])
+
+  @@map("mod_entrega")
+}
+
+// ---------------------------------------------------------
+// 6. CUESTIONARIOS y FORMULARIOS
+//    - Cuestionario: entra en el registro de calificaciones
+//    - Formulario:   el alumno ve sus resultados pero NO cuenta para la nota
+// ---------------------------------------------------------
+
+model mod_cuestionario {
+  id             String         @id @default(uuid()) @db.Uuid
+  actividadId    String         @unique @map("mod_act_id") @db.Uuid
+  duracion       Int            @default(60) @map("mod_cue_duracion") // minutos
+  maxIntentos    Int            @default(1) @map("mod_cue_max_intentos")
+  aleatorizar    Boolean        @default(false) @map("mod_cue_random")
+  randomCount    Int?           @map("mod_cue_random_count") // Número de preguntas aleatorias a mostrar
+  mostrarNota    Boolean        @default(true) @map("mod_cue_mostrar_nota")
+  retroInmediata Boolean        @default(false) @map("mod_cue_retro_inmediata")
+  actividad      mod_actividad  @relation(fields: [actividadId], references: [id])
+  preguntas      mod_pregunta[]
+  intentos       mod_intento[]
+
+  @@map("mod_cuestionario")
+}
+
+enum ModTipoPregunta {
+  MULTIPLE // Una sola respuesta correcta
+  MULTIPLE_M // Varias respuestas correctas
+  VF // Verdadero / Falso
+  TEXTO // Respuesta libre (calificada manualmente)
+  ORDENAR // Ordenar elementos
+}
+
+model mod_pregunta {
+  id             String          @id @default(uuid()) @db.Uuid
+  cuestionarioId String          @map("mod_cue_id") @db.Uuid
+  texto          String          @map("mod_pre_texto") @db.Text
+  tipo           ModTipoPregunta @map("mod_pre_tipo")
+  puntaje        Float           @default(1) @map("mod_pre_puntaje")
+  imagen         String?         @map("mod_pre_imagen")
+  orden          Int             @default(0) @map("mod_pre_orden")
+  estado         Estado          @default(activo) @map("mod_pre_estado")
+
+  cuestionario mod_cuestionario @relation(fields: [cuestionarioId], references: [id])
+  opciones     mod_opcion[]
+
+  @@map("mod_pregunta")
+}
+
+model mod_opcion {
+  id         String  @id @default(uuid()) @db.Uuid
+  preguntaId String  @map("mod_pre_id") @db.Uuid
+  texto      String  @map("mod_opc_texto")
+  esCorrecta Boolean @default(false) @map("mod_opc_correcta")
+  orden      Int     @default(0) @map("mod_opc_orden")
+
+  pregunta mod_pregunta @relation(fields: [preguntaId], references: [id])
+
+  @@map("mod_opcion")
+}
+
+/// Intento de un alumno en un cuestionario/formulario.
+model mod_intento {
+  id             String    @id @default(uuid()) @db.Uuid
+  cuestionarioId String    @map("mod_cue_id") @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  puntajeTotal   Float?    @map("mod_int_puntaje")
+  numero         Int       @default(1) @map("mod_int_numero") // Nro de intento
+  iniciadoEn     DateTime  @default(now()) @map("mod_int_inicio")
+  finalizadoEn   DateTime? @map("mod_int_fin")
+  estado         String    @default("en_progreso") @map("mod_int_estado") // en_progreso, finalizado
+
+  cuestionario mod_cuestionario @relation(fields: [cuestionarioId], references: [id])
+  user         User             @relation(fields: [userId], references: [id])
+  respuestas   mod_respuesta[]
+
+  @@map("mod_intento")
+}
+
+/// Respuesta de un alumno a una pregunta dentro de un intento.
+model mod_respuesta {
+  id         String   @id @default(uuid()) @db.Uuid
+  intentoId  String   @map("mod_int_id") @db.Uuid
+  preguntaId String   @map("mod_pre_id") @db.Uuid
+  opcionId   String?  @map("mod_opc_id") @db.Uuid // null si es texto libre
+  textoLibre String?  @map("mod_res_texto") @db.Text
+  esCorrecta Boolean? @map("mod_res_correcta")
+  puntaje    Float?   @map("mod_res_puntaje")
+
+  intento mod_intento @relation(fields: [intentoId], references: [id])
+
+  @@map("mod_respuesta")
+}
+
+// ---------------------------------------------------------
+// 7. RECURSOS DE APOYO (PDF, VIDEO, IMAGEN, LINK)
+//    Pueden ir en una unidad temática o en una actividad
+// ---------------------------------------------------------
+
+enum ModTipoRecurso {
+  PDF
+  VIDEO
+  IMAGEN
+  LINK
+  PRESENTACION
+}
+
+model mod_recurso {
+  id          String         @id @default(uuid()) @db.Uuid
+  unidadId    String         @map("mod_ut_id") @db.Uuid
+  titulo      String         @map("mod_rec_titulo")
+  tipo        ModTipoRecurso @map("mod_rec_tipo")
+  url         String         @map("mod_rec_url")
+  externo     Boolean        @default(false) @map("mod_rec_externo")
+  descripcion String?        @map("mod_rec_desc")
+  orden       Int            @default(0) @map("mod_rec_orden")
+  estado      Estado         @default(activo) @map("mod_rec_estado")
+  createdAt   DateTime       @default(now()) @map("created_at")
+
+  unidad mod_unidad_tematica @relation(fields: [unidadId], references: [id])
+
+  @@map("mod_recurso")
+}
+
+// ---------------------------------------------------------
+// 8. ASISTENCIA DIARIA
+// ---------------------------------------------------------
+
+model mod_asistencia {
+  id              String   @id @default(uuid()) @db.Uuid
+  moduloId        String?  @map("pm_id") @db.Uuid
+  moduloMaestroId String?  @map("pm_id_maestro") @db.Uuid
+  fecha           DateTime @map("mod_asi_fecha") @db.Date
+  createdAt       DateTime @default(now()) @map("created_at")
+  turnoId         String?  @map("pdt_id") @db.Uuid
+
+  modulo        ProgramaModuloDos?   @relation(fields: [moduloId], references: [id])
+  moduloMaestro ProgramaModulo?      @relation(fields: [moduloMaestroId], references: [id])
+  registros     mod_asistencia_reg[]
+
+  @@map("mod_asistencia")
+}
+
+/// Estado de asistencia de un participante/facilitador en una sesión.
+model mod_asistencia_reg {
+  id           String  @id @default(uuid()) @db.Uuid
+  asistenciaId String  @map("mod_asi_id") @db.Uuid
+  userId       String  @map("user_id") @db.Uuid
+  estado       String  @default("P") @map("mod_asi_reg_estado")
+  // P = Presente, F = Falta, L = Licencia, TP = Tardanza Presente
+  observacion  String? @map("mod_asi_reg_obs")
+
+  asistencia mod_asistencia @relation(fields: [asistenciaId], references: [id])
+  user       User           @relation(fields: [userId], references: [id])
+
+  @@map("mod_asistencia_reg")
+}
+
+// ---------------------------------------------------------
+// 9. CALIFICACIONES — PROCESO Y RESULTADO FINAL
+// ---------------------------------------------------------
+
+/// Nota de un alumno en una actividad concreta (foro, tarea o cuestionario).
+/// Si esCalificable=false, esta nota NO entra en el registro académico oficial.
+model mod_nota_actividad {
+  id            String   @id @default(uuid()) @db.Uuid
+  actividadId   String   @map("mod_act_id") @db.Uuid
+  userId        String   @map("user_id") @db.Uuid
+  nota          Float    @map("mod_na_nota")
+  entroRegistro Boolean  @default(true) @map("mod_na_entro_registro")
+  // false si la actividad es FORMULARIO (diagnóstico)
+  observacion   String?  @map("mod_na_obs")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  actividad mod_actividad @relation(fields: [actividadId], references: [id])
+  user      User          @relation(fields: [userId], references: [id])
+
+  @@unique([actividadId, userId])
+  @@map("mod_nota_actividad")
+}
+
+/// Nota final PONDERADA de un alumno en un módulo.
+/// El sistema calcula: suma(notas_actividaes_por_categoria * peso_categoria / 100).
+/// Este registro es el que aparece en el Acta y el PDF oficial.
+model mod_nota_final {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String   @map("user_id") @db.Uuid
+  moduloId        String?  @map("pm_id") @db.Uuid
+  moduloMaestroId String?  @map("pm_id_maestro") @db.Uuid
+  notaAcademica   Float    @default(0) @map("mod_nf_academica") // Ej: 76.5 / 80
+  notaFinal       Float    @default(0) @map("mod_nf_final") // Ej: 18.0 / 20
+  notaTotal       Float    @default(0) @map("mod_nf_total") // Ej: 94.5 / 100
+  estadoCalif     String   @default("pendiente") @map("mod_nf_estado")
+  // pendiente, aprobado, reprobado
+  asistenciaPct   Float?   @map("mod_nf_asist_pct") // % de asistencia
+  generadoEn      DateTime @default(now()) @map("mod_nf_generado_en")
+
+  user          User               @relation(fields: [userId], references: [id])
+  modulo        ProgramaModuloDos? @relation(fields: [moduloId], references: [id])
+  moduloMaestro ProgramaModulo?    @relation(fields: [moduloMaestroId], references: [id])
+
+  @@unique([userId, moduloId])
+  @@map("mod_nota_final")
+}
+
+// ---------------------------------------------------------
+// 10. GAMIFICACIÓN — INSIGNIAS Y LOGROS (Bonus: mejor que Moodle)
+// ---------------------------------------------------------
+
+/// Insignia / Badge que el sistema otorga automáticamente por logros.
+model mod_insignia {
+  id          String   @id @default(uuid()) @db.Uuid
+  nombre      String   @map("mod_ins_nombre")
+  descripcion String   @map("mod_ins_desc")
+  icono       String   @map("mod_ins_icono") // URL o emoji
+  color       String   @default("#6366f1") @map("mod_ins_color")
+  tipo        String   @map("mod_ins_tipo")
+  // ASISTENCIA_PERFECTA, PRIMER_FORO, TAREA_100, PRIMER_PUESTO, etc.
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  otorgadas mod_insignia_user[]
+
+  @@map("mod_insignia")
+}
+
+model mod_insignia_user {
+  id         String   @id @default(uuid()) @db.Uuid
+  insigniaId String   @map("mod_ins_id") @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  otorgadoEn DateTime @default(now()) @map("mod_ins_user_en")
+
+  insignia mod_insignia @relation(fields: [insigniaId], references: [id])
+  user     User         @relation(fields: [userId], references: [id])
+
+  @@unique([insigniaId, userId])
+  @@map("mod_insignia_user")
+}
+
+// ---------------------------------------------------------
+// 11. NOTIFICACIONES INTERNAS DEL LMS
+// ---------------------------------------------------------
+
+model mod_notificacion {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  titulo    String   @map("mod_noti_titulo")
+  mensaje   String   @map("mod_noti_mensaje") @db.Text
+  leida     Boolean  @default(false) @map("mod_noti_leida")
+  tipo      String   @map("mod_noti_tipo")
+  // NUEVA_ACTIVIDAD, ENTREGA_CALIFICADA, NUEVO_POST, INSIGNIA, RECORDATORIO
+  linkRef   String?  @map("mod_noti_link")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("mod_notificacion")
 }

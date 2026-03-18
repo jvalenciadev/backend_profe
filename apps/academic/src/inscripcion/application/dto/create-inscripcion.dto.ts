@@ -27,4 +27,8 @@ export class CreateInscripcionDto {
 
     @IsOptional()
     unidadEducativa?: string;
+
+    @IsOptional()
+    @IsString()
+    estadoInscripcionId?: string;
 }

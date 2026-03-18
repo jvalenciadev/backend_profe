@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
 import { JwtAuthGuard, PoliciesGuard, CheckPolicies, CurrentUser } from '@app/common';
 import { GetComunicadosUseCase, GetComunicadoByIdUseCase } from '../../application/use-cases/get-comunicados.use-case';
 import { CreateComunicadoUseCase } from '../../application/use-cases/create-comunicado.use-case';
@@ -19,13 +19,9 @@ export class ComunicadoController {
 
   @Get()
   @CheckPolicies((ability: any) => ability.can('read', 'Comunicado'))
-  async findAll(@Query() query: any, @CurrentUser() user: any) {
+  async findAll(@Query() query: any, @Req() req: any) {
     const page = query.page ? Number(query.page) : 1;
     const limit = query.limit ? Number(query.limit) : 20;
-
-    // Si el usuario no es admin global, forzamos su tenantId
-    const isAdmin = user.roles?.some((r: any) => r.role?.name === 'ADMINISTRADOR');
-    const tenantId = isAdmin ? undefined : user.tenantId;
 
     const result = await this.getComunicadosUseCase.execute(
       {
@@ -34,17 +30,15 @@ export class ComunicadoController {
         page,
         limit,
       },
-      tenantId
+      req.ability
     );
     return { ...result, page, limit, totalPages: Math.ceil(result.total / limit) };
   }
 
   @Get(':id')
   @CheckPolicies((ability: any) => ability.can('read', 'Comunicado'))
-  async findOne(@Param('id') id: string, @CurrentUser() user: any) {
-    const isAdmin = user.roles?.some((r: any) => r.role?.name === 'ADMINISTRADOR');
-    const tenantId = isAdmin ? undefined : user.tenantId;
-    return await this.getComunicadoByIdUseCase.execute(id, tenantId);
+  async findOne(@Param('id') id: string, @Req() req: any) {
+    return await this.getComunicadoByIdUseCase.execute(id, req.ability);
   }
 
   @Post()

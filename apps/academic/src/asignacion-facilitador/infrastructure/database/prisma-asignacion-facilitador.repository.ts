@@ -8,12 +8,18 @@ export class PrismaAsignacionFacilitadorRepository implements IAsignacionFacilit
   constructor(
     private readonly prisma: PrismaService,
     private readonly caslPrisma: CaslPrismaService,
-  ) {}
+  ) { }
 
   async findAll(filter: any = {}, ability?: any): Promise<any[]> {
     const { tenantId, search, ...rest } = filter;
     let where: any = { ...rest };
-    // Assuming hasStatus internally
+
+    // Mapping fields from frontend to Prisma model
+    if (where.programaId) {
+      where.programaDosId = where.programaId;
+      delete where.programaId;
+    }
+
     const hasStatus = true;
     if (hasStatus) where.estado = { not: 'eliminado' };
 
@@ -22,8 +28,18 @@ export class PrismaAsignacionFacilitadorRepository implements IAsignacionFacilit
       where = { AND: [where, caslWhere] };
     }
 
-    return await (this.prisma as any).programaDosFacilitador.findMany({
+    return await this.prisma.programaDosFacilitador.findMany({
       where,
+      include: {
+        facilitador: true,
+        modulo: true,
+        turno: {
+          include: {
+            turnoConfig: true
+          }
+        },
+        programaDos: true
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -34,12 +50,20 @@ export class PrismaAsignacionFacilitadorRepository implements IAsignacionFacilit
       const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'AsignacionFacilitador');
       where = { AND: [where, caslWhere] };
     }
-    return await (this.prisma as any).programaDosFacilitador.findFirst({ where });
+    return await this.prisma.programaDosFacilitador.findFirst({ where });
   }
 
   async create(data: any, userId?: string, forcedTenantId?: string): Promise<any> {
-    return await (this.prisma as any).programaDosFacilitador.create({
-      data: { ...data, createdBy: userId }
+    const payload = { ...data };
+
+    // Mapping fields
+    if (payload.programaId) {
+      payload.programaDosId = payload.programaId;
+      delete payload.programaId;
+    }
+
+    return await this.prisma.programaDosFacilitador.create({
+      data: { ...payload, createdBy: userId }
     });
   }
 
@@ -49,12 +73,18 @@ export class PrismaAsignacionFacilitadorRepository implements IAsignacionFacilit
       const caslWhere = this.caslPrisma.getWhere(ability, 'update', 'AsignacionFacilitador');
       where = { AND: [where, caslWhere] };
     }
-    const exists = await (this.prisma as any).programaDosFacilitador.findFirst({ where });
+    const exists = await this.prisma.programaDosFacilitador.findFirst({ where });
     if (!exists) throw new Error('No tiene permisos para editar este registro o no existe');
 
-    return await (this.prisma as any).programaDosFacilitador.update({
+    const payload = { ...data };
+    if (payload.programaId) {
+      payload.programaDosId = payload.programaId;
+      delete payload.programaId;
+    }
+
+    return await this.prisma.programaDosFacilitador.update({
       where: { id },
-      data: { ...data, updatedBy: userId },
+      data: { ...payload, updatedBy: userId },
     });
   }
 
@@ -64,17 +94,17 @@ export class PrismaAsignacionFacilitadorRepository implements IAsignacionFacilit
       const caslWhere = this.caslPrisma.getWhere(ability, 'delete', 'AsignacionFacilitador');
       where = { AND: [where, caslWhere] };
     }
-    const exists = await (this.prisma as any).programaDosFacilitador.findFirst({ where });
+    const exists = await this.prisma.programaDosFacilitador.findFirst({ where });
     if (!exists) throw new Error('No tiene permisos para eliminar este registro o no existe');
 
     const hasStatus = true;
     if (hasStatus) {
-      await (this.prisma as any).programaDosFacilitador.update({
+      await this.prisma.programaDosFacilitador.update({
         where: { id },
         data: { estado: 'eliminado', deletedAt: new Date(), deletedBy: userId },
       });
     } else {
-      await (this.prisma as any).programaDosFacilitador.delete({ where: { id } });
+      await this.prisma.programaDosFacilitador.delete({ where: { id } });
     }
   }
 }

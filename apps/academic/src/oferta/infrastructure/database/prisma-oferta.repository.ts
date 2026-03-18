@@ -3,30 +3,56 @@ import { PrismaService } from '@app/database';
 import { IOfertaRepository } from '../../domain/repositories/oferta.repository.interface';
 import { Oferta } from '../../domain/entities/oferta.entity';
 
+import { CaslPrismaService } from '@app/common';
+
 @Injectable()
 export class PrismaOfertaRepository implements IOfertaRepository {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly caslPrisma: CaslPrismaService
+    ) { }
 
-    async findById(id: string): Promise<Oferta | null> {
-        const data = await this.prisma.programaDos.findUnique({
-            where: { id },
+    async findById(id: string, ability?: any): Promise<Oferta | null> {
+        let where: any = { id };
+        if (ability) {
+            const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'ProgramaDos');
+            where = { AND: [where, caslWhere] };
+        }
+
+        const data = await this.prisma.programaDos.findFirst({
+            where,
             include: {
                 programa: true,
                 sede: true,
-                turnos: true,
+                turnos: {
+                    include: {
+                        turnoConfig: true
+                    }
+                },
                 modulos: true,
             }
         });
         return data ? new Oferta(data) : null;
     }
 
-    async findAll(filter: any = {}): Promise<Oferta[]> {
+    async findAll(filter: any = {}, ability?: any): Promise<Oferta[]> {
+        let where: any = { ...filter, estado: { not: 'eliminado' } };
+
+        if (ability) {
+            const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'ProgramaDos');
+            where = { AND: [where, caslWhere] };
+        }
+
         const data = await this.prisma.programaDos.findMany({
-            where: { ...filter, estado: { not: 'eliminado' } },
+            where,
             include: {
                 programa: true,
                 sede: true,
-                turnos: true,
+                turnos: {
+                    include: {
+                        turnoConfig: true
+                    }
+                },
                 modulos: true,
             },
             orderBy: { createdAt: 'desc' },
@@ -43,7 +69,11 @@ export class PrismaOfertaRepository implements IOfertaRepository {
             include: {
                 programa: true,
                 sede: true,
-                turnos: true,
+                turnos: {
+                    include: {
+                        turnoConfig: true
+                    }
+                },
                 modulos: true,
             }
         });

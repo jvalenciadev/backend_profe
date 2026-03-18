@@ -127,6 +127,17 @@ export class AuthService {
         );
       }
 
+      // Restricción de rol administrativo (Bloquear PARTICIPANTE)
+      const userRolesNames = user.roles?.map((ur: any) => ur.role?.name?.toUpperCase() || '') || [];
+      if (
+        userRolesNames.includes('PARTICIPANTE') && 
+        !userRolesNames.some((r: string) => ['ADMIN', 'SUPER_ADMIN', 'FACILITADOR', 'Técnico', 'Gestor'].some(allowed => r.includes(allowed.toUpperCase())))
+      ) {
+        throw new UnauthorizedException(
+          'Acceso denegado. Este portal es de uso administrativo. Los participantes deben ingresar por el Aula Virtual.',
+        );
+      }
+
       // Validar expiración de contraseña reseteada (1 día de límite)
       if (
         user.requiresPasswordChange &&

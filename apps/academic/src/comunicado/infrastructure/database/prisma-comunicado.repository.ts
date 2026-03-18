@@ -3,9 +3,14 @@ import { PrismaService } from '@app/database';
 import { IComunicadoRepository, ComunicadoFilters } from '../../domain/repositories/comunicado.repository.interface';
 import { Comunicado } from '../../domain/entities/comunicado.entity';
 
+import { CaslPrismaService } from '@app/common';
+
 @Injectable()
 export class PrismaComunicadoRepository implements IComunicadoRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly caslPrisma: CaslPrismaService
+  ) { }
 
   private mapToDomain(record: any): Comunicado {
     const entity = new Comunicado(
@@ -34,21 +39,31 @@ export class PrismaComunicadoRepository implements IComunicadoRepository {
     return this.mapToDomain(record);
   }
 
-  async findById(id: string): Promise<Comunicado | null> {
-    const record = await (this.prisma.comunicado as any).findUnique({
-      where: { id },
+  async findById(id: string, ability?: any): Promise<Comunicado | null> {
+    let where: any = { id };
+    if (ability) {
+      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'Comunicado');
+      where = { AND: [where, caslWhere] };
+    }
+    const record = await (this.prisma.comunicado as any).findFirst({
+      where,
       include: { tenant: true }
     });
     return record ? this.mapToDomain(record) : null;
   }
 
-  async findAll(filters: ComunicadoFilters = {}): Promise<{ data: Comunicado[]; total: number }> {
+  async findAll(filters: ComunicadoFilters = {}, ability?: any): Promise<{ data: Comunicado[]; total: number }> {
     const { search, estado, page = 1, limit = 20, tenantId } = filters;
-    const where: any = { estado: { not: 'eliminado' } };
+    let where: any = { estado: { not: 'eliminado' } };
 
     if (estado && estado !== 'todos') where.estado = estado;
     if (search) where.nombre = { contains: search, mode: 'insensitive' };
     if (tenantId) where.tenantId = tenantId;
+
+    if (ability) {
+      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'Comunicado');
+      where = { AND: [where, caslWhere] };
+    }
 
     const [total, data] = await Promise.all([
       (this.prisma.comunicado as any).count({ where }),

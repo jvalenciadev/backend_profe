@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@app/database';
+import { CaslModule, MailModule } from '@app/common';
 import { COMUNICADO_REPOSITORY } from './domain/repositories/comunicado.repository.interface';
 import { PrismaComunicadoRepository } from './infrastructure/database/prisma-comunicado.repository';
 import { ComunicadoController } from './infrastructure/controllers/comunicado.controller';
@@ -8,7 +9,7 @@ import { GetComunicadosUseCase, GetComunicadoByIdUseCase } from './application/u
 import { UpdateComunicadoUseCase, DeleteComunicadoUseCase } from './application/use-cases/update-comunicado.use-case';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, CaslModule, MailModule],
   controllers: [ComunicadoController],
   providers: [
     { provide: COMUNICADO_REPOSITORY, useClass: PrismaComunicadoRepository },
@@ -20,4 +21,4 @@ import { UpdateComunicadoUseCase, DeleteComunicadoUseCase } from './application/
   ],
   exports: [GetComunicadosUseCase],
 })
-export class ComunicadoModule {}
+export class ComunicadoModule { }

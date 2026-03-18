@@ -8,10 +8,12 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { JwtAuthGuard, UploadConfigService, CurrentUser } from '@app/common';
 import { memoryStorage } from 'multer';
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import { JwtAuthGuard } from '../guards/jwt-auth.guard';
+import { CurrentUser } from '../decorators/current-user.decorator';
+import { UploadConfigService } from './upload-config.service';
 
 @Controller('upload')
 @UseGuards(JwtAuthGuard)

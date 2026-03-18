@@ -8,7 +8,7 @@ export class PrismaTurnoRepository implements ITurnoRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly caslPrisma: CaslPrismaService,
-  ) {}
+  ) { }
 
   async findAll(filter: any = {}, ability?: any): Promise<any[]> {
     const { tenantId, search, ...rest } = filter;
@@ -18,11 +18,11 @@ export class PrismaTurnoRepository implements ITurnoRepository {
     if (hasStatus) where.estado = { not: 'eliminado' };
 
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'Turno');
+      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'ProgramaTurno');
       where = { AND: [where, caslWhere] };
     }
 
-    return await (this.prisma as any).programaTurno.findMany({
+    return await this.prisma.programaTurno.findMany({
       where,
       orderBy: { createdAt: 'desc' },
     });
@@ -31,14 +31,14 @@ export class PrismaTurnoRepository implements ITurnoRepository {
   async findById(id: string, ability?: any): Promise<any | null> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'Turno');
+      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'ProgramaTurno');
       where = { AND: [where, caslWhere] };
     }
-    return await (this.prisma as any).programaTurno.findFirst({ where });
+    return await this.prisma.programaTurno.findFirst({ where });
   }
 
   async create(data: any, userId?: string, forcedTenantId?: string): Promise<any> {
-    return await (this.prisma as any).programaTurno.create({
+    return await this.prisma.programaTurno.create({
       data: { ...data, createdBy: userId }
     });
   }
@@ -46,13 +46,13 @@ export class PrismaTurnoRepository implements ITurnoRepository {
   async update(id: string, data: any, userId?: string, ability?: any): Promise<any> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'update', 'Turno');
+      const caslWhere = this.caslPrisma.getWhere(ability, 'update', 'ProgramaTurno');
       where = { AND: [where, caslWhere] };
     }
-    const exists = await (this.prisma as any).programaTurno.findFirst({ where });
+    const exists = await this.prisma.programaTurno.findFirst({ where });
     if (!exists) throw new Error('No tiene permisos para editar este registro o no existe');
 
-    return await (this.prisma as any).programaTurno.update({
+    return await this.prisma.programaTurno.update({
       where: { id },
       data: { ...data, updatedBy: userId },
     });
@@ -61,20 +61,20 @@ export class PrismaTurnoRepository implements ITurnoRepository {
   async delete(id: string, userId?: string, ability?: any): Promise<void> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'delete', 'Turno');
+      const caslWhere = this.caslPrisma.getWhere(ability, 'delete', 'ProgramaTurno');
       where = { AND: [where, caslWhere] };
     }
-    const exists = await (this.prisma as any).programaTurno.findFirst({ where });
+    const exists = await this.prisma.programaTurno.findFirst({ where });
     if (!exists) throw new Error('No tiene permisos para eliminar este registro o no existe');
 
     const hasStatus = true;
     if (hasStatus) {
-      await (this.prisma as any).programaTurno.update({
+      await this.prisma.programaTurno.update({
         where: { id },
         data: { estado: 'eliminado', deletedAt: new Date(), deletedBy: userId },
       });
     } else {
-      await (this.prisma as any).programaTurno.delete({ where: { id } });
+      await this.prisma.programaTurno.delete({ where: { id } });
     }
   }
 }

@@ -19,8 +19,8 @@ export class EventosController {
     }
 
     @Get(':id')
-    findOne(@Param('id') id: string) {
-        return this.getEventoByIdUseCase.execute(id);
+    findOne(@Param('id') id: string, @Req() req: any) {
+        return this.getEventoByIdUseCase.execute(id, req.ability);
     }
 
     @Post()

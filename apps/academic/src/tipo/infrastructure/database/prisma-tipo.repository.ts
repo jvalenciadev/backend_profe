@@ -8,7 +8,7 @@ export class PrismaTipoRepository implements ITipoRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly caslPrisma: CaslPrismaService,
-  ) {}
+  ) { }
 
   async findAll(filter: any = {}, ability?: any): Promise<any[]> {
     const { tenantId, search, ...rest } = filter;
@@ -18,7 +18,7 @@ export class PrismaTipoRepository implements ITipoRepository {
     if (hasStatus) where.estado = { not: 'eliminado' };
 
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'Tipo');
+      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'ProgramaTipo');
       where = { AND: [where, caslWhere] };
     }
 
@@ -31,7 +31,7 @@ export class PrismaTipoRepository implements ITipoRepository {
   async findById(id: string, ability?: any): Promise<any | null> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'Tipo');
+      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'ProgramaTipo');
       where = { AND: [where, caslWhere] };
     }
     return await (this.prisma as any).programaTipo.findFirst({ where });
@@ -46,7 +46,7 @@ export class PrismaTipoRepository implements ITipoRepository {
   async update(id: string, data: any, userId?: string, ability?: any): Promise<any> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'update', 'Tipo');
+      const caslWhere = this.caslPrisma.getWhere(ability, 'update', 'ProgramaTipo');
       where = { AND: [where, caslWhere] };
     }
     const exists = await (this.prisma as any).programaTipo.findFirst({ where });
@@ -61,7 +61,7 @@ export class PrismaTipoRepository implements ITipoRepository {
   async delete(id: string, userId?: string, ability?: any): Promise<void> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'delete', 'Tipo');
+      const caslWhere = this.caslPrisma.getWhere(ability, 'delete', 'ProgramaTipo');
       where = { AND: [where, caslWhere] };
     }
     const exists = await (this.prisma as any).programaTipo.findFirst({ where });

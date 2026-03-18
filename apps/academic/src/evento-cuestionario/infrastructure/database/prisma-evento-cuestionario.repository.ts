@@ -8,14 +8,13 @@ export class PrismaEventoCuestionarioRepository implements IEventoCuestionarioRe
   constructor(
     private readonly prisma: PrismaService,
     private readonly caslPrisma: CaslPrismaService,
-  ) {}
+  ) { }
 
   async findAll(filter: any = {}, ability?: any): Promise<any[]> {
     const { tenantId, search, ...rest } = filter;
     let where: any = { ...rest };
-    // Assuming hasStatus internally
-    const hasStatus = true;
-    if (hasStatus) where.estado = { not: 'eliminado' };
+    // Always filter out deleted records
+    where.estado = { not: 'eliminado' };
 
     if (ability) {
       const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'EventoCuestionario');
@@ -24,7 +23,12 @@ export class PrismaEventoCuestionarioRepository implements IEventoCuestionarioRe
 
     return await (this.prisma as any).eventoCuestionario.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { orden: 'asc' },
+      include: {
+        preguntas: {
+          where: { estado: { not: 'eliminado' } }
+        }
+      }
     });
   }
 
@@ -34,7 +38,51 @@ export class PrismaEventoCuestionarioRepository implements IEventoCuestionarioRe
       const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'EventoCuestionario');
       where = { AND: [where, caslWhere] };
     }
-    return await (this.prisma as any).eventoCuestionario.findFirst({ where });
+    return await (this.prisma as any).eventoCuestionario.findFirst({ 
+      where,
+      include: {
+        preguntas: {
+          where: { estado: { not: 'eliminado' } }
+        }
+      }
+    });
+  }
+
+  async findProgressForPersona(eventoId: string, personaId: string): Promise<any[]> {
+    // 1. Get all questionnaires for the event, ordered
+    const questionnaires = await (this.prisma as any).eventoCuestionario.findMany({
+      where: { eventoId, estado: { not: 'eliminado' } },
+      orderBy: { orden: 'asc' },
+    });
+
+    // 2. Get attempts made by the persona
+    const attempts = await (this.prisma as any).eventoCuestionarioIntento.findMany({
+      where: { personaId, cuestionarioId: { in: questionnaires.map((q: any) => q.id) } }
+    });
+
+    // 3. Map each questionnaire with its progress status
+    let canProceed = true;
+    return questionnaires.map((q: any) => {
+      const attempt = attempts.find((a: any) => a.cuestionarioId === q.id);
+      const isFinished = attempt?.estado === 'finished';
+      const isPassed = q.esEvaluativo
+        ? (isFinished && (attempt.puntaje >= (q.puntajeMinimo || 0)))
+        : isFinished;
+
+      const status = {
+        isOpened: canProceed,
+        isFinished,
+        isPassed,
+        attempt: attempt || null
+      };
+
+      // If questionnaire is mandatory and not passed, next ones are blocked
+      if (q.esObligatorio && !isPassed) {
+        canProceed = false;
+      }
+
+      return { ...q, progress: status };
+    });
   }
 
   async create(data: any, userId?: string, forcedTenantId?: string): Promise<any> {

@@ -38,7 +38,16 @@ export class PrismaEventoInscripcionRepository implements IEventoInscripcionRepo
       where,
       orderBy: { createdAt: 'desc' },
       include: {
-        persona: true
+        persona: {
+          include: {
+            eventoCuestionarioIntentos: true
+          }
+        },
+        respuestasExtras: {
+          include: {
+            campoExtra: true
+          }
+        }
       }
     });
   }
@@ -58,8 +67,22 @@ export class PrismaEventoInscripcionRepository implements IEventoInscripcionRepo
   }
 
   async create(data: any, userId?: string, forcedTenantId?: string): Promise<any> {
+    const { respuestasExtras, ...cleanData } = data;
     return await (this.prisma as any).eventoInscripcion.create({
-      data: { ...data, createdBy: userId }
+      data: {
+        ...cleanData,
+        createdBy: userId,
+        respuestasExtras: respuestasExtras ? {
+          create: respuestasExtras.map((r: any) => ({
+            campoExtraId: r.campoExtraId,
+            valor: String(r.valor)
+          }))
+        } : undefined
+      },
+      include: {
+        persona: true,
+        respuestasExtras: { include: { campoExtra: true } }
+      }
     });
   }
 

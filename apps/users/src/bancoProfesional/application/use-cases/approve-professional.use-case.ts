@@ -33,14 +33,21 @@ export class ApproveProfessionalUseCase {
 
         const updated = await this.repository.update(id, updateData);
 
-        // Si se cambia el estado a 'inactivo' (baja), enviamos un correo
+        // Lógica de correos según el cambio de estado
         const userEmail = (existing as any).correo || (existing as any).user?.correo;
-        if (data.status?.toLowerCase() === 'inactivo' && userEmail) {
-            const userName = existing.nombre;
-            await this.mailService.sendBajaPostulanteEmail(userEmail, userName).catch(err => {
-                // Loguear pero no interrumpir el flujo si falla el correo
-                console.error('Error enviando correo de baja:', err);
-            });
+        if (userEmail && data.status) {
+            const newStatus = data.status.toLowerCase();
+            const oldStatus = existing.estado?.toLowerCase();
+
+            if (newStatus === 'activo' && oldStatus === 'pendiente') {
+                await this.mailService.sendAprobacionPostulanteEmail(userEmail, existing.nombre).catch(err => {
+                    console.error('Error enviando correo de aprobación:', err);
+                });
+            } else if (newStatus === 'inactivo' && oldStatus !== 'inactivo') {
+                await this.mailService.sendBajaPostulanteEmail(userEmail, existing.nombre).catch(err => {
+                    console.error('Error enviando correo de baja:', err);
+                });
+            }
         }
 
         return updated;

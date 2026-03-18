@@ -11,10 +11,9 @@ export class FindAllProfilesUseCase {
 
     async execute(filter: any = {}): Promise<BancoProfesional[]> {
         // Solo listamos POSTULACION_PROFE y que NO estén inactivos ni eliminados
-        const queryFilter = {
+        const queryFilter: any = {
             ...filter,
             cargoPostulacionId: { not: null },
-            estado: 'activo',
             roles: {
                 some: {
                     role: {
@@ -23,6 +22,12 @@ export class FindAllProfilesUseCase {
                 }
             }
         };
+
+        // Si no se especifica el estado, mostramos activos y pendientes exclusivamente
+        if (!filter.estado) {
+            queryFilter.estado = { in: ['activo', 'pendiente'] };
+        }
+
         return this.repository.findAll(queryFilter);
     }
 }

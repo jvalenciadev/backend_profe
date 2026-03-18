@@ -47,9 +47,11 @@ export class PrismaProgramaRepository implements IProgramaRepository {
         fechaFinInscripcion: rest.fechaFinInscripcion || future,
         fechaInicioClases: rest.fechaInicioClases || future,
         modulos: modulos && Array.isArray(modulos) ? {
-          create: modulos.map(({ id, ...m }: any) => ({
+          create: modulos.map(({ id, createdAt, updatedAt, programaId, facilitador, moduloVersiones, facilitadores, mod_unidades, mod_asistencias, mod_notas_finales, ...m }: any) => ({
             ...m,
-            notaMinima: Number(m.notaMinima) || 69,
+            orden: Number(m.orden) || 0,
+            esGlobal: Boolean(m.esGlobal),
+            facilitadorId: m.facilitadorId || null,
             estado: (m.estado || 'activo').toLowerCase()
           }))
         } : undefined
@@ -62,7 +64,7 @@ export class PrismaProgramaRepository implements IProgramaRepository {
   async findById(id: string): Promise<Programa | null> {
     const record = await (this.prisma.programa as any).findUnique({
       where: { id },
-      include: { modulos: true }
+      include: { modulos: { orderBy: { orden: 'asc' } } }
     });
     return record ? this.mapToDomain(record) : null;
   }
@@ -82,7 +84,7 @@ export class PrismaProgramaRepository implements IProgramaRepository {
       (this.prisma.programa as any).count({ where }),
       (this.prisma.programa as any).findMany({
         where,
-        include: { modulos: true },
+        include: { modulos: { orderBy: { orden: 'asc' } } },
         skip: (page - 1) * limit,
         take: limit,
         orderBy: { createdAt: 'desc' }
@@ -107,9 +109,11 @@ export class PrismaProgramaRepository implements IProgramaRepository {
     if (modulos && Array.isArray(modulos)) {
       updateData.modulos = {
         deleteMany: {},
-        create: modulos.map(({ id, createdAt, updatedAt, programaId, ...m }: any) => ({
+        create: modulos.map(({ id, createdAt, updatedAt, programaId, facilitador, moduloVersiones, facilitadores, mod_unidades, mod_asistencias, mod_notas_finales, ...m }: any) => ({
           ...m,
-          notaMinima: Number(m.notaMinima) || 69,
+          orden: Number(m.orden) || 0,
+          esGlobal: Boolean(m.esGlobal),
+          facilitadorId: m.facilitadorId || null,
           estado: (m.estado || 'activo').toLowerCase()
         }))
       };

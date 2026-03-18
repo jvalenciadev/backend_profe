@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
-import { PrismaService } from '@app/database';
+import { DatabaseModule } from '@app/database';
+import { CaslModule } from '@app/common';
 import { PrismaOfertaRepository } from './infrastructure/database/prisma-oferta.repository';
 import { OFERTA_REPOSITORY } from './domain/repositories/oferta.repository.interface';
 import { GetOfertasUseCase, GetOfertaByIdUseCase } from './application/use-cases/get-ofertas.use-case';
@@ -7,9 +8,9 @@ import { CreateAcademicVersionUseCase } from './application/use-cases/create-aca
 import { OfertaController } from './infrastructure/controllers/oferta.controller';
 
 @Module({
+    imports: [DatabaseModule, CaslModule],
     controllers: [OfertaController],
     providers: [
-        PrismaService,
         GetOfertasUseCase,
         GetOfertaByIdUseCase,
         CreateAcademicVersionUseCase,

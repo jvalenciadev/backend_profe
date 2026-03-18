@@ -13,40 +13,40 @@ export class TipoController {
     private readonly createTipoUseCase: CreateTipoUseCase,
     private readonly updateTipoUseCase: UpdateTipoUseCase,
     private readonly deleteTipoUseCase: DeleteTipoUseCase,
-  ) {}
+  ) { }
 
   @Get()
-  @CheckPolicies((ability: any) => ability.can('read', 'Tipo'))
+  @CheckPolicies((ability: any) => ability.can('read', 'ProgramaTipo'))
   findAll(@Query() query: any, @Req() req: any) {
     return this.getTiposUseCase.execute(query, req.ability);
   }
 
   @Get(':id')
-  @CheckPolicies((ability: any) => ability.can('read', 'Tipo'))
+  @CheckPolicies((ability: any) => ability.can('read', 'ProgramaTipo'))
   findOne(@Param('id') id: string, @Req() req: any) {
     return this.getTipoByIdUseCase.execute(id, req.ability);
   }
 
   @Post()
-  @CheckPolicies((ability: any) => ability.can('create', 'Tipo'))
+  @CheckPolicies((ability: any) => ability.can('create', 'ProgramaTipo'))
   create(@Body() data: any, @Req() req: any) {
     return this.createTipoUseCase.execute(data, req.user?.id, req.user?.tenantId);
   }
 
   @Put(':id')
-  @CheckPolicies((ability: any) => ability.can('update', 'Tipo'))
+  @CheckPolicies((ability: any) => ability.can('update', 'ProgramaTipo'))
   updatePut(@Param('id') id: string, @Body() data: any, @Req() req: any) {
     return this.updateTipoUseCase.execute(id, data, req.user?.id, req.ability);
   }
 
   @Patch(':id')
-  @CheckPolicies((ability: any) => ability.can('update', 'Tipo'))
+  @CheckPolicies((ability: any) => ability.can('update', 'ProgramaTipo'))
   updatePatch(@Param('id') id: string, @Body() data: any, @Req() req: any) {
     return this.updateTipoUseCase.execute(id, data, req.user?.id, req.ability);
   }
 
   @Delete(':id')
-  @CheckPolicies((ability: any) => ability.can('delete', 'Tipo'))
+  @CheckPolicies((ability: any) => ability.can('delete', 'ProgramaTipo'))
   remove(@Param('id') id: string, @Req() req: any) {
     return this.deleteTipoUseCase.execute(id, req.user?.id, req.ability);
   }

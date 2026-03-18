@@ -54,10 +54,13 @@ export class UploadConfigService {
       where: { tableName },
     });
 
+    const envMaxSize = process.env.MAX_FILE_SIZE_MB ? parseInt(process.env.MAX_FILE_SIZE_MB) : 20;
+
     if (!config || config.estado !== 'activo') {
-      // Si no hay configuración o no está activa, usamos validación por defecto mínima
-      if (file.size > 10 * 1024 * 1024) { // 10MB por defecto si no hay config
-        throw new BadRequestException('El archivo excede el tamaño máximo permitido (10MB)');
+      // Si no hay configuración o no está activa, usamos validación por defecto o .env
+      const maxSizeBytes = envMaxSize * 1024 * 1024;
+      if (file.size > maxSizeBytes) { 
+        throw new BadRequestException(`El archivo excede el tamaño máximo permitido (${envMaxSize}MB)`);
       }
       return true;
     }
@@ -72,11 +75,12 @@ export class UploadConfigService {
       );
     }
 
-    // 2. Validar Tamaño
-    const maxSizeBytes = config.maxSizeMB * 1024 * 1024;
+    // 2. Validar Tamaño (Priorizar el menor entre Config y ENV)
+    const activeMaxSize = Math.min(config.maxSizeMB, envMaxSize);
+    const maxSizeBytes = activeMaxSize * 1024 * 1024;
     if (file.size > maxSizeBytes) {
       throw new BadRequestException(
-        `El archivo excede el tamaño máximo permitido (${config.maxSizeMB}MB)`,
+        `El archivo excede el tamaño máximo permitido (${activeMaxSize}MB)`,
       );
     }
 

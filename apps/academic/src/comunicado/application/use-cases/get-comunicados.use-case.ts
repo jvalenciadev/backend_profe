@@ -10,13 +10,8 @@ export class GetComunicadosUseCase {
     private readonly repository: IComunicadoRepository,
   ) { }
 
-  async execute(filters: ComunicadoFilters = {}, tenantId?: string): Promise<{ data: Comunicado[]; total: number }> {
-    // Si hay tenantId forzamos el filtro al tenant del usuario actual
-    const appliedFilters = { ...filters };
-    if (tenantId) {
-      appliedFilters.tenantId = tenantId;
-    }
-    return await this.repository.findAll(appliedFilters);
+  async execute(filters: ComunicadoFilters = {}, ability?: any): Promise<{ data: Comunicado[]; total: number }> {
+    return await this.repository.findAll(filters, ability);
   }
 }
 
@@ -27,13 +22,9 @@ export class GetComunicadoByIdUseCase {
     private readonly repository: IComunicadoRepository,
   ) { }
 
-  async execute(id: string, tenantId?: string): Promise<Comunicado> {
-    const entity = await this.repository.findById(id);
+  async execute(id: string, ability?: any): Promise<Comunicado> {
+    const entity = await this.repository.findById(id, ability);
     if (!entity) throw new NotFoundException(`Comunicado con ID ${id} no encontrado`);
-
-    if (tenantId && entity.tenantId && entity.tenantId !== tenantId) {
-      throw new NotFoundException(`Comunicado con ID ${id} no encontrado en este departamento`);
-    }
 
     return entity;
   }

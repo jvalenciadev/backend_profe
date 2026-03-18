@@ -3,9 +3,14 @@ import { PrismaService } from '@app/database';
 import { ICargoRepository, CargoFilters } from '../../domain/repositories/cargo.repository.interface';
 import { Cargo } from '../../domain/entities/cargo.entity';
 
+import { CaslPrismaService } from '@app/common';
+
 @Injectable()
 export class PrismaCargoRepository implements ICargoRepository {
-    constructor(private readonly prisma: PrismaService) { }
+    constructor(
+        private readonly prisma: PrismaService,
+        private readonly caslPrisma: CaslPrismaService
+    ) { }
 
     private mapToDomain(record: any): Cargo {
         return new Cargo(
@@ -32,20 +37,31 @@ export class PrismaCargoRepository implements ICargoRepository {
         return this.mapToDomain(data);
     }
 
-    async findById(id: string): Promise<Cargo | null> {
-        const data = await this.prisma.cargo.findUnique({ where: { id } });
+    async findById(id: string, ability?: any): Promise<Cargo | null> {
+        let where: any = { id };
+        if (ability) {
+            const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'Cargo');
+            where = { AND: [where, caslWhere] };
+        }
+
+        const data = await this.prisma.cargo.findFirst({ where });
         return data ? this.mapToDomain(data) : null;
     }
 
-    async findAll(filters: CargoFilters = {}): Promise<{ data: Cargo[]; total: number }> {
+    async findAll(filters: CargoFilters = {}, ability?: any): Promise<{ data: Cargo[]; total: number }> {
         const { search, estado, page = 1, limit = 20 } = filters;
-        const where: any = { estado: { not: 'eliminado' } };
+        let where: any = { estado: { not: 'eliminado' } };
 
         if (estado && estado !== 'todos') {
             where.estado = estado;
         }
         if (search) {
             where.nombre = { contains: search, mode: 'insensitive' };
+        }
+
+        if (ability) {
+            const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'Cargo');
+            where = { AND: [where, caslWhere] };
         }
 
         const [total, data] = await Promise.all([

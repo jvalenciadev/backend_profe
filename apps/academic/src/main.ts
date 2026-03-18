@@ -1,4 +1,4 @@
-import { NestFactory } from '@nestjs/core';
+import { NestFactory } from '@nestjs/core'; // Force reload for Prisma Schema update
 import { AcademicModule } from './academic.module';
 import { setupBigIntSerialization } from '@app/common/utils/bigint.serializer';
 import { ValidationPipe } from '@nestjs/common';

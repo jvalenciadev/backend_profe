@@ -14,9 +14,9 @@ export class GetEventosUseCase {
 @Injectable()
 export class GetEventoByIdUseCase {
     constructor(@Inject(EVENTO_REPOSITORY) private readonly repo: IEventoRepository) { }
-    async execute(id: string): Promise<Evento> {
-        const evento = await this.repo.findById(id);
-        if (!evento) throw new NotFoundException(`Evento con ID ${id} no encontrado`);
+    async execute(id: string, ability?: any): Promise<Evento> {
+        const evento = await this.repo.findById(id, ability);
+        if (!evento) throw new NotFoundException(`Evento con ID ${id} no encontrado o sin permisos`);
         return evento;
     }
 }

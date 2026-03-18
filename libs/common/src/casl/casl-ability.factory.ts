@@ -7,7 +7,7 @@ export type AppAbility = PureAbility<[string, any], PrismaQuery>;
 
 @Injectable()
 export class CaslAbilityFactory {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async createForUser(user: any): Promise<AppAbility> {
     const { can, build } = new AbilityBuilder<AppAbility>(createPrismaAbility);
@@ -37,6 +37,7 @@ export class CaslAbilityFactory {
     ];
 
     // 3. Aplicar reglas con condiciones ABAC interpoladas
+    // console.log(`Cargando ${allPermissionEntries.length} permisos para ${dbUser.username}`);
     for (const entry of allPermissionEntries) {
       const { action, subject, conditions, fields } = entry.permission as any;
 
@@ -45,32 +46,52 @@ export class CaslAbilityFactory {
 
       // LOGICA MULTI-TENANT:
       if (dbUser.tenantId) {
-        // Forzamos el filtro por departamento o tenant en todas las reglas
+        // Subjects filtrados por departamentoId (Sede, Distritos, ProgramaDos pertenecen al departamento/sede)
         const depIdSubjects = [
           'Sede',
           'Distrito',
+          'Provincia',
+          'UnidadEducativa',
           'ProgramaDos',
           'EventoInscripcion',
         ];
+
+        // Subjects filtrados por tenantId (tenant = departamento del usuario)
         const tenantIdSubjects = [
           'User',
+          'Role',
+          'Permission',
           'Blog',
           'Comunicado',
           'Evento',
+          'Galeria',
           'ProgramaInscripcion',
           'Video',
           'AuditLog',
+          'MapPersona',
+          'MapCategoria',
+          'Inscripcion',
+          'EvaluacionAdmins',
+          'EvaluacionPuntaje',
         ];
 
-        if (depIdSubjects.includes(subject) || subject === 'all') {
+        // Si tiene acceso 'all', aplicamos AMBOS filtros para evitar fuga de datos
+        if (subject === 'all') {
           parsedConditions = {
             ...parsedConditions,
-            departamentoId: dbUser.tenantId,
+            tenantId: dbUser.tenantId,
           };
-        }
+        } else {
+          if (depIdSubjects.includes(subject)) {
+            parsedConditions = {
+              ...parsedConditions,
+              departamentoId: dbUser.tenantId,
+            };
+          }
 
-        if (tenantIdSubjects.includes(subject) || subject === 'all') {
-          parsedConditions = { ...parsedConditions, tenantId: dbUser.tenantId };
+          if (tenantIdSubjects.includes(subject)) {
+            parsedConditions = { ...parsedConditions, tenantId: dbUser.tenantId };
+          }
         }
       } else if (parsedConditions) {
         // ADMIN GLOBAL: No tenantId. Eliminamos filtros de tenant si existen en las reglas.

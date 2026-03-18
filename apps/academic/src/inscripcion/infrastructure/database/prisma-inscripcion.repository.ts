@@ -10,6 +10,22 @@ export class PrismaInscripcionRepository implements IInscripcionRepository {
     async findById(id: string): Promise<Inscripcion | null> {
         const data = await this.prisma.programaInscripcion.findUnique({
             where: { id },
+            include: {
+                programa: {
+                    include: {
+                        version: true
+                    }
+                },
+                sede: true,
+                estadoInscripcion: true,
+                persona: true,
+                turno: {
+                    include: {
+                        turnoConfig: true
+                    }
+                },
+                baucher: true
+            },
         });
         return data ? new Inscripcion(data as any) : null;
     }
@@ -17,6 +33,22 @@ export class PrismaInscripcionRepository implements IInscripcionRepository {
     async findAll(filter: any = {}): Promise<Inscripcion[]> {
         const data = await this.prisma.programaInscripcion.findMany({
             where: { ...filter, estado: { not: 'eliminado' } },
+            include: {
+                programa: {
+                    include: {
+                        version: true
+                    }
+                },
+                sede: true,
+                estadoInscripcion: true,
+                persona: true,
+                turno: {
+                    include: {
+                        turnoConfig: true
+                    }
+                },
+                baucher: true
+            },
             orderBy: { createdAt: 'desc' },
         });
         return data.map(d => new Inscripcion(d as any));
@@ -94,5 +126,42 @@ export class PrismaInscripcionRepository implements IInscripcionRepository {
             }
         });
         return new Inscripcion(created as any);
+    }
+
+    async update(id: string, data: any): Promise<Inscripcion> {
+        const updated = await this.prisma.programaInscripcion.update({
+            where: { id },
+            data: {
+                turnoId: data.turnoId,
+                sedeId: data.sedeId,
+                estadoInscripcionId: data.estadoInscripcionId,
+                observacion: data.observacion,
+                licenciatura: data.licenciatura,
+                unidadEducativa: data.unidadEducativa,
+                estado: data.estado,
+                updatedBy: data.updatedBy
+            }
+        });
+        return new Inscripcion(updated as any);
+    }
+
+    async delete(id: string): Promise<void> {
+        await this.prisma.programaInscripcion.update({
+            where: { id },
+            data: { estado: 'eliminado' }
+        });
+    }
+
+    async updateBaucher(baucherId: string, data: any): Promise<void> {
+        await this.prisma.programaBaucher.update({
+            where: { id: baucherId },
+            data
+        });
+    }
+
+    async findBaucherById(baucherId: string): Promise<any | null> {
+        return this.prisma.programaBaucher.findUnique({
+            where: { id: baucherId }
+        });
     }
 }

@@ -56,6 +56,7 @@ export class CreateAcademicVersionUseCase {
                 // Relations
                 programaId: masterId,
                 sedeId: rest.sedeId || null,
+                departamentoId: rest.departamentoId || null,
                 duracionId: rest.duracionId || master.duracionId,
                 versionId: rest.versionId, // Must be provided in versionData
                 tipoId: rest.tipoId || master.tipoId,
@@ -67,12 +68,14 @@ export class CreateAcademicVersionUseCase {
                 modulos: {
                     create: (modulos && modulos.length > 0
                         ? modulos
-                        : master.modulos
-                    ).map((m: any) => ({
+                        : master.modulos.sort((a: any, b: any) => (a.orden || 0) - (b.orden || 0))
+                    ).filter((m: any) => !m.esGlobal).map((m: any) => ({
                         nombre: m.nombre,
                         codigo: m.codigo,
                         descripcion: m.descripcion,
-                        notaMinima: m.notaMinima || 69,
+                        moduloMaestroId: m.id || m.moduloId || null,
+                        esGlobal: m.esGlobal || false,
+                        orden: m.orden || 0,
                         // Las fechas solo existen en ProgramaModuloDos (Versiones), no en el Maestro
                         fechaInicio: m.fechaInicio ? new Date(m.fechaInicio) : new Date(),
                         fechaFin: m.fechaFin ? new Date(m.fechaFin) : new Date(),
@@ -81,14 +84,13 @@ export class CreateAcademicVersionUseCase {
                     })),
                 },
                 // Setup turns for this offering
-                turnos: turnos
+                turnos: turnos && turnos.length > 0
                     ? {
                         create: turnos.map((t: any) => ({
-                            id: t.id || undefined, // Allow providing fixed IDs if needed
-                            turnoIds: t.turnoIds,
-                            cupo: t.cupo,
-                            cupoPre: t.cupoPre || 0,
-                            estado: t.status || t.estado || 'activo',
+                            turnoId: t.turnoIds || t.turnoId || t.id, // Support both ID formats from UI
+                            cupo: Number(t.cupo) || 0,
+                            cupoPre: Number(t.cupoPre) || 0,
+                            estado: t.estado || 'activo',
                             createdBy: user?.id || null,
                         })),
                     }

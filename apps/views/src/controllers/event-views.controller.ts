@@ -9,16 +9,16 @@ import {
     ConflictException,
     ForbiddenException,
 } from '@nestjs/common';
-// ForbiddenException se mantiene para las validaciones de asistencia y cuestionario
 import { PrismaService } from '@app/database';
-import { Public } from '@app/common';
 
-@Public()
+/**
+ * CONTROLADOR DE VISTAS DE EVENTOS
+ * Requiere API_SECRET (X-SECRET) pero no sesión de usuario.
+ */
 @Controller('public/eventos')
-export class EventosPublicoController {
+export class EventViewsController {
     constructor(private readonly prisma: PrismaService) { }
 
-    // ─── GET EVENTO DETALLE PÚBLICO ────────────────────────────────────────────
     @Get(':codigo')
     async getEvento(@Param('codigo') codigo: string) {
         const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(codigo);
@@ -33,8 +33,13 @@ export class EventosPublicoController {
             include: {
                 tipo: true,
                 tenant: true,
+                camposExtras: {
+                    where: { deletedAt: null },
+                    orderBy: { orden: 'asc' }
+                },
                 cuestionarios: {
                     where: { estado: 'activo' },
+                    orderBy: { orden: 'asc' },
                     include: {
                         preguntas: {
                             where: { estado: 'activo' },
@@ -49,7 +54,6 @@ export class EventosPublicoController {
 
         if (!evento) throw new NotFoundException('Evento no encontrado');
 
-        // Ocultar si la opción es correcta para no hacer trampa
         const sanitized = {
             ...evento,
             cuestionarios: evento.cuestionarios.map((c) => ({
@@ -64,7 +68,6 @@ export class EventosPublicoController {
         return sanitized;
     }
 
-    // ─── BUSCAR PERSONA POR CI + FECHA NACIMIENTO ───────────────────────────────
     @Post('persona/buscar')
     async buscarPersona(@Body() body: { ci: string; fechaNacimiento: string }) {
         const { ci, fechaNacimiento } = body;
@@ -90,13 +93,11 @@ export class EventosPublicoController {
         };
     }
 
-    // ─── INSCRIPCION A EVENTO ───────────────────────────────────────────────────
     @Post(':eventoId/inscribir')
     async inscribirse(
         @Param('eventoId') eventoId: string,
         @Body()
         body: {
-            // datos identificacion
             ci: string;
             fechaNacimiento: string;
             complemento?: string;
@@ -110,6 +111,7 @@ export class EventosPublicoController {
             generoId?: number;
             departamentoId: string;
             modalidadId: string;
+            respuestasExtras?: Array<{ campoId: string; valor: any }>;
         },
     ) {
         const evento = await this.prisma.evento.findFirst({
@@ -120,7 +122,6 @@ export class EventosPublicoController {
         if (!evento.inscripcionAbierta)
             throw new ForbiddenException('La inscripción está cerrada');
 
-        // Buscar o crear persona
         let persona = await this.prisma.eventoPersona.findFirst({
             where: {
                 ci: BigInt(body.ci),
@@ -146,7 +147,6 @@ export class EventosPublicoController {
                 },
             });
         } else {
-            // Actualizar datos si ya existe
             persona = await this.prisma.eventoPersona.update({
                 where: { id: persona.id },
                 data: {
@@ -160,7 +160,6 @@ export class EventosPublicoController {
             });
         }
 
-        // Verificar si ya está inscrito
         const existente = await this.prisma.eventoInscripcion.findFirst({
             where: { personaId: persona.id, eventoId, deletedAt: null },
         });
@@ -168,7 +167,6 @@ export class EventosPublicoController {
         if (existente)
             throw new ConflictException('Ya estás inscrito en este evento');
 
-        // Crear inscripción
         const inscripcion = await this.prisma.eventoInscripcion.create({
             data: {
                 personaId: persona.id,
@@ -177,10 +175,27 @@ export class EventosPublicoController {
                 modalidadId: body.modalidadId,
                 asistencia: false,
                 estado: 'activo',
+                respuestasExtras: {
+                    create: body.respuestasExtras?.map(re => {
+                        let finalValue = re.valor;
+                        if (Array.isArray(re.valor)) {
+                            // Limpiar cada elemento de posibles comillas o corchetes accidentales (legacy)
+                            finalValue = re.valor
+                                .map(v => String(v).replace(/^["'\[\s]+|[\]"'\s]+$/g, '').trim())
+                                .filter(v => v !== '')
+                                .join(', ');
+                        } else if (typeof re.valor === 'boolean') {
+                            finalValue = re.valor ? 'SÍ' : 'NO';
+                        }
+                        return {
+                            campoExtraId: re.campoId,
+                            valor: String(finalValue)
+                        };
+                    }) || []
+                }
             },
         });
 
-        // Incrementar contador de inscritos
         await this.prisma.evento.update({
             where: { id: eventoId },
             data: { totalInscritos: { increment: 1 } },
@@ -194,7 +209,6 @@ export class EventosPublicoController {
         };
     }
 
-    // ─── VERIFICAR INSCRIPCION ──────────────────────────────────────────────────
     @Post(':eventoId/verificar-inscripcion')
     async verificarInscripcion(
         @Param('eventoId') eventoId: string,
@@ -224,7 +238,6 @@ export class EventosPublicoController {
         };
     }
 
-    // ─── ASISTENCIA POR CÓDIGO ──────────────────────────────────────────────────
     @Post(':eventoId/asistencia')
     async registrarAsistencia(
         @Param('eventoId') eventoId: string,
@@ -236,14 +249,12 @@ export class EventosPublicoController {
 
         if (!evento) throw new NotFoundException('Evento no encontrado');
 
-        // Validar código
         if (!evento.codigoAsistencia)
             throw new ForbiddenException('Este evento no tiene código de asistencia activo');
 
         if (evento.codigoAsistencia.trim().toUpperCase() !== body.codigoAsistencia.trim().toUpperCase())
             throw new ForbiddenException('Código de asistencia incorrecto');
 
-        // Buscar persona
         const persona = await this.prisma.eventoPersona.findFirst({
             where: {
                 ci: BigInt(body.ci),
@@ -259,10 +270,17 @@ export class EventosPublicoController {
         });
 
         if (!inscripcion) throw new NotFoundException('No estás inscrito en este evento');
-        if (inscripcion.asistencia)
-            throw new ConflictException('Tu asistencia ya fue registrada anteriormente');
 
-        // Registrar asistencia
+        if (inscripcion.asistencia) {
+            return {
+                success: true,
+                yaRegistrada: true,
+                persona: { ...persona, ci: persona.ci.toString() },
+                evento: { nombre: evento.nombre, fecha: evento.fecha, lugar: evento.lugar },
+                inscripcion: inscripcion.id,
+            };
+        }
+
         await this.prisma.eventoInscripcion.update({
             where: { id: inscripcion.id },
             data: { asistencia: true },
@@ -270,13 +288,43 @@ export class EventosPublicoController {
 
         return {
             success: true,
+            yaRegistrada: false,
             persona: { ...persona, ci: persona.ci.toString() },
             evento: { nombre: evento.nombre, fecha: evento.fecha, lugar: evento.lugar },
             inscripcion: inscripcion.id,
         };
     }
 
-    // ─── ENVIAR RESPUESTAS DE CUESTIONARIO ─────────────────────────────────────
+    @Post(':eventoId/cuestionario/:cuestionarioId/marcar-video')
+    async marcarVideoVisto(
+        @Param('eventoId') eventoId: string,
+        @Param('cuestionarioId') cuestionarioId: string,
+        @Body() body: { ci: string; fechaNacimiento: string },
+    ) {
+        const persona = await this.prisma.eventoPersona.findFirst({
+            where: {
+                ci: BigInt(body.ci),
+                fechaNacimiento: new Date(body.fechaNacimiento),
+                deletedAt: null,
+            },
+        });
+
+        if (!persona) throw new NotFoundException('Participante no registrado');
+
+        await this.prisma.eventoCuestionarioIntento.upsert({
+            where: { unique_persona_cuestionario: { cuestionarioId, personaId: persona.id } },
+            update: { videoCompletado: true },
+            create: {
+                cuestionarioId,
+                personaId: persona.id,
+                videoCompletado: true,
+                numeroIntentos: 0,
+            },
+        });
+
+        return { success: true };
+    }
+
     @Post(':eventoId/cuestionario/:cuestionarioId/responder')
     async responderCuestionario(
         @Param('eventoId') eventoId: string,
@@ -287,13 +335,12 @@ export class EventosPublicoController {
             fechaNacimiento: string;
             respuestas: Array<{
                 preguntaId: string;
-                opcionId?: string; // para SINGLE, MULTIPLE, TRUE_FALSE
-                opciones?: string[]; // para MULTIPLE
-                texto?: string; // para TEXTO
+                opcionId?: string;
+                opciones?: string[];
+                texto?: string;
             }>;
         },
     ) {
-        // Verificar cuestionario
         const cuestionario = await this.prisma.eventoCuestionario.findFirst({
             where: { id: cuestionarioId, eventoId, estado: 'activo' },
             include: {
@@ -312,7 +359,6 @@ export class EventosPublicoController {
         if (now > cuestionario.fechaFin)
             throw new ForbiddenException('El cuestionario ya ha cerrado');
 
-        // Buscar persona
         const persona = await this.prisma.eventoPersona.findFirst({
             where: {
                 ci: BigInt(body.ci),
@@ -323,7 +369,26 @@ export class EventosPublicoController {
 
         if (!persona) throw new NotFoundException('Participante no encontrado');
 
-        // Verificar si ya respondió
+        const intentoActual = await this.prisma.eventoCuestionarioIntento.findFirst({
+            where: { cuestionarioId, personaId: persona.id },
+        });
+
+        if (cuestionario.urlVideo && !intentoActual?.videoCompletado) {
+            throw new ForbiddenException('Debes terminar de ver el video obligatorio antes de responder el cuestionario.');
+        }
+
+        // Si NO es evaluativo, solo se puede completar una vez
+        if (!cuestionario.esEvaluativo) {
+            if (intentoActual && (intentoActual.numeroIntentos || 0) >= 1) {
+                throw new ForbiddenException('Este formulario ya fue completado. Solo se puede enviar una vez.');
+            }
+        } else {
+            // Si es evaluativo, respetar el límite de intentos configurado
+            if (cuestionario.limiteIntentos !== null && (intentoActual?.numeroIntentos || 0) >= cuestionario.limiteIntentos) {
+                throw new ForbiddenException('Has superado el límite de intentos permitidos para este cuestionario.');
+            }
+        }
+
         const yaRespondio = await this.prisma.evento_respuestas.findFirst({
             where: {
                 cuestionarioId,
@@ -332,10 +397,15 @@ export class EventosPublicoController {
             },
         });
 
-        if (yaRespondio)
-            throw new ConflictException('Ya enviaste tus respuestas para este cuestionario');
+        // Solo borrar respuestas anteriores si es evaluativo (permite reintentos)
+        if (yaRespondio && cuestionario.esEvaluativo) {
+            await this.prisma.evento_respuestas.deleteMany({
+                where: { cuestionarioId, personaId: persona.id },
+            });
+        } else if (yaRespondio && !cuestionario.esEvaluativo) {
+            throw new ForbiddenException('Este formulario ya fue completado.');
+        }
 
-        // Calcular puntaje
         let puntajeTotal = 0;
         const respuestasData: any[] = [];
 
@@ -345,8 +415,8 @@ export class EventosPublicoController {
 
             if (pregunta.tipo === 'SINGLE' || pregunta.tipo === 'TRUE_FALSE') {
                 const opcion = pregunta.opciones.find((o) => o.id === resp.opcionId);
-                const esCorrecta = opcion?.esCorrecta || false;
-                const puntos = esCorrecta ? pregunta.puntos : 0;
+                const esCorrecta = cuestionario.esEvaluativo ? (opcion?.esCorrecta || false) : false;
+                const puntos = (cuestionario.esEvaluativo && esCorrecta) ? pregunta.puntos : 0;
                 puntajeTotal += puntos;
 
                 respuestasData.push({
@@ -359,12 +429,11 @@ export class EventosPublicoController {
                     personaId: persona.id,
                 });
             } else if (pregunta.tipo === 'MULTIPLE') {
-                // Múltiple: puntaje parcial por respuestas correctas
                 const opciones = resp.opciones || [];
                 for (const opcId of opciones) {
                     const opcion = pregunta.opciones.find((o) => o.id === opcId);
-                    const esCorrecta = opcion?.esCorrecta || false;
-                    const puntosParciales = esCorrecta ? Math.round(pregunta.puntos / (pregunta.opciones.filter((o) => o.esCorrecta).length || 1)) : 0;
+                    const esCorrecta = cuestionario.esEvaluativo ? (opcion?.esCorrecta || false) : false;
+                    const puntosParciales = (cuestionario.esEvaluativo && esCorrecta) ? Math.round(pregunta.puntos / (pregunta.opciones.filter((o) => o.esCorrecta).length || 1)) : 0;
                     puntajeTotal += puntosParciales;
                     respuestasData.push({
                         cuestionarioId,
@@ -377,7 +446,6 @@ export class EventosPublicoController {
                     });
                 }
             } else if (pregunta.tipo === 'TEXTO') {
-                // Texto libre: sin calificación automática
                 respuestasData.push({
                     cuestionarioId,
                     preguntaId: resp.preguntaId,
@@ -390,35 +458,62 @@ export class EventosPublicoController {
             }
         }
 
-        // Guardar respuestas
         await this.prisma.evento_respuestas.createMany({ data: respuestasData });
 
-        // Si el cuestionario cuenta como asistencia, registrarla
-        const inscripcion = await this.prisma.eventoInscripcion.findFirst({
-            where: { personaId: persona.id, eventoId, deletedAt: null },
-        });
-        if (inscripcion) {
-            await this.prisma.eventoInscripcion.update({
-                where: { id: inscripcion.id },
-                data: { asistencia: true },
-            });
+        // Calcular puntaje máximo solo si es evaluativo
+        let puntajeMaximo = 0;
+        let nota = 0;
+
+        if (cuestionario.esEvaluativo) {
+            // Base: suma de puntos de TODAS las preguntas activas
+            const totalPuntosTodasPreguntas = cuestionario.preguntas.reduce((s, p) => s + p.puntos, 0);
+            puntajeMaximo = totalPuntosTodasPreguntas;
+
+            // Si hay cantidad de preguntas a mostrar (aleatorio limitado),
+            // el máximo es proporcional: promedio por pregunta × cantidad a mostrar
+            if (cuestionario.cantidadPreguntas && cuestionario.cantidadPreguntas > 0 && cuestionario.preguntas.length > 0) {
+                const puntosPromedio = totalPuntosTodasPreguntas / cuestionario.preguntas.length;
+                puntajeMaximo = Math.round(puntosPromedio * cuestionario.cantidadPreguntas);
+            }
+
+            // Si el cuestionario tiene puntosMaximos explícito configurado, usarlo (prioridad)
+            if (cuestionario.puntosMaximos && cuestionario.puntosMaximos > 0) {
+                puntajeMaximo = cuestionario.puntosMaximos;
+            }
+
+            nota = puntajeMaximo > 0 ? Math.round((puntajeTotal / puntajeMaximo) * 100) : 0;
         }
 
-        const puntajeMaximo = cuestionario.puntosMaximos || cuestionario.preguntas.reduce((s, p) => s + p.puntos, 0);
-        const nota = puntajeMaximo > 0 ? Math.round((puntajeTotal / puntajeMaximo) * 100) : 0;
+        await this.prisma.eventoCuestionarioIntento.upsert({
+            where: { unique_persona_cuestionario: { cuestionarioId, personaId: persona.id } },
+            update: {
+                numeroIntentos: { increment: 1 },
+                puntaje: puntajeTotal,
+                estado: 'finished',
+                finalizadoEn: new Date(),
+            },
+            create: {
+                cuestionarioId,
+                personaId: persona.id,
+                numeroIntentos: 1,
+                puntaje: puntajeTotal,
+                estado: 'finished',
+                finalizadoEn: new Date(),
+            },
+        });
 
         return {
             success: true,
-            puntaje: puntajeTotal,
-            puntajeMaximo,
-            nota,
+            esEvaluativo: cuestionario.esEvaluativo,
+            puntaje: cuestionario.esEvaluativo ? puntajeTotal : null,
+            puntajeMaximo: cuestionario.esEvaluativo ? puntajeMaximo : null,
+            nota: cuestionario.esEvaluativo ? nota : null,
             persona: { ...persona, ci: persona.ci.toString() },
             cuestionario: { titulo: cuestionario.titulo },
             evento: { id: eventoId },
         };
     }
 
-    // ─── GET RESULTADO DE CUESTIONARIO ─────────────────────────────────────────
     @Post(':eventoId/cuestionario/:cuestionarioId/resultado')
     async getResultado(
         @Param('cuestionarioId') cuestionarioId: string,
@@ -449,7 +544,18 @@ export class EventosPublicoController {
         });
 
         const puntajeTotal = respuestas.reduce((s, r) => s + r.puntos, 0);
-        const puntajeMaximo = cuestionario?.puntosMaximos || 100;
+        
+        // Calcular puntaje máximo basado en las preguntas respondidas si hay límite/aleatorio
+        let puntajeMaximo = cuestionario?.puntosMaximos || 0;
+        if (!puntajeMaximo || (cuestionario?.cantidadPreguntas && cuestionario.cantidadPreguntas > 0)) {
+            const uniquePreguntas = Array.from(new Set(respuestas.map(r => r.preguntaId)));
+            puntajeMaximo = uniquePreguntas.reduce((acc, pId) => {
+                const r = respuestas.find(resp => resp.preguntaId === pId);
+                return acc + (r?.pregunta?.puntos || 0);
+            }, 0);
+        }
+        if (puntajeMaximo === 0) puntajeMaximo = 100;
+
         const nota = Math.round((puntajeTotal / puntajeMaximo) * 100);
 
         return {
@@ -458,13 +564,105 @@ export class EventosPublicoController {
             puntaje: puntajeTotal,
             puntajeMaximo,
             nota,
-            aprobado: nota >= 60,
+            aprobado: nota >= 100,
             respuestas: respuestas.map((r) => ({
                 pregunta: r.pregunta.texto,
                 respuesta: r.texto || r.opcion?.texto,
                 esCorrecta: r.esCorrecta,
                 puntos: r.puntos,
             })),
+        };
+    }
+
+    @Post(':eventoId/progreso')
+    async getInscripcionProgress(
+        @Param('eventoId') eventoId: string,
+        @Body() body: { ci: string; fechaNacimiento: string },
+    ) {
+        const persona = await this.prisma.eventoPersona.findFirst({
+            where: {
+                ci: BigInt(body.ci),
+                fechaNacimiento: new Date(body.fechaNacimiento),
+                deletedAt: null,
+            },
+        });
+
+        if (!persona) throw new NotFoundException('Participante no encontrado');
+
+        const inscripcion = await this.prisma.eventoInscripcion.findFirst({
+            where: { personaId: persona.id, eventoId, deletedAt: null },
+        });
+
+        if (!inscripcion) throw new NotFoundException('No estás inscrito en este evento');
+
+        const cuestionarios = await this.prisma.eventoCuestionario.findMany({
+            where: { eventoId, estado: 'activo' },
+            orderBy: { orden: 'asc' },
+        });
+
+        const progress = await Promise.all(
+            cuestionarios.map(async (c) => {
+                const respuestas = await this.prisma.evento_respuestas.findMany({
+                    where: { cuestionarioId: c.id, personaId: persona.id, deletedAt: null },
+                    include: { pregunta: true }
+                });
+
+                const intento = await this.prisma.eventoCuestionarioIntento.findFirst({
+                    where: { cuestionarioId: c.id, personaId: persona.id },
+                });
+
+                const finalizado = respuestas.length > 0;
+                let aprobado = false;
+                let puntajeTotal = 0;
+                let puntajeMaximo = 0;
+                let nota = 0;
+
+                if (finalizado) {
+                    if (!c.esEvaluativo) {
+                        aprobado = true;
+                    } else {
+                        puntajeTotal = respuestas.reduce((s, r) => s + r.puntos, 0);
+                        
+                        puntajeMaximo = c.puntosMaximos || 0;
+                        if (!puntajeMaximo || (c.cantidadPreguntas && c.cantidadPreguntas > 0)) {
+                            // Sumar puntos de preguntas únicas respondidas
+                            const uniquePreguntas = Array.from(new Set(respuestas.map(r => r.preguntaId)));
+                            puntajeMaximo = uniquePreguntas.reduce((acc, pId) => {
+                                const r = respuestas.find(resp => resp.preguntaId === pId);
+                                return acc + (r?.pregunta?.puntos || 0);
+                            }, 0);
+                        }
+                        if (puntajeMaximo === 0) puntajeMaximo = 100;
+
+                        nota = Math.round((puntajeTotal / puntajeMaximo) * 100);
+                        aprobado = nota >= 100;
+                    }
+                }
+
+                return {
+                    id: c.id,
+                    titulo: c.titulo,
+                    orden: c.orden,
+                    esObligatorio: c.esObligatorio,
+                    esEvaluativo: c.esEvaluativo,
+                    finalizado,
+                    aprobado,
+                    puntaje: puntajeTotal,
+                    puntajeMaximo,
+                    nota,
+                    limiteIntentos: c.limiteIntentos,
+                    urlVideo: c.urlVideo,
+                    esAleatorio: c.esAleatorio,
+                    cantidadPreguntas: c.cantidadPreguntas,
+                    numeroIntentos: intento?.numeroIntentos || 0,
+                    videoCompletado: intento?.videoCompletado || false,
+                };
+            }),
+        );
+
+        return {
+            persona: { ...persona, ci: persona.ci.toString() },
+            progress,
         };
     }
 }

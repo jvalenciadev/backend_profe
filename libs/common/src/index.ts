@@ -10,5 +10,6 @@ export * from './decorators/public.decorator';
 export * from './common.module';
 export * from './upload/upload.module';
 export * from './upload/upload-config.service';
+export * from './upload/upload.controller';
 export * from './guards/api-key.guard';
 export * from './mail';

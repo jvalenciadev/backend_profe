@@ -36,9 +36,13 @@ export class PrismaPermissionRepository implements IPermissionRepository {
   }
 
   async create(data: any, userId?: string, forcedTenantId?: string): Promise<any> {
-    const { id: _, createdAt: __, updatedAt: ___, rolePermissions: ____, ...restData } = data;
+    const { id: _, createdAt: __, updatedAt: ___, rolePermissions: ____, guardName, ...restData } = data;
     return await (this.prisma as any).permission.create({
-      data: { ...restData, createdBy: userId }
+      data: {
+        ...restData,
+        guardName: guardName || 'web',
+        createdBy: userId
+      }
     });
   }
 

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@app/database';
+import { CaslModule } from '@app/common';
 import { SEDE_REPOSITORY } from './domain/repositories/sede.repository.interface';
 import { PrismaSedeRepository } from './infrastructure/database/prisma-sede.repository';
 import { SedeController } from './infrastructure/controllers/sede.controller';
@@ -9,7 +10,7 @@ import { UpdateSedeUseCase, DeleteSedeUseCase } from './application/use-cases/up
 import { DepartamentoModule } from '../departamento/departamento.module';
 
 @Module({
-  imports: [DatabaseModule, DepartamentoModule],
+  imports: [DatabaseModule, CaslModule, DepartamentoModule],
   controllers: [SedeController],
   providers: [
     { provide: SEDE_REPOSITORY, useClass: PrismaSedeRepository },

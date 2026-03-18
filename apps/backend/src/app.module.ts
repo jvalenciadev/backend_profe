@@ -11,8 +11,7 @@ import { AcademicModule } from '../../academic/src/academic.module';
 import { AuditModule } from '../../audit/src/audit.module';
 import { JobsModule } from '../../jobs/src/jobs.module';
 import { DatabaseModule } from '@app/database';
-import { APP_GUARD } from '@nestjs/core';
-import { Reflector } from '@nestjs/core';
+import { APP_GUARD, Reflector } from '@nestjs/core';
 import { CaslModule, ApiKeyGuard, MailModule } from '@app/common';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
@@ -44,4 +43,4 @@ import { join } from 'path';
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }

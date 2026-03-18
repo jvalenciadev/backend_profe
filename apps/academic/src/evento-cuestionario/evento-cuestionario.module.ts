@@ -5,7 +5,7 @@ import { EVENTOCUESTIONARIO_REPOSITORY } from './domain/repositories/evento-cues
 import { PrismaEventoCuestionarioRepository } from './infrastructure/database/prisma-evento-cuestionario.repository';
 import { EventoCuestionarioController } from './infrastructure/controllers/evento-cuestionario.controller';
 import {
-  GetEventoCuestionariosUseCase, GetEventoCuestionarioByIdUseCase, CreateEventoCuestionarioUseCase, UpdateEventoCuestionarioUseCase, DeleteEventoCuestionarioUseCase
+  GetEventoCuestionariosUseCase, GetEventoCuestionarioByIdUseCase, CreateEventoCuestionarioUseCase, UpdateEventoCuestionarioUseCase, DeleteEventoCuestionarioUseCase, GetEventoProgressUseCase
 } from './application/use-cases/evento-cuestionario.use-cases';
 
 @Module({
@@ -18,7 +18,8 @@ import {
     CreateEventoCuestionarioUseCase,
     UpdateEventoCuestionarioUseCase,
     DeleteEventoCuestionarioUseCase,
+    GetEventoProgressUseCase,
   ],
-  exports: [GetEventoCuestionariosUseCase, GetEventoCuestionarioByIdUseCase]
+  exports: [GetEventoCuestionariosUseCase, GetEventoCuestionarioByIdUseCase, GetEventoProgressUseCase]
 })
-export class EventoCuestionarioModule {}
+export class EventoCuestionarioModule { }

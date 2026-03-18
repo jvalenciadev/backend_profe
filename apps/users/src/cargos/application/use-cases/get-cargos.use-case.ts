@@ -10,8 +10,8 @@ export class GetCargosUseCase {
         private readonly cargoRepository: ICargoRepository,
     ) { }
 
-    async execute(filters: CargoFilters = {}): Promise<{ data: Cargo[]; total: number }> {
-        return await this.cargoRepository.findAll(filters);
+    async execute(filters: CargoFilters = {}, ability?: any): Promise<{ data: Cargo[]; total: number }> {
+        return await this.cargoRepository.findAll(filters, ability);
     }
 }
 
@@ -22,8 +22,8 @@ export class GetCargoByIdUseCase {
         private readonly cargoRepository: ICargoRepository,
     ) { }
 
-    async execute(id: string): Promise<Cargo> {
-        const cargo = await this.cargoRepository.findById(id);
+    async execute(id: string, ability?: any): Promise<Cargo> {
+        const cargo = await this.cargoRepository.findById(id, ability);
         if (!cargo) {
             throw new Error('Cargo no encontrado');
         }

@@ -3,9 +3,14 @@ import { PrismaService } from '@app/database';
 import type { ISedeRepository, SedeFilters } from '../../domain/repositories/sede.repository.interface';
 import { Sede } from '../../domain/entities/sede.entity';
 
+import { CaslPrismaService } from '@app/common';
+
 @Injectable()
 export class PrismaSedeRepository implements ISedeRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly caslPrisma: CaslPrismaService
+  ) { }
 
   private mapToDomain(record: any): Sede {
     return new Sede(
@@ -62,19 +67,30 @@ export class PrismaSedeRepository implements ISedeRepository {
     return this.mapToDomain(record);
   }
 
-  async findById(id: string): Promise<Sede | null> {
-    const record = await (this.prisma.sede as any).findUnique({
-      where: { id },
+  async findById(id: string, ability?: any): Promise<Sede | null> {
+    let where: any = { id };
+    if (ability) {
+      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'Sede');
+      where = { AND: [where, caslWhere] };
+    }
+
+    const record = await (this.prisma.sede as any).findFirst({
+      where,
       include: { departamento: true }
     });
     return record ? this.mapToDomain(record) : null;
   }
 
-  async findAll(filters: SedeFilters = {}): Promise<{ data: Sede[]; total: number }> {
+  async findAll(filters: SedeFilters = {}, ability?: any): Promise<{ data: Sede[]; total: number }> {
     const { search, estado, page = 1, limit = 20 } = filters;
-    const where: any = { estado: { not: 'eliminado' } };
+    let where: any = { estado: { not: 'eliminado' } };
     if (estado && estado !== 'todos') where.estado = estado;
     if (search) where.nombre = { contains: search, mode: 'insensitive' };
+
+    if (ability) {
+      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'Sede');
+      where = { AND: [where, caslWhere] };
+    }
 
     const [total, data] = await Promise.all([
       (this.prisma.sede as any).count({ where }),

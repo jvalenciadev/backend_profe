@@ -35,6 +35,9 @@ export class CaslPrismaService {
       'ProgramaInscripcion',
       'Video',
       'AuditLog',
+      'Inscripcion',
+      'EvaluacionAdmins',
+      'EvaluacionPuntaje',
     ];
     const globalSubjects = [
       'Departamento',
@@ -43,7 +46,12 @@ export class CaslPrismaService {
       'ProgramaTipo',
       'ProgramaModalidad',
       'ProgramaVersion',
+      'ProgramaTurno',
+      'ProgramaModulo',
+      'ProgramaModuloDos',
+      'ProgramaModuloVersion',
       'TipoEvento',
+      'EventoTipo',
       'Persona',
       'MapPersona',
       'AreaTrabajo',
@@ -61,9 +69,11 @@ export class CaslPrismaService {
       'EventoRestriccion',
       'EventoCuestionario',
       'EventoPregunta',
-      'EventoOpcion',
-      'EventoRespuesta',
+      'EventoOpciones',
+      'EventoRespuestas',
       'Galeria',
+      'AsignacionFacilitador',
+      'AsignarFacilitador',
     ];
 
     const fieldsToRemove: string[] = [];

@@ -13,40 +13,40 @@ export class VersionController {
     private readonly createVersionUseCase: CreateVersionUseCase,
     private readonly updateVersionUseCase: UpdateVersionUseCase,
     private readonly deleteVersionUseCase: DeleteVersionUseCase,
-  ) {}
+  ) { }
 
   @Get()
-  @CheckPolicies((ability: any) => ability.can('read', 'Version'))
+  @CheckPolicies((ability: any) => ability.can('read', 'ProgramaVersion'))
   findAll(@Query() query: any, @Req() req: any) {
     return this.getVersionsUseCase.execute(query, req.ability);
   }
 
   @Get(':id')
-  @CheckPolicies((ability: any) => ability.can('read', 'Version'))
+  @CheckPolicies((ability: any) => ability.can('read', 'ProgramaVersion'))
   findOne(@Param('id') id: string, @Req() req: any) {
     return this.getVersionByIdUseCase.execute(id, req.ability);
   }
 
   @Post()
-  @CheckPolicies((ability: any) => ability.can('create', 'Version'))
+  @CheckPolicies((ability: any) => ability.can('create', 'ProgramaVersion'))
   create(@Body() data: any, @Req() req: any) {
     return this.createVersionUseCase.execute(data, req.user?.id, req.user?.tenantId);
   }
 
   @Put(':id')
-  @CheckPolicies((ability: any) => ability.can('update', 'Version'))
+  @CheckPolicies((ability: any) => ability.can('update', 'ProgramaVersion'))
   updatePut(@Param('id') id: string, @Body() data: any, @Req() req: any) {
     return this.updateVersionUseCase.execute(id, data, req.user?.id, req.ability);
   }
 
   @Patch(':id')
-  @CheckPolicies((ability: any) => ability.can('update', 'Version'))
+  @CheckPolicies((ability: any) => ability.can('update', 'ProgramaVersion'))
   updatePatch(@Param('id') id: string, @Body() data: any, @Req() req: any) {
     return this.updateVersionUseCase.execute(id, data, req.user?.id, req.ability);
   }
 
   @Delete(':id')
-  @CheckPolicies((ability: any) => ability.can('delete', 'Version'))
+  @CheckPolicies((ability: any) => ability.can('delete', 'ProgramaVersion'))
   remove(@Param('id') id: string, @Req() req: any) {
     return this.deleteVersionUseCase.execute(id, req.user?.id, req.ability);
   }

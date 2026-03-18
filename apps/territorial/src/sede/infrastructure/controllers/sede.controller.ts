@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
 import { JwtAuthGuard, PoliciesGuard, CheckPolicies } from '@app/common';
 import { GetSedesUseCase, GetSedeByIdUseCase } from '../../application/use-cases/get-sedes.use-case';
 import { CreateSedeUseCase } from '../../application/use-cases/create-sede.use-case';
@@ -17,7 +17,7 @@ export class SedeController {
 
   @Get()
   @CheckPolicies((ability: any) => ability.can('read', 'Sede'))
-  async findAll(@Query() query: any) {
+  async findAll(@Query() query: any, @Req() req: any) {
     const page = query.page ? Number(query.page) : 1;
     const limit = query.limit ? Number(query.limit) : 20;
     const result = await this.getSedesUseCase.execute({
@@ -25,14 +25,14 @@ export class SedeController {
       estado: query.estado,
       page,
       limit,
-    });
+    }, req.ability);
     return { ...result, page, limit, totalPages: Math.ceil(result.total / limit) };
   }
 
   @Get(':id')
   @CheckPolicies((ability: any) => ability.can('read', 'Sede'))
-  async findOne(@Param('id') id: string) {
-    return await this.getSedeByIdUseCase.execute(id);
+  async findOne(@Param('id') id: string, @Req() req: any) {
+    return await this.getSedeByIdUseCase.execute(id, req.ability);
   }
 
   @Post()

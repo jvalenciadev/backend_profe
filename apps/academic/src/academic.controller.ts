@@ -34,3 +34,4 @@ export class AcademicController {
     return { status: 'ok' };
   }
 }
+ 

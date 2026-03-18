@@ -13,40 +13,40 @@ export class ModalidadController {
     private readonly createModalidadUseCase: CreateModalidadUseCase,
     private readonly updateModalidadUseCase: UpdateModalidadUseCase,
     private readonly deleteModalidadUseCase: DeleteModalidadUseCase,
-  ) {}
+  ) { }
 
   @Get()
-  @CheckPolicies((ability: any) => ability.can('read', 'Modalidad'))
+  @CheckPolicies((ability: any) => ability.can('read', 'ProgramaModalidad'))
   findAll(@Query() query: any, @Req() req: any) {
     return this.getModalidadsUseCase.execute(query, req.ability);
   }
 
   @Get(':id')
-  @CheckPolicies((ability: any) => ability.can('read', 'Modalidad'))
+  @CheckPolicies((ability: any) => ability.can('read', 'ProgramaModalidad'))
   findOne(@Param('id') id: string, @Req() req: any) {
     return this.getModalidadByIdUseCase.execute(id, req.ability);
   }
 
   @Post()
-  @CheckPolicies((ability: any) => ability.can('create', 'Modalidad'))
+  @CheckPolicies((ability: any) => ability.can('create', 'ProgramaModalidad'))
   create(@Body() data: any, @Req() req: any) {
     return this.createModalidadUseCase.execute(data, req.user?.id, req.user?.tenantId);
   }
 
   @Put(':id')
-  @CheckPolicies((ability: any) => ability.can('update', 'Modalidad'))
+  @CheckPolicies((ability: any) => ability.can('update', 'ProgramaModalidad'))
   updatePut(@Param('id') id: string, @Body() data: any, @Req() req: any) {
     return this.updateModalidadUseCase.execute(id, data, req.user?.id, req.ability);
   }
 
   @Patch(':id')
-  @CheckPolicies((ability: any) => ability.can('update', 'Modalidad'))
+  @CheckPolicies((ability: any) => ability.can('update', 'ProgramaModalidad'))
   updatePatch(@Param('id') id: string, @Body() data: any, @Req() req: any) {
     return this.updateModalidadUseCase.execute(id, data, req.user?.id, req.ability);
   }
 
   @Delete(':id')
-  @CheckPolicies((ability: any) => ability.can('delete', 'Modalidad'))
+  @CheckPolicies((ability: any) => ability.can('delete', 'ProgramaModalidad'))
   remove(@Param('id') id: string, @Req() req: any) {
     return this.deleteModalidadUseCase.execute(id, req.user?.id, req.ability);
   }

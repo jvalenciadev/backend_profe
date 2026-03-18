@@ -41,6 +41,7 @@ export class ApiKeyGuard implements CanActivate {
 
     const apiKey = request.headers['x-secret'] || request.headers['X-SECRET'];
     const secretKey =
+      this.configService.get<string>('LMS_API_SECRET_KEY') ||
       this.configService.get<string>('API_SECRET_KEY') ||
       'mQsYt86mu5wiiqjmwyxYXMqeHVo4lRqIT6dQUwqYqzM=';
 

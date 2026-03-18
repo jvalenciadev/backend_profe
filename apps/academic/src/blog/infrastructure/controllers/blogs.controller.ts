@@ -18,10 +18,7 @@ export class BlogsController {
     @Get()
     @CheckPolicies((ability: any) => ability.can('read', 'Blog'))
     findAll(@Query() query: any, @Req() req: any) {
-        const isAdmin = req.user.roles?.some((r: any) => r.role?.name === 'ADMINISTRADOR');
-        const tenantId = isAdmin ? undefined : req.user.tenantId;
-
-        return this.getBlogsUseCase.execute({ search: query.search, tenantId }, req.ability);
+        return this.getBlogsUseCase.execute({ search: query.search }, req.ability);
     }
 
     @Get(':id')

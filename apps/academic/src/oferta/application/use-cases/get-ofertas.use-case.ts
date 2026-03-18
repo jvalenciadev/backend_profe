@@ -10,8 +10,8 @@ export class GetOfertasUseCase {
         private readonly repository: IOfertaRepository,
     ) { }
 
-    async execute(filters?: any): Promise<Oferta[]> {
-        return this.repository.findAll(filters);
+    async execute(filters?: any, ability?: any): Promise<Oferta[]> {
+        return this.repository.findAll(filters, ability);
     }
 }
 
@@ -22,7 +22,7 @@ export class GetOfertaByIdUseCase {
         private readonly repository: IOfertaRepository,
     ) { }
 
-    async execute(id: string): Promise<Oferta | null> {
-        return this.repository.findById(id);
+    async execute(id: string, ability?: any): Promise<Oferta | null> {
+        return this.repository.findById(id, ability);
     }
 }
