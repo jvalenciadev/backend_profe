@@ -13,10 +13,12 @@ import { LookupsUseCase } from './application/use-cases/lookups.use-case';
 import { FindAllProfilesUseCase } from './application/use-cases/find-all-profiles.use-case';
 import { ApproveProfessionalUseCase } from './application/use-cases/approve-professional.use-case';
 
-import { MailModule } from '@app/common';
+import { MailModule, UploadModule } from '@app/common';
+
 
 @Module({
-    imports: [MailModule],
+    imports: [MailModule, UploadModule],
+
     controllers: [BancoProfesionalController, PublicBancoProfesionalController],
     providers: [
         PrismaService,

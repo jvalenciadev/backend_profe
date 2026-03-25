@@ -4,12 +4,74 @@ import * as fs from 'fs/promises';
 import { existsSync } from 'fs';
 import * as path from 'path';
 import sharp from 'sharp';
+import * as FileType from 'file-type';
 
 @Injectable()
 export class UploadConfigService {
   private readonly baseUploadDir = 'uploads';
 
   constructor(private prisma: PrismaService) { }
+
+  /**
+   * Obtiene todas las configuraciones de carga
+   */
+  async findAll() {
+    return this.prisma.uploadConfig.findMany({
+      orderBy: { tableName: 'asc' }
+    });
+  }
+
+  /**
+   * Obtiene una configuración por nombre de tabla
+   */
+  async findOneByTable(tableName: string) {
+    return this.prisma.uploadConfig.findUnique({
+      where: { tableName }
+    });
+  }
+
+  /**
+   * Crea una nueva configuración
+   */
+  async create(data: any) {
+    return this.prisma.uploadConfig.create({
+      data: {
+        ...data,
+        maxSizeMB: parseFloat(data.maxSizeMB || '5'),
+        minWidth: data.minWidth ? parseInt(data.minWidth) : null,
+        maxWidth: data.maxWidth ? parseInt(data.maxWidth) : null,
+        minHeight: data.minHeight ? parseInt(data.minHeight) : null,
+        maxHeight: data.maxHeight ? parseInt(data.maxHeight) : null,
+      }
+    });
+  }
+
+  /**
+   * Actualiza una configuración existente
+   */
+  async update(id: string, data: any) {
+    const { id: _, ...rest } = data;
+    return this.prisma.uploadConfig.update({
+      where: { id },
+      data: {
+        ...rest,
+        maxSizeMB: data.maxSizeMB ? parseFloat(data.maxSizeMB) : undefined,
+        minWidth: data.minWidth !== undefined ? (data.minWidth ? parseInt(data.minWidth) : null) : undefined,
+        maxWidth: data.maxWidth !== undefined ? (data.maxWidth ? parseInt(data.maxWidth) : null) : undefined,
+        minHeight: data.minHeight !== undefined ? (data.minHeight ? parseInt(data.minHeight) : null) : undefined,
+        maxHeight: data.maxHeight !== undefined ? (data.maxHeight ? parseInt(data.maxHeight) : null) : undefined,
+      }
+    });
+  }
+
+  /**
+   * Elimina una configuración
+   */
+  async remove(id: string) {
+    return this.prisma.uploadConfig.delete({
+      where: { id }
+    });
+  }
 
   /**
    * Genera la ruta dinámica de almacenamiento:
@@ -65,14 +127,37 @@ export class UploadConfigService {
       return true;
     }
 
-    // 1. Validar Extensión
+    // 1. Validar Extensión y Magic Bytes reales (Seguridad Básica contra spoofing de extensiones)
     const fileExt = path.extname(file.originalname).toLowerCase().replace('.', '');
-    const allowedExtensions = config.allowedExtensions.toLowerCase().split(',').map(e => e.trim());
+    const allowedExtensions = config.allowedExtensions.toLowerCase().split(',').map((e: string) => e.trim());
 
     if (!allowedExtensions.includes(fileExt)) {
       throw new BadRequestException(
         `Extensión de archivo .${fileExt} no permitida. Permitidas: ${config.allowedExtensions}`,
       );
+    }
+
+    // Usar file-type para descubrir el verdadero formato analizando el Buffer
+    try {
+      const fileInfo = await FileType.fromBuffer(file.buffer);
+      
+      if (fileInfo) {
+        // fileInfo.ext devuelve extensiones canónicas. ej. jpg, png, pdf, zip
+        const detectedExt = fileInfo.ext.toLowerCase();
+
+        // Algunas excepciones comunes (docx, xlsx, pptx internamente son zip)
+        const isOfficeDoc = ['docx', 'xlsx', 'pptx'].includes(fileExt) && detectedExt === 'zip';
+        
+        // Excepción de jpg/jpeg
+        const isJpegVar = (fileExt === 'jpg' && detectedExt === 'jpg') || (fileExt === 'jpeg' && detectedExt === 'jpg');
+
+        if (!isOfficeDoc && !isJpegVar && detectedExt !== fileExt) {
+          throw new BadRequestException(`Format mismatch. Pretende ser ${fileExt} pero internamente es ${detectedExt}`);
+        }
+      }
+    } catch (err: any) {
+      if (err instanceof BadRequestException) throw err;
+      console.warn('Advertencia en file-type:', err);
     }
 
     // 2. Validar Tamaño (Priorizar el menor entre Config y ENV)

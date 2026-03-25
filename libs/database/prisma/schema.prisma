@@ -4,81 +4,83 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 model User {
-  id                        String                      @id @default(uuid()) @db.Uuid
-  imagen                    String?
-  nombre                    String
-  apellidos                 String
-  genero                    String?                     @default("No prefiero decirlo")
-  licenciatura              String?
-  direccion                 String?
-  curriculum                String?
-  fechaNacimiento           String?                     @map("fecha_nacimiento")
-  estadoCivil               String?                     @map("estado_civil")
-  facebook                  String?
-  tiktok                    String?
-  cargoStr                  String?                     @map("cargo")
-  celular                   String?
-  correo                    String                      @unique
-  username                  String                      @unique
-  password                  String
-  rememberToken             String?                     @map("remember_token")
-  estado                    Estado                      @default(activo)
-  resetPasswordToken        String?                     @map("reset_password_token")
-  resetPasswordExpires      DateTime?                   @map("reset_password_expires")
-  requiresPasswordChange    Boolean?                    @default(false) @map("requires_password_change")
-  tenantId                  String?                     @map("tenant_id") @db.Uuid
-  personaId                 String?                     @unique @map("per_id") @db.Uuid
-  createdAt                 DateTime                    @default(now()) @map("created_at")
-  updatedAt                 DateTime                    @updatedAt @map("updated_at")
-  deletedAt                 DateTime?                   @map("deleted_at")
-  createdBy                 String?                     @map("created_by") @db.Uuid
-  updatedBy                 String?                     @map("updated_by") @db.Uuid
-  deletedBy                 String?                     @map("deleted_by") @db.Uuid
-  sedeIds                   String?                     @map("sede_ids")
-  proIds                    String?                     @map("pro_ids")
+  id                              String                      @id @default(uuid()) @db.Uuid
+  imagen                          String?
+  nombre                          String
+  apellidos                       String
+  genero                          String?                     @default("No prefiero decirlo")
+  licenciatura                    String?
+  direccion                       String?
+  curriculum                      String?
+  fechaNacimiento                 String?                     @map("fecha_nacimiento")
+  estadoCivil                     String?                     @map("estado_civil")
+  facebook                        String?
+  tiktok                          String?
+  cargoStr                        String?                     @map("cargo")
+  celular                         String?
+  correo                          String                      @unique
+  username                        String                      @unique
+  password                        String
+  rememberToken                   String?                     @map("remember_token")
+  estado                          Estado                      @default(activo)
+  resetPasswordToken              String?                     @map("reset_password_token")
+  resetPasswordExpires            DateTime?                   @map("reset_password_expires")
+  requiresPasswordChange          Boolean?                    @default(false) @map("requires_password_change")
+  tenantId                        String?                     @map("tenant_id") @db.Uuid
+  personaId                       String?                     @unique @map("per_id") @db.Uuid
+  tokenDispositivo                String?                     @map("token_dispositivo")
+  createdAt                       DateTime                    @default(now()) @map("created_at")
+  updatedAt                       DateTime                    @updatedAt @map("updated_at")
+  deletedAt                       DateTime?                   @map("deleted_at")
+  createdBy                       String?                     @map("created_by") @db.Uuid
+  updatedBy                       String?                     @map("updated_by") @db.Uuid
+  deletedBy                       String?                     @map("deleted_by") @db.Uuid
+  sedeIds                         String?                     @map("sede_ids")
+  proIds                          String?                     @map("pro_ids")
   // ── Identificación ───────────────────────────────────────────────────────
-  ci                        BigInt?                     @map("per_ci")
-  complemento               String?                     @map("per_complemento")
+  ci                              BigInt?                     @map("per_ci")
+  complemento                     String?                     @map("per_complemento")
   // ── Banco Profesional ────────────────────────────────────────────────────
-  esMaestro                 Boolean                     @default(false) @map("bp_es_maestro")
-  licUniversitaria          String?                     @map("bp_lic_universitaria")
-  licMescp                  String?                     @map("bp_lic_mescp")
-  tieneProduccion           Boolean                     @default(false) @map("bp_tiene_produccion")
-  hojaDeVidaPdf             String?                     @map("bp_hoja_vida_pdf")
-  rda                       BigInt?                     @unique @map("per_rda")
-  rdaPdf                    String?                     @map("bp_rda_pdf")
-  categoriaId               String?                     @map("cat_id") @db.Uuid
-  cargoPostulacionId        String?                     @map("car_id_postulacion") @db.Uuid
-  resumenProfesional        String?                     @map("bp_resumen_profesional")
-  habilidades               String?                     @map("bp_habilidades")
-  idiomas                   String?                     @map("bp_idiomas")
-  experienciaLaboral        String?                     @map("bp_experiencia_laboral")
-  linkedinUrl               String?                     @map("bp_linkedin_url")
-  cargoPostulacion          Cargo?                      @relation(fields: [cargoPostulacionId], references: [id])
-  categoria                 MapCategoria?               @relation(fields: [categoriaId], references: [id])
-  tenant                    Departamento?               @relation("UserTenant", fields: [tenantId], references: [id])
-  auditLogs                 AuditLog[]
-  bp_posgrado               bp_posgrado[]
-  bp_produccion_intelectual bp_produccion_intelectual[]
-  evaluaciones              EvaluacionAdmins[]
-  roles                     UserRole[]
-  programaDosFacilitadors   ProgramaDosFacilitador[]
-  sedes                     UserSede[]
+  esMaestro                       Boolean                     @default(false) @map("bp_es_maestro")
+  licUniversitaria                String?                     @map("bp_lic_universitaria")
+  licMescp                        String?                     @map("bp_lic_mescp")
+  tieneProduccion                 Boolean                     @default(false) @map("bp_tiene_produccion")
+  hojaDeVidaPdf                   String?                     @map("bp_hoja_vida_pdf")
+  rda                             BigInt?                     @unique @map("per_rda")
+  rdaPdf                          String?                     @map("bp_rda_pdf")
+  categoriaId                     String?                     @map("cat_id") @db.Uuid
+  cargoPostulacionId              String?                     @map("car_id_postulacion") @db.Uuid
+  resumenProfesional              String?                     @map("bp_resumen_profesional")
+  habilidades                     String?                     @map("bp_habilidades")
+  idiomas                         String?                     @map("bp_idiomas")
+  experienciaLaboral              String?                     @map("bp_experiencia_laboral")
+  linkedinUrl                     String?                     @map("bp_linkedin_url")
+  cargoPostulacion                Cargo?                      @relation(fields: [cargoPostulacionId], references: [id])
+  categoria                       MapCategoria?               @relation(fields: [categoriaId], references: [id])
+  tenant                          Departamento?               @relation("UserTenant", fields: [tenantId], references: [id])
+  auditLogs                       AuditLog[]
+  bp_posgrado                     bp_posgrado[]
+  bp_produccion_intelectual       bp_produccion_intelectual[]
+  evaluaciones                    EvaluacionAdmins[]
+  roles                           UserRole[]
+  programaDosFacilitadors         ProgramaDosFacilitador[]
+  sedes                           UserSede[]
   // LMS Moodle Relations
-  mod_foro_posts            mod_foro_post[]
-  mod_tarea_entregas        mod_entrega[]
-  mod_cuestionario_intentos mod_intento[]
-  mod_asistencia_regs       mod_asistencia_reg[]
-  mod_nota_actividades      mod_nota_actividad[]
-  mod_nota_finales          mod_nota_final[]
-  mod_insignias             mod_insignia_user[]
-  mod_notificaciones        mod_notificacion[]
-  modulosMaestrosAsignados  ProgramaModulo[]
-  inscripciones             ProgramaInscripcion[]       @relation("InscripcionesUser")
+  mod_foro_posts                  mod_foro_post[]
+  mod_tarea_entregas              mod_entrega[]
+  mod_cuestionario_intentos       mod_intento[]
+  mod_asistencia_regs             mod_asistencia_reg[]
+  mod_nota_actividades            mod_nota_actividad[]
+  mod_nota_finales                mod_nota_final[]
+  mod_insignias                   mod_insignia_user[]
+  mod_notificaciones              mod_notificacion[]
+  modulosMaestrosAsignados        ProgramaModulo[]
+  inscripciones                   ProgramaInscripcion[]       @relation("InscripcionesUser")
+  mod_nota_actividads_facilitadas mod_nota_actividad[]        @relation("FacilitadorNotas")
+  mod_campos_extra_regs           mod_campo_extra_respuesta[]
 
   @@index([ci])
   @@index([ci, complemento])
@@ -1449,6 +1451,7 @@ enum ModTipoActividad {
   CUESTIONARIO
   FORMULARIO // Como cuestionario pero SIN valor en registro de calificaciones
   RECURSO // Solo material de apoyo
+  ASISTENCIA // Control de asistencia como actividad calificada
 }
 
 /// Actividad académica dentro de una unidad temática.
@@ -1477,6 +1480,7 @@ model mod_actividad {
   foro         mod_foro?
   tarea        mod_tarea?
   cuestionario mod_cuestionario?
+  asistencia   mod_asistencia?
 
   // Notas individuales de alumnos para esta actividad
   notas mod_nota_actividad[]
@@ -1570,6 +1574,8 @@ model mod_cuestionario {
   randomCount    Int?           @map("mod_cue_random_count") // Número de preguntas aleatorias a mostrar
   mostrarNota    Boolean        @default(true) @map("mod_cue_mostrar_nota")
   retroInmediata Boolean        @default(false) @map("mod_cue_retro_inmediata")
+  soloMobile     Boolean        @default(false) @map("mod_cue_solo_mobile") // Obliga a usar celular
+  bloquearCopia  Boolean        @default(false) @map("mod_cue_bloquear_copia") // Bloquea selección/copiado
   actividad      mod_actividad  @relation(fields: [actividadId], references: [id])
   preguntas      mod_pregunta[]
   intentos       mod_intento[]
@@ -1654,9 +1660,11 @@ model mod_respuesta {
 enum ModTipoRecurso {
   PDF
   VIDEO
+  YOUTUBE
   IMAGEN
   LINK
   PRESENTACION
+  TITULO
 }
 
 model mod_recurso {
@@ -1664,7 +1672,7 @@ model mod_recurso {
   unidadId    String         @map("mod_ut_id") @db.Uuid
   titulo      String         @map("mod_rec_titulo")
   tipo        ModTipoRecurso @map("mod_rec_tipo")
-  url         String         @map("mod_rec_url")
+  url         String?        @map("mod_rec_url") // Ahora es opcional para tipos como "TÍTULO"
   externo     Boolean        @default(false) @map("mod_rec_externo")
   descripcion String?        @map("mod_rec_desc")
   orden       Int            @default(0) @map("mod_rec_orden")
@@ -1684,12 +1692,15 @@ model mod_asistencia {
   id              String   @id @default(uuid()) @db.Uuid
   moduloId        String?  @map("pm_id") @db.Uuid
   moduloMaestroId String?  @map("pm_id_maestro") @db.Uuid
+  actividadId     String?  @unique @map("mod_act_id") @db.Uuid // Vínculo con la actividad generada
   fecha           DateTime @map("mod_asi_fecha") @db.Date
   createdAt       DateTime @default(now()) @map("created_at")
   turnoId         String?  @map("pdt_id") @db.Uuid
+  esPresencial    Boolean  @default(true) @map("mod_asi_presencial")
 
   modulo        ProgramaModuloDos?   @relation(fields: [moduloId], references: [id])
   moduloMaestro ProgramaModulo?      @relation(fields: [moduloMaestroId], references: [id])
+  actividad     mod_actividad?       @relation(fields: [actividadId], references: [id])
   registros     mod_asistencia_reg[]
 
   @@map("mod_asistencia")
@@ -1717,18 +1728,21 @@ model mod_asistencia_reg {
 /// Nota de un alumno en una actividad concreta (foro, tarea o cuestionario).
 /// Si esCalificable=false, esta nota NO entra en el registro académico oficial.
 model mod_nota_actividad {
-  id            String   @id @default(uuid()) @db.Uuid
-  actividadId   String   @map("mod_act_id") @db.Uuid
-  userId        String   @map("user_id") @db.Uuid
-  nota          Float    @map("mod_na_nota")
-  entroRegistro Boolean  @default(true) @map("mod_na_entro_registro")
+  id            String    @id @default(uuid()) @db.Uuid
+  actividadId   String    @map("mod_act_id") @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  nota          Float     @map("mod_na_nota")
+  entroRegistro Boolean   @default(true) @map("mod_na_entro_registro")
   // false si la actividad es FORMULARIO (diagnóstico)
-  observacion   String?  @map("mod_na_obs")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  observacion   String?   @map("mod_na_obs")
+  fechaCalif    DateTime? @map("mod_na_fecha_calif")
+  facilitadorId String?   @map("facilitador_id") @db.Uuid
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
 
-  actividad mod_actividad @relation(fields: [actividadId], references: [id])
-  user      User          @relation(fields: [userId], references: [id])
+  actividad   mod_actividad @relation(fields: [actividadId], references: [id])
+  user        User          @relation(fields: [userId], references: [id])
+  facilitador User?         @relation("FacilitadorNotas", fields: [facilitadorId], references: [id])
 
   @@unique([actividadId, userId])
   @@map("mod_nota_actividad")
@@ -1809,4 +1823,47 @@ model mod_notificacion {
   user User @relation(fields: [userId], references: [id])
 
   @@map("mod_notificacion")
+}
+
+// ---------------------------------------------------------
+// 12. CAMPOS EXTRA DINÁMICOS PARA PERFIL Y MÓDULOS
+//     Basado en la lógica de evento_campo_extra
+// ---------------------------------------------------------
+
+model mod_campo_extra {
+  id            String            @id @default(uuid()) @db.Uuid
+  label         String            @map("mod_ce_label")
+  tipo          ModTipoCampoExtra @map("mod_ce_tipo")
+  opciones      Json?             @map("mod_ce_opciones") // JSON para listas de selección
+  esObligatorio Boolean           @default(false) @map("mod_ce_obligatorio")
+  orden         Int               @default(0) @map("mod_ce_orden")
+  estado        Estado            @default(activo) @map("mod_ce_estado")
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+  deletedAt     DateTime?         @map("deleted_at")
+
+  respuestas mod_campo_extra_respuesta[]
+
+  @@map("mod_campo_extra")
+}
+
+model mod_campo_extra_respuesta {
+  id           String   @id @default(uuid()) @db.Uuid
+  campoExtraId String   @map("mod_ce_id") @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  valor        String   @map("mod_cer_valor") @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  campoExtra mod_campo_extra @relation(fields: [campoExtraId], references: [id])
+  user       User            @relation(fields: [userId], references: [id])
+
+  @@unique([campoExtraId, userId])
+  @@map("mod_campo_extra_respuesta")
+}
+
+enum ModTipoCampoExtra {
+  TEXTO
+  BOOLEAN
+  MULTIPLE_SELECT
+  SINGLE_SELECT
 }

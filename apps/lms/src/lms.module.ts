@@ -13,6 +13,7 @@ import { NotificacionesModule } from './notificaciones/notificaciones.module';
 import { InsigniasModule } from './insignias/insignias.module';
 import { UploadModule } from '@app/common';
 import { UploadController } from '@app/common/upload/upload.controller';
+import { UploadConfigController } from '@app/common/upload/upload-config.controller';
 
 import { APP_GUARD } from '@nestjs/core';
 import { ApiKeyGuard } from '@app/common';
@@ -43,7 +44,7 @@ import { RecordatoriosModule } from './recordatorios/recordatorios.module';
     ScheduleModule.forRoot(),
     RecordatoriosModule,
   ],
-  controllers: [LmsController, UploadController],
+  controllers: [LmsController, UploadController, UploadConfigController],
   providers: [
     LmsService,
     JwtStrategy,

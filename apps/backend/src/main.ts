@@ -3,10 +3,14 @@ import { AppModule } from './app.module';
 import { setupBigIntSerialization } from '@app/common/utils/bigint.serializer';
 import { ValidationPipe } from '@nestjs/common';
 import { AllExceptionsFilter } from '@app/common/filters/all-exceptions.filter';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" } // Permite cargar recursos desde otros dominios
+  }));
   app.useGlobalFilters(new AllExceptionsFilter());
 
   // Aumentar límites de tamaño del body (necesario para importaciones masivas)

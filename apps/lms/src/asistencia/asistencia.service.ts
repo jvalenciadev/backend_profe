@@ -137,7 +137,7 @@ export class AsistenciaService {
 
         // También verificar via sede si el turno no filtra suficiente
         if (!inscripcion) {
-            const errorMsg = turnoId !== 'global' 
+            const errorMsg = turnoId !== 'global'
                 ? 'No estás inscrito en el turno correspondiente a este código QR.'
                 : 'No estás inscrito en el programa o sede correspondiente a este código QR.';
             throw new ForbiddenException(errorMsg);
@@ -161,6 +161,34 @@ export class AsistenciaService {
             }
         });
 
+        // 8. Sincronizar con mod_nota_actividad si aplica
+        if (sesion.actividadId) {
+            const act = await this.prisma.mod_actividad.findUnique({
+                where: { id: sesion.actividadId },
+                select: { puntajeMax: true }
+            });
+            await this.prisma.mod_nota_actividad.upsert({
+                where: {
+                    actividadId_userId: {
+                        actividadId: sesion.actividadId,
+                        userId
+                    }
+                },
+                update: {
+                    nota: act?.puntajeMax || 100,
+                    observacion: 'Asistencia registrada vía QR',
+                    fechaCalif: new Date()
+                },
+                create: {
+                    userId,
+                    actividadId: sesion.actividadId,
+                    nota: act?.puntajeMax || 100,
+                    observacion: 'Asistencia registrada vía QR',
+                    fechaCalif: new Date()
+                }
+            });
+        }
+
         return { success: true, message: '¡Asistencia registrada correctamente!', alreadyRegistered: false };
     }
 
@@ -170,9 +198,19 @@ export class AsistenciaService {
     async getSesionesModulo(id: string, turnoId?: string) {
         const sesiones = await this.prisma.mod_asistencia.findMany({
             where: {
-                OR: [
-                    { moduloId: id },
-                    { moduloMaestroId: id }
+                AND: [
+                    {
+                        OR: [
+                            { moduloId: id },
+                            { moduloMaestroId: id }
+                        ]
+                    },
+                    {
+                        OR: [
+                            { actividadId: null },
+                            { actividad: { estado: 'activo' } }
+                        ]
+                    }
                 ],
                 ...(turnoId ? {
                     OR: [
@@ -187,7 +225,8 @@ export class AsistenciaService {
                     select: { registros: true }
                 },
                 modulo: { select: { nombre: true, codigo: true } },
-                moduloMaestro: { select: { nombre: true, codigo: true } }
+                moduloMaestro: { select: { nombre: true, codigo: true } },
+                actividad: { select: { id: true, titulo: true, puntajeMax: true } }
             }
         });
 
@@ -207,7 +246,7 @@ export class AsistenciaService {
         }));
     }
 
-    async crearSesion(userId: string, targetId: string, data: { fecha: string; turnoId?: string }) {
+    async crearSesion(userId: string, targetId: string, data: { fecha: string; turnoId?: string, esPresencial?: boolean }) {
         // Identificar si es módulo operativo o maestro
         const modOper = await this.prisma.programaModuloDos.findUnique({ where: { id: targetId } });
         const modMaestro = !modOper ? await this.prisma.programaModulo.findUnique({ where: { id: targetId } }) : null;
@@ -269,7 +308,8 @@ export class AsistenciaService {
                 moduloId: modOper ? targetId : null,
                 moduloMaestroId: modMaestro ? targetId : null,
                 turnoId: finalTurnoId || null,
-                fecha: new Date(data.fecha)
+                fecha: new Date(data.fecha),
+                esPresencial: data.esPresencial !== undefined ? data.esPresencial : true
             }
         });
     }
@@ -455,6 +495,55 @@ export class AsistenciaService {
         });
 
         await Promise.all(promises);
+
+        // ─────────────────────────────────────────────────────────────
+        //  NUEVO: Sincronizar con mod_nota_actividad
+        // ─────────────────────────────────────────────────────────────
+        if (sesion.actividadId) {
+            const actividad = await this.prisma.mod_actividad.findUnique({
+                where: { id: sesion.actividadId },
+                select: { puntajeMax: true }
+            });
+            const puntajeMax = actividad?.puntajeMax || 100;
+
+            for (const r of data.registros) {
+                let notaValue = 0;
+                let observacion = r.estado === 'P' ? 'Asistencia registrada' : `Inasistencia: ${r.estado}`;
+
+                if (r.estado === 'P' || r.estado === 'L') {
+                    notaValue = puntajeMax;
+                    if (r.estado === 'L') observacion = 'Licencia validada (Con Nota)';
+                } else if (r.estado === 'T') {
+                    notaValue = puntajeMax / 2;
+                    observacion = 'Atraso (50% de la nota)';
+                }
+
+                // Upsert en mod_nota_actividad
+                await this.prisma.mod_nota_actividad.upsert({
+                    where: {
+                        actividadId_userId: {
+                            actividadId: sesion.actividadId,
+                            userId: r.userId
+                        }
+                    },
+                    update: {
+                        nota: notaValue,
+                        observacion: observacion,
+                        fechaCalif: new Date(),
+                        facilitadorId: userId
+                    },
+                    create: {
+                        userId: r.userId,
+                        actividadId: sesion.actividadId,
+                        nota: notaValue,
+                        observacion: observacion,
+                        fechaCalif: new Date(),
+                        facilitadorId: userId
+                    }
+                });
+            }
+        }
+
         return { success: true };
     }
 
@@ -476,9 +565,19 @@ export class AsistenciaService {
 
         const sesiones = await this.prisma.mod_asistencia.findMany({
             where: {
-                OR: [
-                    { moduloId: id },
-                    { moduloMaestroId: id }
+                AND: [
+                    {
+                        OR: [
+                            { moduloId: id },
+                            { moduloMaestroId: id }
+                        ]
+                    },
+                    {
+                        OR: [
+                            { actividadId: null },
+                            { actividad: { estado: 'activo' } }
+                        ]
+                    }
                 ],
                 // Ver solo sesiones de su turno o globales
                 turnoId: studentTurnoId || null
@@ -494,7 +593,8 @@ export class AsistenciaService {
         return sesiones.map(s => ({
             id: s.id,
             fecha: s.fecha,
-            estado: s.registros[0]?.estado || 'N/A'
+            estado: s.registros[0]?.estado || 'F', // Falta por defecto si no hay registro
+            esPresencial: s.esPresencial
         }));
     }
 }

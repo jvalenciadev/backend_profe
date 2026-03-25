@@ -12,9 +12,11 @@ import { AuditModule } from '../../audit/src/audit.module';
 import { JobsModule } from '../../jobs/src/jobs.module';
 import { DatabaseModule } from '@app/database';
 import { APP_GUARD, Reflector } from '@nestjs/core';
-import { CaslModule, ApiKeyGuard, MailModule } from '@app/common';
+import { CaslModule, ApiKeyGuard, MailModule, UploadModule } from '@app/common';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { UploadController } from '@app/common/upload/upload.controller';
+import { UploadConfigController } from '@app/common/upload/upload-config.controller';
 
 @Module({
   imports: [
@@ -28,12 +30,21 @@ import { join } from 'path';
     AcademicModule,
     AuditModule,
     JobsModule,
+    UploadModule,
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/uploads',
+      serveStaticOptions: {
+        setHeaders: (res, path) => {
+          // Medidas para asegurar que archivos maliciosos no ejecuten código en el navegador (XSS)
+          res.set('X-Content-Type-Options', 'nosniff');
+          res.set('Content-Security-Policy', "default-src 'none'");
+          res.set('Cache-Control', 'public, max-age=31536000');
+        },
+      },
     }),
   ],
-  controllers: [AppController],
+  controllers: [AppController, UploadController, UploadConfigController],
   providers: [
     AppService,
     Reflector,

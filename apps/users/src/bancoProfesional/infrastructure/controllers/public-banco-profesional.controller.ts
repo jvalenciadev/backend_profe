@@ -7,6 +7,8 @@ import { RegistrationUseCase } from '../../application/use-cases/registration.us
 import { RequestVerificationUseCase } from '../../application/use-cases/request-verification.use-case';
 import { LookupsUseCase } from '../../application/use-cases/lookups.use-case';
 import { Public } from '@app/common';
+import { UploadConfigService } from '@app/common';
+
 
 @Public()
 @Controller('public/banco-profesional')
@@ -15,7 +17,9 @@ export class PublicBancoProfesionalController {
         private readonly registrationUseCase: RegistrationUseCase,
         private readonly requestVerificationUseCase: RequestVerificationUseCase,
         private readonly lookupsUseCase: LookupsUseCase,
+        private readonly uploadConfigService: UploadConfigService,
     ) { }
+
 
     @Post('registrar')
     registrar(@Body() data: any) {
@@ -48,8 +52,13 @@ export class PublicBancoProfesionalController {
         if (!file) throw new BadRequestException('No se ha subido ningún archivo');
 
         const tableName = 'banco_profesional';
+        
+        // Dynamic validation from DB config
+        await this.uploadConfigService.validateImage(tableName, file);
+
+        // Dynamic pathing
+        const finalPath = await this.uploadConfigService.getDynamicPath(null, tableName);
         const uploadsRoot = path.join(process.cwd(), 'uploads');
-        const finalPath = path.join(uploadsRoot, 'public', tableName, new Date().getFullYear().toString());
 
         try {
             await fs.mkdir(finalPath, { recursive: true });
@@ -72,4 +81,5 @@ export class PublicBancoProfesionalController {
             throw new BadRequestException('No se pudo guardar el archivo: ' + error.message);
         }
     }
+
 }

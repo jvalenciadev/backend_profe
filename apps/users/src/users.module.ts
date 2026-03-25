@@ -25,6 +25,9 @@ import {
   RequestEmailVerificationUseCase,
 } from './user/application/use-cases/user.use-cases';
 
+import { CamposExtraController } from './campos-extra/campos-extra.controller';
+import { CamposExtraService } from './campos-extra/campos-extra.service';
+
 @Module({
   imports: [
     ConfigModule,
@@ -47,6 +50,7 @@ import {
     MapPersonasModule,
   ],
   controllers: [
+    CamposExtraController,
     UsersController,
   ],
   providers: [
@@ -58,6 +62,7 @@ import {
     DeleteUserUseCase,
     ResetUserPasswordUseCase,
     RequestEmailVerificationUseCase,
+    CamposExtraService,
   ],
 })
 export class UsersModule { }

@@ -11,6 +11,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import * as crypto from 'crypto';
 import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 import { CurrentUser } from '../decorators/current-user.decorator';
 import { UploadConfigService } from './upload-config.service';
@@ -43,10 +44,15 @@ export class UploadController {
       tableName,
     );
 
-    // Generar nombre único
-    const timestamp = Date.now();
-    const fileExt = path.extname(file.originalname);
-    const filename = `${timestamp}${fileExt}`;
+    // Generar nombre único usando UUID para evitar ejecución y conflictos
+    const secureId = crypto.randomUUID();
+    const fileExt = path.extname(file.originalname).toLowerCase();
+    
+    if (fileExt.includes('/') || fileExt.includes('\\')) {
+      throw new BadRequestException('Formato de extensión inválido');
+    }
+
+    const filename = `${secureId}${fileExt}`;
     const fullPath = path.join(finalPath, filename);
 
     // Guardar archivo asincrónicamente

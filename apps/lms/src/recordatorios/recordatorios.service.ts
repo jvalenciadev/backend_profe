@@ -59,7 +59,7 @@ export class RecordatoriosService {
             } else if (diffDays < 1) {
                 threshold = '1D';
                 label = 'ALERTA';
-                msg = `⏱️ ¡El tiempo vuela! Tu actividad "${act.titulo}" vence mañana. No lo dejes para el final.`;
+                msg = `¡El tiempo vuela! Tu actividad "${act.titulo}" vence mañana. No lo dejes para el final.`;
             } else if (diffDays <= 5) {
                 threshold = '5D';
                 label = 'RECORDATORIO';
@@ -111,7 +111,7 @@ export class RecordatoriosService {
         for (const userId of studentIds) {
             // Control de duplicidad: un solo recordatorio por threshold por actividad
             const tag = `RECORDATORIO_${act.id}_${threshold}`;
-            
+
             const existing = await this.prisma.mod_notificacion.findFirst({
                 where: { userId, tipo: tag }
             });
@@ -122,13 +122,19 @@ export class RecordatoriosService {
             const submitted = await this.hasSubmitted(act, userId);
             if (submitted) continue;
 
+            // Construcción del enlace dinámico según el tipo
+            const cursoId = moduloId || 'm'; // fallback si es master
+            const linkRef = act.tipo === 'CUESTIONARIO' 
+                ? `/aula/curso/${cursoId}?openQuiz=${act.id}`
+                : `/aula/curso/${cursoId}/actividad/${act.id}`;
+
             // Enviar
             await this.notiService.emit({
                 userId,
                 titulo: `${label}: Actividad Pendiente`,
                 mensaje: message,
                 tipo: tag,
-                linkRef: `/aula/actividades/${act.id}`
+                linkRef
             });
         }
     }

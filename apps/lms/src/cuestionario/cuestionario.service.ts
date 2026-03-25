@@ -61,7 +61,9 @@ export class CuestionarioService {
                 aleatorizar: data.aleatorizar,
                 randomCount: data.randomCount !== undefined ? data.randomCount : null,
                 mostrarNota: data.mostrarNota,
-                retroInmediata: data.retroInmediata
+                retroInmediata: data.retroInmediata,
+                soloMobile: data.soloMobile !== undefined ? data.soloMobile : data.mod_cue_solo_mobile,
+                bloquearCopia: data.bloquearCopia !== undefined ? data.bloquearCopia : data.mod_cue_bloquear_copia
             }
         });
     }
@@ -130,7 +132,7 @@ export class CuestionarioService {
     async getLobbyData(userId: string, cuestionarioId: string) {
         const cue = await this.prisma.mod_cuestionario.findUnique({
             where: { id: cuestionarioId },
-            include: { actividad: true }
+            include: { actividad: true, preguntas: { where: { estado: 'activo' } } }
         });
         if (!cue) throw new NotFoundException('Cuestionario no encontrado');
 
@@ -153,7 +155,7 @@ export class CuestionarioService {
     // ─── INTENTOS ───────────────────────────────────────────────
 
     async iniciarIntento(userId: string, cuestionarioId: string) {
-        const cue = await this.prisma.mod_cuestionario.findUnique({ 
+        const cue = await this.prisma.mod_cuestionario.findUnique({
             where: { id: cuestionarioId },
             include: { preguntas: { where: { estado: 'activo' } } }
         });
@@ -283,8 +285,41 @@ export class CuestionarioService {
                     esCorrecta = true;
                     puntaje = pregunta.puntaje;
                 }
+            } else if (pregunta.tipo === 'MULTIPLE_M') {
+                // Estudiante envió JSON array de IDs en textoLibre
+                try {
+                    const idsMarcados: string[] = JSON.parse(res.textoLibre || '[]');
+                    const idsCorrectos = pregunta.opciones.filter(o => o.esCorrecta).map(o => o.id);
+                    const idsIncorrectos = pregunta.opciones.filter(o => !o.esCorrecta).map(o => o.id);
+
+                    const marcoTodosCorrectos = idsCorrectos.every(id => idsMarcados.includes(id));
+                    const noMarcoNingunIncorrecto = idsMarcados.every(id => !idsIncorrectos.includes(id));
+
+                    if (marcoTodosCorrectos && noMarcoNingunIncorrecto && idsMarcados.length === idsCorrectos.length) {
+                        esCorrecta = true;
+                        puntaje = pregunta.puntaje;
+                    }
+                } catch (e) {
+                    console.error('Error parseando MULTIPLE_M:', e);
+                }
+            } else if (pregunta.tipo === 'ORDENAR') {
+                // Estudiante envió JSON array de IDs en orden en textoLibre
+                try {
+                    const idsOrdenados: string[] = JSON.parse(res.textoLibre || '[]');
+                    const idsEnOrdenCorrecto = [...pregunta.opciones].sort((a, b) => a.orden - b.orden).map(o => o.id);
+
+                    if (JSON.stringify(idsOrdenados) === JSON.stringify(idsEnOrdenCorrecto)) {
+                        esCorrecta = true;
+                        puntaje = pregunta.puntaje;
+                    }
+                } catch (e) {
+                    console.error('Error parseando ORDENAR:', e);
+                }
+            } else if (pregunta.tipo === 'TEXTO') {
+                // Respuesta abierta: Calificación manual por defecto (0pts)
+                esCorrecta = false;
+                puntaje = 0;
             }
-            // TODO: Implementar MULTIPLE_M y otros tipos
 
             notaObtenida += puntaje;
             updates.push(this.prisma.mod_respuesta.update({
@@ -322,7 +357,7 @@ export class CuestionarioService {
                 finalizadoEn: new Date(),
                 puntajeTotal: notaObtenida // Guardamos la suma bruta
             },
-            include: { cuestionario: true }
+            include: { cuestionario: true, respuestas: true }
         });
 
         // Sincronizar con mod_nota_actividad

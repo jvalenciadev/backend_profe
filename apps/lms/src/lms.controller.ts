@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, UseGuards, Request, Param, Query } from '@nestjs/common';
+import { Controller, Get, Post, Put, Patch, Delete, Body, UseGuards, Request, Param, Query, BadRequestException } from '@nestjs/common';
 import { LmsService } from './lms.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
@@ -14,7 +14,7 @@ export class LmsController {
 
   @Post('auth/login')
   async login(@Body() body: any) {
-    return this.lmsService.login(body.username, body.password);
+    return this.lmsService.login(body.username, body.password, body.tokenDispositivo);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -75,6 +75,9 @@ export class LmsController {
   @UseGuards(JwtAuthGuard)
   @Get('verificar-pago/:inscripcionId')
   async verificarPago(@Param('inscripcionId') inscripcionId: string) {
+    if (!inscripcionId || inscripcionId === 'undefined' || inscripcionId === 'null') {
+      throw new BadRequestException('El ID de inscripción no es válido');
+    }
     return this.lmsService.verificarPago(inscripcionId);
   }
 
@@ -171,5 +174,31 @@ export class LmsController {
   @Get('modulo/:id/reporte-calificaciones')
   async getReporteCalificaciones(@Param('id') id: string, @Query('turnoId') turnoId: string, @Request() req: any) {
     return this.lmsService.getReporteCalificaciones(req.user.id, id, turnoId);
+  }
+  // ─── CAMPOS EXTRA DEL PERFIL ──────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Get('perfil/campos-extra')
+  async getCamposExtraPerfil(@Request() req: any) {
+    return this.lmsService.getCamposExtraPerfil(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('perfil/campos-extra')
+  async guardarRespuestaCampoExtra(@Request() req: any, @Body() body: { respuestas: { campoExtraId: string, valor: string }[] }) {
+    if (!body || !body.respuestas) throw new BadRequestException('Se requieren las respuestas');
+    return this.lmsService.guardarRespuestasCampoExtra(req.user.id, body.respuestas);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('perfil')
+  async getPerfil(@Request() req: any) {
+    return this.lmsService.getPerfil(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('perfil')
+  async updatePerfil(@Request() req: any, @Body() body: any) {
+    return this.lmsService.updatePerfil(req.user.id, body);
   }
 }

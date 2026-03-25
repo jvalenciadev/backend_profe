@@ -94,12 +94,13 @@ export class UpdateUserUseCase {
         const existing = await this.repository.findById(id);
         if (!existing) throw new NotFoundException('Usuario no encontrado');
 
-        if (existing.requiresPasswordChange && data.verificationCode) {
+        // Solo exigir código de verificación si se está intentando cambiar la contraseña
+        // o si el campo password viene en el payload.
+        if (existing.requiresPasswordChange && (data.password || data.verificationCode)) {
             const raw = await (this.repository as any).getRawToken(id);
-            if (raw !== data.verificationCode)
-                throw new ForbiddenException('Código de verificación incorrecto');
-        } else if (existing.requiresPasswordChange && !data.verificationCode) {
-            throw new ForbiddenException('El código de verificación es obligatorio');
+            if (!data.verificationCode || raw !== data.verificationCode) {
+                throw new ForbiddenException('Se requiere código de verificación válido para cambiar la contraseña');
+            }
         }
 
         const { roles, sedes, email, ...userData } = data;
