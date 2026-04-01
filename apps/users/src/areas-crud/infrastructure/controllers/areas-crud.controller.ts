@@ -1,7 +1,23 @@
-import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard, PoliciesGuard, CheckPolicies } from '@app/common';
 import {
-  GetAreasUseCase, GetAreaByIdUseCase, CreateAreaUseCase, UpdateAreaUseCase, DeleteAreaUseCase
+  GetAreasUseCase,
+  GetAreaByIdUseCase,
+  CreateAreaUseCase,
+  UpdateAreaUseCase,
+  DeleteAreaUseCase,
 } from '../../application/use-cases/areas-crud.use-cases';
 
 @Controller('areas')
@@ -30,7 +46,11 @@ export class AreaController {
   @Post()
   @CheckPolicies((ability: any) => ability.can('create', 'Area'))
   create(@Body() data: any, @Req() req: any) {
-    return this.createAreaUseCase.execute(data, req.user?.id, req.user?.tenantId);
+    return this.createAreaUseCase.execute(
+      data,
+      req.user?.id,
+      req.user?.tenantId,
+    );
   }
 
   @Put(':id')

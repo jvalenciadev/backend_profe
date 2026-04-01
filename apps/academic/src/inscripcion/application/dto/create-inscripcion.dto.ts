@@ -1,34 +1,34 @@
 import { IsUUID, IsOptional, IsString } from 'class-validator';
 
 export class CreateInscripcionDto {
-    @IsUUID()
-    personaId: string;
+  @IsUUID()
+  personaId: string;
 
-    @IsUUID()
-    programaId: string;
+  @IsUUID()
+  programaId: string;
 
-    @IsUUID()
-    turnoId: string;
+  @IsUUID()
+  turnoId: string;
 
-    @IsUUID()
-    sedeId: string;
+  @IsUUID()
+  sedeId: string;
 
-    @IsOptional()
-    @IsString()
-    observacion?: string;
+  @IsOptional()
+  @IsString()
+  observacion?: string;
 
-    // Additional fields for senior level
-    @IsOptional()
-    @IsString()
-    documentoDigital?: string;
+  // Additional fields for senior level
+  @IsOptional()
+  @IsString()
+  documentoDigital?: string;
 
-    @IsOptional()
-    licenciatura?: string;
+  @IsOptional()
+  licenciatura?: string;
 
-    @IsOptional()
-    unidadEducativa?: string;
+  @IsOptional()
+  unidadEducativa?: string;
 
-    @IsOptional()
-    @IsString()
-    estadoInscripcionId?: string;
+  @IsOptional()
+  @IsString()
+  estadoInscripcionId?: string;
 }

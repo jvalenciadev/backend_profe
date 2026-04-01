@@ -5,7 +5,11 @@ import { PROVINCIA_REPOSITORY } from './domain/repositories/provincia.repository
 import { PrismaProvinciaRepository } from './infrastructure/database/prisma-provincia.repository';
 import { ProvinciaController } from './infrastructure/controllers/provincia.controller';
 import {
-  GetProvinciasUseCase, GetProvinciaByIdUseCase, CreateProvinciaUseCase, UpdateProvinciaUseCase, DeleteProvinciaUseCase
+  GetProvinciasUseCase,
+  GetProvinciaByIdUseCase,
+  CreateProvinciaUseCase,
+  UpdateProvinciaUseCase,
+  DeleteProvinciaUseCase,
 } from './application/use-cases/provincia.use-cases';
 
 @Module({
@@ -19,6 +23,6 @@ import {
     UpdateProvinciaUseCase,
     DeleteProvinciaUseCase,
   ],
-  exports: [GetProvinciasUseCase]
+  exports: [GetProvinciasUseCase],
 })
 export class ProvinciaModule {}

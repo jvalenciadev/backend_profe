@@ -1,11 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@app/database';
-import { IProfeRepository, ProfeFilters } from '../../domain/repositories/profe.repository.interface';
+import {
+  IProfeRepository,
+  ProfeFilters,
+} from '../../domain/repositories/profe.repository.interface';
 import { Profe } from '../../domain/entities/profe.entity';
 
 @Injectable()
 export class PrismaProfeRepository implements IProfeRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   private mapToDomain(record: any): Profe {
     return new Profe(
@@ -46,11 +49,15 @@ export class PrismaProfeRepository implements IProfeRepository {
   }
 
   async findById(id: string): Promise<Profe | null> {
-    const record = await (this.prisma.profe as any).findUnique({ where: { id } });
+    const record = await (this.prisma.profe as any).findUnique({
+      where: { id },
+    });
     return record ? this.mapToDomain(record) : null;
   }
 
-  async findAll(filters: ProfeFilters = {}): Promise<{ data: Profe[]; total: number }> {
+  async findAll(
+    filters: ProfeFilters = {},
+  ): Promise<{ data: Profe[]; total: number }> {
     const { search, estado, page = 1, limit = 20 } = filters;
     const where: any = { estado: { not: 'eliminado' } };
     if (estado && estado !== 'todos') where.estado = estado;

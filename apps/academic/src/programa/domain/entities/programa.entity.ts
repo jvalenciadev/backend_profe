@@ -19,5 +19,5 @@ export class Programa {
     public tipoId?: string,
     public modalidadId?: string,
     public modulos?: any[],
-  ) { }
+  ) {}
 }

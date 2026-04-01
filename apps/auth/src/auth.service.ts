@@ -128,10 +128,15 @@ export class AuthService {
       }
 
       // Restricción de rol administrativo (Bloquear PARTICIPANTE)
-      const userRolesNames = user.roles?.map((ur: any) => ur.role?.name?.toUpperCase() || '') || [];
+      const userRolesNames =
+        user.roles?.map((ur: any) => ur.role?.name?.toUpperCase() || '') || [];
       if (
-        userRolesNames.includes('PARTICIPANTE') && 
-        !userRolesNames.some((r: string) => ['ADMIN', 'SUPER_ADMIN', 'FACILITADOR', 'Técnico', 'Gestor'].some(allowed => r.includes(allowed.toUpperCase())))
+        userRolesNames.includes('PARTICIPANTE') &&
+        !userRolesNames.some((r: string) =>
+          ['ADMIN', 'SUPER_ADMIN', 'FACILITADOR', 'Técnico', 'Gestor'].some(
+            (allowed) => r.includes(allowed.toUpperCase()),
+          ),
+        )
       ) {
         throw new UnauthorizedException(
           'Acceso denegado. Este portal es de uso administrativo. Los participantes deben ingresar por el Aula Virtual.',
@@ -156,7 +161,28 @@ export class AuthService {
     return null;
   }
 
-  async login(user: any) {
+  async login(user: any, tokenDispositivo?: string) {
+    if (tokenDispositivo) {
+      const existingToken = await this.prisma.token_dispositivo.findFirst({
+        where: { token: tokenDispositivo },
+      });
+
+      if (!existingToken) {
+        await this.prisma.token_dispositivo.create({
+          data: {
+            token: tokenDispositivo,
+            userId: user.id,
+            tipo_usuario: user.roles?.map((ur: any) => ur.role?.name).join(',') || '',
+          },
+        });
+      } else if (existingToken.userId !== user.id) {
+        await this.prisma.token_dispositivo.update({
+          where: { id_token: existingToken.id_token },
+          data: { userId: user.id },
+        });
+      }
+    }
+
     const roles = user.roles?.map((ur: any) => ur.role.name) || [];
     const sedesIds = user.sedes?.map((us: any) => us.sedeId.toString()) || [];
 

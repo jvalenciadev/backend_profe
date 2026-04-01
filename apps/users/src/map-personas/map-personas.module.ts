@@ -6,13 +6,13 @@ import { ImportMapPersonasUseCase } from './application/use-cases/import-map-per
 import { GetMapCatalogsUseCase } from './application/use-cases/get-map-catalogs.use-case';
 
 @Module({
-    imports: [DatabaseModule],
-    controllers: [MapPersonasController],
-    providers: [
-        FindMapPersonasUseCase,
-        ImportMapPersonasUseCase,
-        GetMapCatalogsUseCase,
-    ],
-    exports: [FindMapPersonasUseCase],
+  imports: [DatabaseModule],
+  controllers: [MapPersonasController],
+  providers: [
+    FindMapPersonasUseCase,
+    ImportMapPersonasUseCase,
+    GetMapCatalogsUseCase,
+  ],
+  exports: [FindMapPersonasUseCase],
 })
-export class MapPersonasModule { }
+export class MapPersonasModule {}

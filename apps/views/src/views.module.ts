@@ -6,16 +6,13 @@ import { EventViewsController } from './controllers/event-views.controller';
 import { UploadModule, MailModule } from '@app/common';
 
 @Module({
-    imports: [
-        ConfigModule.forRoot({ isGlobal: true }),
-        DatabaseModule,
-        UploadModule,
-        MailModule,
-    ],
-    controllers: [
-        LandingViewsController,
-        EventViewsController,
-    ],
-    providers: [],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    DatabaseModule,
+    UploadModule,
+    MailModule,
+  ],
+  controllers: [LandingViewsController, EventViewsController],
+  providers: [],
 })
-export class ViewsModule { }
+export class ViewsModule {}

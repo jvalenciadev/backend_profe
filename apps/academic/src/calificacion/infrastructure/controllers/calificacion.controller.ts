@@ -1,7 +1,23 @@
-import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard, PoliciesGuard, CheckPolicies } from '@app/common';
 import {
-  GetCalificacionsUseCase, GetCalificacionByIdUseCase, CreateCalificacionUseCase, UpdateCalificacionUseCase, DeleteCalificacionUseCase
+  GetCalificacionsUseCase,
+  GetCalificacionByIdUseCase,
+  CreateCalificacionUseCase,
+  UpdateCalificacionUseCase,
+  DeleteCalificacionUseCase,
 } from '../../application/use-cases/calificacion.use-cases';
 
 @Controller('calificaciones')
@@ -30,24 +46,42 @@ export class CalificacionController {
   @Post()
   @CheckPolicies((ability: any) => ability.can('create', 'Calificacion'))
   create(@Body() data: any, @Req() req: any) {
-    return this.createCalificacionUseCase.execute(data, req.user?.id, req.user?.tenantId);
+    return this.createCalificacionUseCase.execute(
+      data,
+      req.user?.id,
+      req.user?.tenantId,
+    );
   }
 
   @Put(':id')
   @CheckPolicies((ability: any) => ability.can('update', 'Calificacion'))
   updatePut(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updateCalificacionUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updateCalificacionUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Patch(':id')
   @CheckPolicies((ability: any) => ability.can('update', 'Calificacion'))
   updatePatch(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updateCalificacionUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updateCalificacionUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Delete(':id')
   @CheckPolicies((ability: any) => ability.can('delete', 'Calificacion'))
   remove(@Param('id') id: string, @Req() req: any) {
-    return this.deleteCalificacionUseCase.execute(id, req.user?.id, req.ability);
+    return this.deleteCalificacionUseCase.execute(
+      id,
+      req.user?.id,
+      req.ability,
+    );
   }
 }

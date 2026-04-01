@@ -5,7 +5,11 @@ import { MODALIDAD_REPOSITORY } from './domain/repositories/modalidad.repository
 import { PrismaModalidadRepository } from './infrastructure/database/prisma-modalidad.repository';
 import { ModalidadController } from './infrastructure/controllers/modalidad.controller';
 import {
-  GetModalidadsUseCase, GetModalidadByIdUseCase, CreateModalidadUseCase, UpdateModalidadUseCase, DeleteModalidadUseCase
+  GetModalidadsUseCase,
+  GetModalidadByIdUseCase,
+  CreateModalidadUseCase,
+  UpdateModalidadUseCase,
+  DeleteModalidadUseCase,
 } from './application/use-cases/modalidad.use-cases';
 
 @Module({
@@ -19,6 +23,6 @@ import {
     UpdateModalidadUseCase,
     DeleteModalidadUseCase,
   ],
-  exports: [GetModalidadsUseCase, GetModalidadByIdUseCase]
+  exports: [GetModalidadsUseCase, GetModalidadByIdUseCase],
 })
 export class ModalidadModule {}

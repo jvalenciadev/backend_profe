@@ -1,7 +1,23 @@
-import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard, PoliciesGuard, CheckPolicies } from '@app/common';
 import {
-  GetModalidadsUseCase, GetModalidadByIdUseCase, CreateModalidadUseCase, UpdateModalidadUseCase, DeleteModalidadUseCase
+  GetModalidadsUseCase,
+  GetModalidadByIdUseCase,
+  CreateModalidadUseCase,
+  UpdateModalidadUseCase,
+  DeleteModalidadUseCase,
 } from '../../application/use-cases/modalidad.use-cases';
 
 @Controller('modalidades')
@@ -13,7 +29,7 @@ export class ModalidadController {
     private readonly createModalidadUseCase: CreateModalidadUseCase,
     private readonly updateModalidadUseCase: UpdateModalidadUseCase,
     private readonly deleteModalidadUseCase: DeleteModalidadUseCase,
-  ) { }
+  ) {}
 
   @Get()
   @CheckPolicies((ability: any) => ability.can('read', 'ProgramaModalidad'))
@@ -30,19 +46,33 @@ export class ModalidadController {
   @Post()
   @CheckPolicies((ability: any) => ability.can('create', 'ProgramaModalidad'))
   create(@Body() data: any, @Req() req: any) {
-    return this.createModalidadUseCase.execute(data, req.user?.id, req.user?.tenantId);
+    return this.createModalidadUseCase.execute(
+      data,
+      req.user?.id,
+      req.user?.tenantId,
+    );
   }
 
   @Put(':id')
   @CheckPolicies((ability: any) => ability.can('update', 'ProgramaModalidad'))
   updatePut(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updateModalidadUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updateModalidadUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Patch(':id')
   @CheckPolicies((ability: any) => ability.can('update', 'ProgramaModalidad'))
   updatePatch(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updateModalidadUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updateModalidadUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Delete(':id')

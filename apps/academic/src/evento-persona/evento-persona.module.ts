@@ -5,20 +5,27 @@ import { EVENTOPERSONA_REPOSITORY } from './domain/repositories/evento-persona.r
 import { PrismaEventoPersonaRepository } from './infrastructure/database/prisma-evento-persona.repository';
 import { EventoPersonaController } from './infrastructure/controllers/evento-persona.controller';
 import {
-  GetEventoPersonasUseCase, GetEventoPersonaByIdUseCase, CreateEventoPersonaUseCase, UpdateEventoPersonaUseCase, DeleteEventoPersonaUseCase
+  GetEventoPersonasUseCase,
+  GetEventoPersonaByIdUseCase,
+  CreateEventoPersonaUseCase,
+  UpdateEventoPersonaUseCase,
+  DeleteEventoPersonaUseCase,
 } from './application/use-cases/evento-persona.use-cases';
 
 @Module({
   imports: [DatabaseModule, CaslModule],
   controllers: [EventoPersonaController],
   providers: [
-    { provide: EVENTOPERSONA_REPOSITORY, useClass: PrismaEventoPersonaRepository },
+    {
+      provide: EVENTOPERSONA_REPOSITORY,
+      useClass: PrismaEventoPersonaRepository,
+    },
     GetEventoPersonasUseCase,
     GetEventoPersonaByIdUseCase,
     CreateEventoPersonaUseCase,
     UpdateEventoPersonaUseCase,
     DeleteEventoPersonaUseCase,
   ],
-  exports: [GetEventoPersonasUseCase, GetEventoPersonaByIdUseCase]
+  exports: [GetEventoPersonasUseCase, GetEventoPersonaByIdUseCase],
 })
 export class EventoPersonaModule {}

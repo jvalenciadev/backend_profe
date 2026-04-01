@@ -13,21 +13,21 @@ import { OfertaModule } from '../oferta/oferta.module';
 import { INSCRIPCION_REPOSITORY } from './domain/repositories/inscripcion.repository.interface';
 
 @Module({
-    imports: [OfertaModule],
-    controllers: [InscripcionController],
-    providers: [
-        PrismaService,
-        CreateInscripcionUseCase,
-        GetInscripcionsUseCase,
-        GetInscripcionByIdUseCase,
-        UpdateInscripcionUseCase,
-        DeleteInscripcionUseCase,
-        ConfirmBaucherUseCase,
-        ConfirmInscripcionUseCase,
-        {
-            provide: INSCRIPCION_REPOSITORY,
-            useClass: PrismaInscripcionRepository,
-        },
-    ],
+  imports: [OfertaModule],
+  controllers: [InscripcionController],
+  providers: [
+    PrismaService,
+    CreateInscripcionUseCase,
+    GetInscripcionsUseCase,
+    GetInscripcionByIdUseCase,
+    UpdateInscripcionUseCase,
+    DeleteInscripcionUseCase,
+    ConfirmBaucherUseCase,
+    ConfirmInscripcionUseCase,
+    {
+      provide: INSCRIPCION_REPOSITORY,
+      useClass: PrismaInscripcionRepository,
+    },
+  ],
 })
-export class InscripcionModule { }
+export class InscripcionModule {}

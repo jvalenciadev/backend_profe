@@ -7,5 +7,5 @@ export class Comunicado {
     public importancia: string,
     public estado: string,
     public tenantId?: string,
-  ) { }
+  ) {}
 }

@@ -1,4 +1,16 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, Req, UseGuards, Put } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  Req,
+  UseGuards,
+  Put,
+} from '@nestjs/common';
 import { JwtAuthGuard, PoliciesGuard, CheckPolicies } from '@app/common';
 import {
   CreateUserUseCase,
@@ -8,6 +20,7 @@ import {
   DeleteUserUseCase,
   ResetUserPasswordUseCase,
   RequestEmailVerificationUseCase,
+  ChangePasswordUseCase,
 } from './user/application/use-cases/user.use-cases';
 
 @Controller('users')
@@ -21,7 +34,8 @@ export class UsersController {
     private readonly deleteUserUseCase: DeleteUserUseCase,
     private readonly resetPasswordUseCase: ResetUserPasswordUseCase,
     private readonly requestVerificationUseCase: RequestEmailVerificationUseCase,
-  ) { }
+    private readonly changePasswordUseCase: ChangePasswordUseCase,
+  ) {}
 
   @Post()
   @CheckPolicies((ability) => ability.can('create', 'User'))
@@ -49,6 +63,15 @@ export class UsersController {
   @Patch('profile')
   updateProfilePatch(@Req() req: any, @Body() data: any) {
     return this.updateUserUseCase.execute(req.user.id, data, req.user);
+  }
+
+  @Post('profile/change-password')
+  changePassword(
+    @Req() req: any,
+    @Body('oldPassword') oldPass: string,
+    @Body('newPassword') newPass: string,
+  ) {
+    return this.changePasswordUseCase.execute(req.user.id, oldPass, newPass);
   }
 
   @Put(':id')

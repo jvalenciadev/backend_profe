@@ -12,7 +12,9 @@ export interface ProgramaFilters {
 export interface IProgramaRepository {
   create(data: Omit<Programa, 'id'>): Promise<Programa>;
   findById(id: string): Promise<Programa | null>;
-  findAll(filters?: ProgramaFilters): Promise<{ data: Programa[]; total: number }>;
+  findAll(
+    filters?: ProgramaFilters,
+  ): Promise<{ data: Programa[]; total: number }>;
   update(id: string, data: Partial<Programa>): Promise<Programa>;
   delete(id: string): Promise<boolean>;
 }

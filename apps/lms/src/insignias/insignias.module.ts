@@ -5,9 +5,9 @@ import { DatabaseModule } from '@app/database';
 import { InsigniasController } from './insignias.controller';
 
 @Module({
-    imports: [DatabaseModule],
-    controllers: [InsigniasController],
-    providers: [InsigniasService],
-    exports: [InsigniasService]
+  imports: [DatabaseModule],
+  controllers: [InsigniasController],
+  providers: [InsigniasService],
+  exports: [InsigniasService],
 })
-export class InsigniasModule { }
+export class InsigniasModule {}

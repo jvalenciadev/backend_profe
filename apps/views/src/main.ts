@@ -5,21 +5,21 @@ import { ValidationPipe } from '@nestjs/common';
 import { AllExceptionsFilter } from '@app/common/filters/all-exceptions.filter';
 
 async function bootstrap() {
-    const app = await NestFactory.create(ViewsModule);
+  const app = await NestFactory.create(ViewsModule);
 
-    app.useGlobalFilters(new AllExceptionsFilter());
+  app.useGlobalFilters(new AllExceptionsFilter());
 
-    const express = require('express');
-    app.use(express.json({ limit: '50mb' }));
-    app.use(express.urlencoded({ limit: '50mb', extended: true }));
+  const express = require('express');
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
-    app.enableCors();
-    app.useGlobalPipes(new ValidationPipe({ transform: true }));
+  app.enableCors();
+  app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
-    setupBigIntSerialization();
+  setupBigIntSerialization();
 
-    const port = process.env.VIEWS_PORT || 3005;
-    await app.listen(port);
-    console.log(`📡 Public Views Service running on: http://localhost:${port}`);
+  const port = process.env.VIEWS_PORT || 3005;
+  await app.listen(port);
+  console.log(`📡 Public Views Service running on: http://localhost:${port}`);
 }
 bootstrap();

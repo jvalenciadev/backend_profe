@@ -1,8 +1,30 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard, PoliciesGuard, CheckPolicies, CurrentUser, Public } from '@app/common';
-import { GetProfesUseCase, GetProfeByIdUseCase } from '../../application/use-cases/get-profes.use-case';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  JwtAuthGuard,
+  PoliciesGuard,
+  CheckPolicies,
+  CurrentUser,
+  Public,
+} from '@app/common';
+import {
+  GetProfesUseCase,
+  GetProfeByIdUseCase,
+} from '../../application/use-cases/get-profes.use-case';
 import { CreateProfeUseCase } from '../../application/use-cases/create-profe.use-case';
-import { UpdateProfeUseCase, DeleteProfeUseCase } from '../../application/use-cases/update-profe.use-case';
+import {
+  UpdateProfeUseCase,
+  DeleteProfeUseCase,
+} from '../../application/use-cases/update-profe.use-case';
 import { CreateProfeDto } from '../../application/dto/create-profe.dto';
 import { UpdateProfeDto } from '../../application/dto/update-profe.dto';
 
@@ -15,7 +37,7 @@ export class ProfeController {
     private readonly createProfeUseCase: CreateProfeUseCase,
     private readonly updateProfeUseCase: UpdateProfeUseCase,
     private readonly deleteProfeUseCase: DeleteProfeUseCase,
-  ) { }
+  ) {}
 
   @Get()
   @Public()
@@ -28,7 +50,12 @@ export class ProfeController {
       page,
       limit,
     });
-    return { ...result, page, limit, totalPages: Math.ceil(result.total / limit) };
+    return {
+      ...result,
+      page,
+      limit,
+      totalPages: Math.ceil(result.total / limit),
+    };
   }
 
   @Get(':id')
@@ -45,7 +72,11 @@ export class ProfeController {
 
   @Put(':id')
   @CheckPolicies((ability: any) => ability.can('update', 'Profe'))
-  async update(@Param('id') id: string, @Body() dto: UpdateProfeDto, @CurrentUser() user: any) {
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateProfeDto,
+    @CurrentUser() user: any,
+  ) {
     return await this.updateProfeUseCase.execute(id, dto, user.id);
   }
 

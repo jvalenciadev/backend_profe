@@ -4,8 +4,14 @@ import { DISTRITO_REPOSITORY } from './domain/repositories/distrito.repository.i
 import { PrismaDistritoRepository } from './infrastructure/database/prisma-distrito.repository';
 import { DistritoController } from './infrastructure/controllers/distrito.controller';
 import { CreateDistritoUseCase } from './application/use-cases/create-distrito.use-case';
-import { GetDistritosUseCase, GetDistritoByIdUseCase } from './application/use-cases/get-distritos.use-case';
-import { UpdateDistritoUseCase, DeleteDistritoUseCase } from './application/use-cases/update-distrito.use-case';
+import {
+  GetDistritosUseCase,
+  GetDistritoByIdUseCase,
+} from './application/use-cases/get-distritos.use-case';
+import {
+  UpdateDistritoUseCase,
+  DeleteDistritoUseCase,
+} from './application/use-cases/update-distrito.use-case';
 
 @Module({
   imports: [DatabaseModule],

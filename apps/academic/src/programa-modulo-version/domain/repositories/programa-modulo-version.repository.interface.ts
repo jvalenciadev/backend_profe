@@ -1,6 +1,7 @@
 import { ProgramaModuloVersion } from '../entities/programa-modulo-version.entity';
 
-export const PROGRAMAMODULOVERSION_REPOSITORY = 'PROGRAMAMODULOVERSION_REPOSITORY';
+export const PROGRAMAMODULOVERSION_REPOSITORY =
+  'PROGRAMAMODULOVERSION_REPOSITORY';
 
 export interface IProgramaModuloVersionRepository {
   findAll(filter?: any, ability?: any): Promise<any[]>;

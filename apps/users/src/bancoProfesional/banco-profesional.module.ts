@@ -6,7 +6,10 @@ import { PrismaBancoProfesionalRepository } from './infrastructure/database/pris
 import { BANCO_PROFESIONAL_REPOSITORY } from './domain/repositories/banco-profesional.repository.interface';
 import { GetMyProfileUseCase } from './application/use-cases/get-my-profile.use-case';
 import { UpdateProfileUseCase } from './application/use-cases/update-profile.use-case';
-import { ManagePosgradoUseCase, ManageProduccionUseCase } from './application/use-cases/manage-experience.use-case';
+import {
+  ManagePosgradoUseCase,
+  ManageProduccionUseCase,
+} from './application/use-cases/manage-experience.use-case';
 import { RegistrationUseCase } from './application/use-cases/registration.use-case';
 import { RequestVerificationUseCase } from './application/use-cases/request-verification.use-case';
 import { LookupsUseCase } from './application/use-cases/lookups.use-case';
@@ -15,27 +18,30 @@ import { ApproveProfessionalUseCase } from './application/use-cases/approve-prof
 
 import { MailModule, UploadModule } from '@app/common';
 
-
 @Module({
-    imports: [MailModule, UploadModule],
+  imports: [MailModule, UploadModule],
 
-    controllers: [BancoProfesionalController, PublicBancoProfesionalController],
-    providers: [
-        PrismaService,
-        GetMyProfileUseCase,
-        UpdateProfileUseCase,
-        ManagePosgradoUseCase,
-        ManageProduccionUseCase,
-        RegistrationUseCase,
-        RequestVerificationUseCase,
-        LookupsUseCase,
-        FindAllProfilesUseCase,
-        ApproveProfessionalUseCase,
-        {
-            provide: BANCO_PROFESIONAL_REPOSITORY,
-            useClass: PrismaBancoProfesionalRepository,
-        },
-    ],
-    exports: [BANCO_PROFESIONAL_REPOSITORY, GetMyProfileUseCase, UpdateProfileUseCase],
+  controllers: [BancoProfesionalController, PublicBancoProfesionalController],
+  providers: [
+    PrismaService,
+    GetMyProfileUseCase,
+    UpdateProfileUseCase,
+    ManagePosgradoUseCase,
+    ManageProduccionUseCase,
+    RegistrationUseCase,
+    RequestVerificationUseCase,
+    LookupsUseCase,
+    FindAllProfilesUseCase,
+    ApproveProfessionalUseCase,
+    {
+      provide: BANCO_PROFESIONAL_REPOSITORY,
+      useClass: PrismaBancoProfesionalRepository,
+    },
+  ],
+  exports: [
+    BANCO_PROFESIONAL_REPOSITORY,
+    GetMyProfileUseCase,
+    UpdateProfileUseCase,
+  ],
 })
-export class BancoProfesionalModule { }
+export class BancoProfesionalModule {}

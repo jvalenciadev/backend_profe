@@ -54,4 +54,4 @@ import { UploadConfigController } from '@app/common/upload/upload-config.control
     },
   ],
 })
-export class AppModule { }
+export class AppModule {}

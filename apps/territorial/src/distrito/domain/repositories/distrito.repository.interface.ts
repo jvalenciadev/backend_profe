@@ -12,7 +12,9 @@ export interface DistritoFilters {
 export interface IDistritoRepository {
   create(data: Omit<Distrito, 'id'>): Promise<Distrito>;
   findById(id: string): Promise<Distrito | null>;
-  findAll(filters?: DistritoFilters): Promise<{ data: Distrito[]; total: number }>;
+  findAll(
+    filters?: DistritoFilters,
+  ): Promise<{ data: Distrito[]; total: number }>;
   update(id: string, data: Partial<Distrito>): Promise<Distrito>;
   delete(id: string): Promise<boolean>;
 }

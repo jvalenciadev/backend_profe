@@ -36,20 +36,36 @@ export class PrismaProvinciaRepository implements IProvinciaRepository {
     return await (this.prisma as any).provincia.findFirst({ where });
   }
 
-  async create(data: any, userId?: string, forcedTenantId?: string): Promise<any> {
+  async create(
+    data: any,
+    userId?: string,
+    forcedTenantId?: string,
+  ): Promise<any> {
     return await (this.prisma as any).provincia.create({
-      data: { ...data, createdBy: userId }
+      data: { ...data, createdBy: userId },
     });
   }
 
-  async update(id: string, data: any, userId?: string, ability?: any): Promise<any> {
+  async update(
+    id: string,
+    data: any,
+    userId?: string,
+    ability?: any,
+  ): Promise<any> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'update', 'Provincia');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'update',
+        'Provincia',
+      );
       where = { AND: [where, caslWhere] };
     }
     const exists = await (this.prisma as any).provincia.findFirst({ where });
-    if (!exists) throw new Error('No tiene permisos para editar este registro o no existe');
+    if (!exists)
+      throw new Error(
+        'No tiene permisos para editar este registro o no existe',
+      );
 
     return await (this.prisma as any).provincia.update({
       where: { id },
@@ -60,11 +76,18 @@ export class PrismaProvinciaRepository implements IProvinciaRepository {
   async delete(id: string, userId?: string, ability?: any): Promise<void> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'delete', 'Provincia');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'delete',
+        'Provincia',
+      );
       where = { AND: [where, caslWhere] };
     }
     const exists = await (this.prisma as any).provincia.findFirst({ where });
-    if (!exists) throw new Error('No tiene permisos para eliminar este registro o no existe');
+    if (!exists)
+      throw new Error(
+        'No tiene permisos para eliminar este registro o no existe',
+      );
 
     const hasStatus = true;
     if (hasStatus) {

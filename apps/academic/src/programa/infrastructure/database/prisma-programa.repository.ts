@@ -1,11 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@app/database';
-import type { IProgramaRepository, ProgramaFilters } from '../../domain/repositories/programa.repository.interface';
+import type {
+  IProgramaRepository,
+  ProgramaFilters,
+} from '../../domain/repositories/programa.repository.interface';
 import { Programa } from '../../domain/entities/programa.entity';
 
 @Injectable()
 export class PrismaProgramaRepository implements IProgramaRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   private mapToDomain(record: any): Programa {
     return new Programa(
@@ -46,17 +49,37 @@ export class PrismaProgramaRepository implements IProgramaRepository {
         fechaInicioInscripcion: rest.fechaInicioInscripcion || now,
         fechaFinInscripcion: rest.fechaFinInscripcion || future,
         fechaInicioClases: rest.fechaInicioClases || future,
-        modulos: modulos && Array.isArray(modulos) ? {
-          create: modulos.map(({ id, createdAt, updatedAt, programaId, facilitador, moduloVersiones, facilitadores, mod_unidades, mod_asistencias, mod_notas_finales, ...m }: any) => ({
-            ...m,
-            orden: Number(m.orden) || 0,
-            esGlobal: Boolean(m.esGlobal),
-            facilitadorId: m.facilitadorId || null,
-            estado: (m.estado || 'activo').toLowerCase()
-          }))
-        } : undefined
+        modulos:
+          modulos && Array.isArray(modulos)
+            ? {
+                create: modulos.map(
+                  ({
+                    id,
+                    createdAt,
+                    updatedAt,
+                    programaId,
+                    facilitador,
+                    moduloVersiones,
+                    facilitadores,
+                    mod_unidades,
+                    mod_asistencias,
+                    mod_notas_finales,
+                    ...m
+                  }: any) => ({
+                    ...m,
+                    orden:
+                      m.orden !== undefined
+                        ? Number(m.orden) || 0
+                        : Number(m.pm_orden) || 0,
+                    esGlobal: Boolean(m.esGlobal),
+                    facilitadorId: m.facilitadorId || null,
+                    estado: (m.estado || 'activo').toLowerCase(),
+                  }),
+                ),
+              }
+            : undefined,
       },
-      include: { modulos: true }
+      include: { modulos: true },
     });
     return this.mapToDomain(record);
   }
@@ -64,19 +87,21 @@ export class PrismaProgramaRepository implements IProgramaRepository {
   async findById(id: string): Promise<Programa | null> {
     const record = await (this.prisma.programa as any).findUnique({
       where: { id },
-      include: { modulos: { orderBy: { orden: 'asc' } } }
+      include: { modulos: { orderBy: { orden: 'asc' } } },
     });
     return record ? this.mapToDomain(record) : null;
   }
 
-  async findAll(filters: ProgramaFilters = {}): Promise<{ data: Programa[]; total: number }> {
+  async findAll(
+    filters: ProgramaFilters = {},
+  ): Promise<{ data: Programa[]; total: number }> {
     const { search, estado, page = 1, limit = 20 } = filters;
     const where: any = { estado: { not: 'eliminado' } };
     if (estado && estado !== 'todos') where.estado = estado.toLowerCase();
     if (search) {
       where.OR = [
         { nombre: { contains: search, mode: 'insensitive' } },
-        { codigo: { contains: search, mode: 'insensitive' } }
+        { codigo: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -87,7 +112,7 @@ export class PrismaProgramaRepository implements IProgramaRepository {
         include: { modulos: { orderBy: { orden: 'asc' } } },
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
       }),
     ]);
 
@@ -101,7 +126,7 @@ export class PrismaProgramaRepository implements IProgramaRepository {
     const { modulos, nombreAbre, ...rest } = data;
     const updateData: any = {
       ...rest,
-      nombreAbreviado: nombreAbre || rest.nombreAbreviado
+      nombreAbreviado: nombreAbre || rest.nombreAbreviado,
     };
 
     if (data.estado) updateData.estado = data.estado.toLowerCase();
@@ -109,20 +134,37 @@ export class PrismaProgramaRepository implements IProgramaRepository {
     if (modulos && Array.isArray(modulos)) {
       updateData.modulos = {
         deleteMany: {},
-        create: modulos.map(({ id, createdAt, updatedAt, programaId, facilitador, moduloVersiones, facilitadores, mod_unidades, mod_asistencias, mod_notas_finales, ...m }: any) => ({
-          ...m,
-          orden: Number(m.orden) || 0,
-          esGlobal: Boolean(m.esGlobal),
-          facilitadorId: m.facilitadorId || null,
-          estado: (m.estado || 'activo').toLowerCase()
-        }))
+        create: modulos.map(
+          ({
+            id,
+            createdAt,
+            updatedAt,
+            programaId,
+            facilitador,
+            moduloVersiones,
+            facilitadores,
+            mod_unidades,
+            mod_asistencias,
+            mod_notas_finales,
+            ...m
+          }: any) => ({
+            ...m,
+            orden:
+              m.orden !== undefined
+                ? Number(m.orden) || 0
+                : Number(m.pm_orden) || 0,
+            esGlobal: Boolean(m.esGlobal),
+            facilitadorId: m.facilitadorId || null,
+            estado: (m.estado || 'activo').toLowerCase(),
+          }),
+        ),
       };
     }
 
     const record = await (this.prisma.programa as any).update({
       where: { id },
       data: updateData,
-      include: { modulos: true }
+      include: { modulos: true },
     });
     return this.mapToDomain(record);
   }

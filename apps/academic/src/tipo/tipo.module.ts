@@ -5,7 +5,11 @@ import { TIPO_REPOSITORY } from './domain/repositories/tipo.repository.interface
 import { PrismaTipoRepository } from './infrastructure/database/prisma-tipo.repository';
 import { TipoController } from './infrastructure/controllers/tipo.controller';
 import {
-  GetTiposUseCase, GetTipoByIdUseCase, CreateTipoUseCase, UpdateTipoUseCase, DeleteTipoUseCase
+  GetTiposUseCase,
+  GetTipoByIdUseCase,
+  CreateTipoUseCase,
+  UpdateTipoUseCase,
+  DeleteTipoUseCase,
 } from './application/use-cases/tipo.use-cases';
 
 @Module({
@@ -19,6 +23,6 @@ import {
     UpdateTipoUseCase,
     DeleteTipoUseCase,
   ],
-  exports: [GetTiposUseCase, GetTipoByIdUseCase]
+  exports: [GetTiposUseCase, GetTipoByIdUseCase],
 })
 export class TipoModule {}

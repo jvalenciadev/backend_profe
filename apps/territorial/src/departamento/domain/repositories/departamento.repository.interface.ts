@@ -12,7 +12,9 @@ export interface DepartamentoFilters {
 export interface IDepartamentoRepository {
   create(data: Omit<Departamento, 'id'>): Promise<Departamento>;
   findById(id: string): Promise<Departamento | null>;
-  findAll(filters?: DepartamentoFilters): Promise<{ data: Departamento[]; total: number }>;
+  findAll(
+    filters?: DepartamentoFilters,
+  ): Promise<{ data: Departamento[]; total: number }>;
   update(id: string, data: Partial<Departamento>): Promise<Departamento>;
   delete(id: string): Promise<boolean>;
 }

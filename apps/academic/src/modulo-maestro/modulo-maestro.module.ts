@@ -5,20 +5,27 @@ import { MODULOMAESTRO_REPOSITORY } from './domain/repositories/modulo-maestro.r
 import { PrismaModuloMaestroRepository } from './infrastructure/database/prisma-modulo-maestro.repository';
 import { ModuloMaestroController } from './infrastructure/controllers/modulo-maestro.controller';
 import {
-  GetModuloMaestrosUseCase, GetModuloMaestroByIdUseCase, CreateModuloMaestroUseCase, UpdateModuloMaestroUseCase, DeleteModuloMaestroUseCase
+  GetModuloMaestrosUseCase,
+  GetModuloMaestroByIdUseCase,
+  CreateModuloMaestroUseCase,
+  UpdateModuloMaestroUseCase,
+  DeleteModuloMaestroUseCase,
 } from './application/use-cases/modulo-maestro.use-cases';
 
 @Module({
   imports: [DatabaseModule, CaslModule],
   controllers: [ModuloMaestroController],
   providers: [
-    { provide: MODULOMAESTRO_REPOSITORY, useClass: PrismaModuloMaestroRepository },
+    {
+      provide: MODULOMAESTRO_REPOSITORY,
+      useClass: PrismaModuloMaestroRepository,
+    },
     GetModuloMaestrosUseCase,
     GetModuloMaestroByIdUseCase,
     CreateModuloMaestroUseCase,
     UpdateModuloMaestroUseCase,
     DeleteModuloMaestroUseCase,
   ],
-  exports: [GetModuloMaestrosUseCase, GetModuloMaestroByIdUseCase]
+  exports: [GetModuloMaestrosUseCase, GetModuloMaestroByIdUseCase],
 })
 export class ModuloMaestroModule {}

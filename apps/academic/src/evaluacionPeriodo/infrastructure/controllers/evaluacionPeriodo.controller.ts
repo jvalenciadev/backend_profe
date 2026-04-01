@@ -1,8 +1,24 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard, PoliciesGuard, CheckPolicies } from '@app/common';
-import { GetEvaluacionPeriodosUseCase, GetEvaluacionPeriodoByIdUseCase } from '../../application/use-cases/get-evaluacionPeriodos.use-case';
+import {
+  GetEvaluacionPeriodosUseCase,
+  GetEvaluacionPeriodoByIdUseCase,
+} from '../../application/use-cases/get-evaluacionPeriodos.use-case';
 import { CreateEvaluacionPeriodoUseCase } from '../../application/use-cases/create-evaluacionPeriodo.use-case';
-import { UpdateEvaluacionPeriodoUseCase, DeleteEvaluacionPeriodoUseCase } from '../../application/use-cases/update-evaluacionPeriodo.use-case';
+import {
+  UpdateEvaluacionPeriodoUseCase,
+  DeleteEvaluacionPeriodoUseCase,
+} from '../../application/use-cases/update-evaluacionPeriodo.use-case';
 
 @Controller('evaluacion-periodos')
 @UseGuards(JwtAuthGuard, PoliciesGuard)
@@ -13,7 +29,7 @@ export class EvaluacionPeriodoController {
     private readonly createEvaluacionPeriodoUseCase: CreateEvaluacionPeriodoUseCase,
     private readonly updateEvaluacionPeriodoUseCase: UpdateEvaluacionPeriodoUseCase,
     private readonly deleteEvaluacionPeriodoUseCase: DeleteEvaluacionPeriodoUseCase,
-  ) { }
+  ) {}
 
   @Get()
   @CheckPolicies((ability: any) => ability.can('read', 'EvaluacionPeriodo'))
@@ -26,7 +42,12 @@ export class EvaluacionPeriodoController {
       page,
       limit,
     });
-    return { ...result, page, limit, totalPages: Math.ceil(result.total / limit) };
+    return {
+      ...result,
+      page,
+      limit,
+      totalPages: Math.ceil(result.total / limit),
+    };
   }
 
   @Get(':id')

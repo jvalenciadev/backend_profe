@@ -1,7 +1,23 @@
-import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard, PoliciesGuard, CheckPolicies } from '@app/common';
 import {
-  GetEventoTiposUseCase, GetEventoTipoByIdUseCase, CreateEventoTipoUseCase, UpdateEventoTipoUseCase, DeleteEventoTipoUseCase
+  GetEventoTiposUseCase,
+  GetEventoTipoByIdUseCase,
+  CreateEventoTipoUseCase,
+  UpdateEventoTipoUseCase,
+  DeleteEventoTipoUseCase,
 } from '../../application/use-cases/evento-tipo.use-cases';
 
 @Controller('tipos-evento')
@@ -30,19 +46,33 @@ export class EventoTipoController {
   @Post()
   @CheckPolicies((ability: any) => ability.can('create', 'EventoTipo'))
   create(@Body() data: any, @Req() req: any) {
-    return this.createEventoTipoUseCase.execute(data, req.user?.id, req.user?.tenantId);
+    return this.createEventoTipoUseCase.execute(
+      data,
+      req.user?.id,
+      req.user?.tenantId,
+    );
   }
 
   @Put(':id')
   @CheckPolicies((ability: any) => ability.can('update', 'EventoTipo'))
   updatePut(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updateEventoTipoUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updateEventoTipoUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Patch(':id')
   @CheckPolicies((ability: any) => ability.can('update', 'EventoTipo'))
   updatePatch(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updateEventoTipoUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updateEventoTipoUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Delete(':id')

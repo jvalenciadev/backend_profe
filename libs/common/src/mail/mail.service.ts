@@ -9,20 +9,32 @@ export class MailService {
   constructor(
     private readonly mailerService: MailerService,
     private readonly configService: ConfigService,
-  ) { }
+  ) {}
 
   /**
    * Envía correos de forma masiva en bloques (chunks) para evitar bloqueos
    * del servidor SMTP y manejar grandes volúmenes de destinatarios.
    */
-  async sendComunicadoEmailChunks(emails: string[], titulo: string, contenido: string, imagen?: string) {
+  async sendComunicadoEmailChunks(
+    emails: string[],
+    titulo: string,
+    contenido: string,
+    imagen?: string,
+  ) {
     const chunkSize = 40; // Tamaño de bloque seguro
     const waitBetweenChunks = 3000; // 3 segundos entre bloques para evitar rate limits
-    const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:5415';
-    
-    this.logger.log(`[MailService] Iniciando envío masivo: "${titulo}" a ${emails.length} destinatarios.`);
+    const frontendUrl =
+      this.configService.get('FRONTEND_URL') || 'http://localhost:5415';
 
-    const imageUrl = imagen ? (imagen.startsWith('http') ? imagen : `${frontendUrl}/${imagen}`) : null;
+    this.logger.log(
+      `[MailService] Iniciando envío masivo: "${titulo}" a ${emails.length} destinatarios.`,
+    );
+
+    const imageUrl = imagen
+      ? imagen.startsWith('http')
+        ? imagen
+        : `${frontendUrl}/${imagen}`
+      : null;
 
     for (let i = 0; i < emails.length; i += chunkSize) {
       const chunk = emails.slice(i, i + chunkSize);
@@ -37,11 +49,15 @@ export class MailService {
                     <div style="width: 50px; height: 3px; background-color: #3182ce; margin: 10px auto;"></div>
                   </div>
 
-                  ${imageUrl ? `
+                  ${
+                    imageUrl
+                      ? `
                   <div style="margin-bottom: 25px; border-radius: 12px; overflow: hidden; text-align: center;">
                     <img src="${imageUrl}" alt="${titulo}" style="max-width: 100%; height: auto; border-radius: 8px; display: block; margin: 0 auto;" />
                   </div>
-                  ` : ''}
+                  `
+                      : ''
+                  }
                   
                   <h3 style="color: #2b6cb0; font-size: 18px; margin-top: 0;">${titulo}</h3>
                   
@@ -62,15 +78,22 @@ export class MailService {
               </div>
           `,
         });
-        
-        this.logger.log(`[MailService] Chunk enviado exitosamente (${i + chunk.length}/${emails.length})`);
-        
+
+        this.logger.log(
+          `[MailService] Chunk enviado exitosamente (${i + chunk.length}/${emails.length})`,
+        );
+
         // Si hay más bloques (chunks), esperamos un poco
         if (i + chunkSize < emails.length) {
-          await new Promise(resolve => setTimeout(resolve, waitBetweenChunks));
+          await new Promise((resolve) =>
+            setTimeout(resolve, waitBetweenChunks),
+          );
         }
       } catch (error) {
-        this.logger.error(`[MailService] Error enviando chunk iniciado en índice ${i}:`, error);
+        this.logger.error(
+          `[MailService] Error enviando chunk iniciado en índice ${i}:`,
+          error,
+        );
       }
     }
     this.logger.log(`[MailService] Envío masivo finalizado.`);
@@ -132,12 +155,19 @@ export class MailService {
       this.logger.log(`Email de verificación enviado a: ${email}`);
       return true;
     } catch (error) {
-      this.logger.error(`Error enviando código de verificación a ${email}:`, error);
+      this.logger.error(
+        `Error enviando código de verificación a ${email}:`,
+        error,
+      );
       return false;
     }
   }
 
-  async sendPasswordResetSuccess(email: string, name: string, password: string) {
+  async sendPasswordResetSuccess(
+    email: string,
+    name: string,
+    password: string,
+  ) {
     try {
       await this.mailerService.sendMail({
         to: email,
@@ -178,7 +208,10 @@ export class MailService {
       this.logger.log(`Email de éxito de reset enviado a: ${email}`);
       return true;
     } catch (error) {
-      this.logger.error(`Error enviando email de éxito de reset a ${email}:`, error);
+      this.logger.error(
+        `Error enviando email de éxito de reset a ${email}:`,
+        error,
+      );
       return false;
     }
   }
@@ -215,7 +248,8 @@ export class MailService {
 
   async sendBajaPostulanteEmail(email: string, name: string) {
     try {
-      const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
+      const frontendUrl =
+        this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
       const logoUrl = `${frontendUrl}/logo-principal.png`; // Ajustado al nombre real en la carpeta public
 
       await this.mailerService.sendMail({
@@ -275,12 +309,14 @@ export class MailService {
 
   async sendAprobacionPostulanteEmail(email: string, name: string) {
     try {
-      const frontendUrl = this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
+      const frontendUrl =
+        this.configService.get('FRONTEND_URL') || 'http://localhost:3000';
       const logoUrl = `${frontendUrl}/logo-principal.png`;
 
       await this.mailerService.sendMail({
         to: email,
-        subject: '¡Felicidades! Su postulación ha sido aprobada - Programa PROFE',
+        subject:
+          '¡Felicidades! Su postulación ha sido aprobada - Programa PROFE',
         html: `
                     <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 650px; margin: 0 auto; padding: 0; border: 1px solid #eaeaea; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
                         <div style="background-color: #10b981; padding: 25px; text-align: center;">
@@ -324,12 +360,20 @@ export class MailService {
       this.logger.log(`Email de aprobación enviado a: ${email}`);
       return true;
     } catch (error) {
-      this.logger.error(`Error enviando email de aprobación a ${email}:`, error);
+      this.logger.error(
+        `Error enviando email de aprobación a ${email}:`,
+        error,
+      );
       return false;
     }
   }
 
-  async sendInscripcionConfirmation(email: string, name: string, programa: string, sede: string) {
+  async sendInscripcionConfirmation(
+    email: string,
+    name: string,
+    programa: string,
+    sede: string,
+  ) {
     try {
       const loginUrl = `${this.configService.get('FRONTEND_URL') || 'http://localhost:5415'}/login`;
 
@@ -362,7 +406,9 @@ export class MailService {
                     </div>
                 `,
       });
-      this.logger.log(`Email de confirmación de inscripción enviado a: ${email}`);
+      this.logger.log(
+        `Email de confirmación de inscripción enviado a: ${email}`,
+      );
       return true;
     } catch (error) {
       this.logger.error(`Error enviando confirmación a ${email}:`, error);

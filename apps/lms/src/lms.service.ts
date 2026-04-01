@@ -1,8 +1,16 @@
-import { Injectable, NotFoundException, UnauthorizedException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '@app/database';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { NotificacionesService } from './notificaciones/notificaciones.service';
+import { MailService } from '@app/common';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class LmsService {
@@ -10,6 +18,7 @@ export class LmsService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly notiService: NotificacionesService,
+    private readonly mailService: MailService,
   ) { }
 
   /**
@@ -27,62 +36,107 @@ export class LmsService {
       },
     });
 
-    if (!user) throw new UnauthorizedException('Credenciales inválidas');
+    if (!user)
+      throw new UnauthorizedException(
+        'El usuario ingresado no existe o los datos son incorrectos. Verifique sus credenciales.',
+      );
 
     const isMatch = await bcrypt.compare(pass, user.password);
-    if (!isMatch) throw new UnauthorizedException('Credenciales inválidas');
+    if (!isMatch)
+      throw new UnauthorizedException(
+        'Contraseña incorrecta. Por favor, vuelva a intentarlo o recupere su contraseña si la ha olvidado.',
+      );
 
     // --- REGISTRO DE TOKEN DE DISPOSITIVO (PUSH) ---
-    if (tokenDispositivo && tokenDispositivo !== user.tokenDispositivo) {
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: { tokenDispositivo }
+    if (tokenDispositivo) {
+      const existingToken = await this.prisma.token_dispositivo.findFirst({
+        where: { token: tokenDispositivo },
       });
+
+      if (!existingToken) {
+        await this.prisma.token_dispositivo.create({
+          data: {
+            token: tokenDispositivo,
+            userId: user.id,
+            tipo_usuario: user.roles?.map((ur: any) => ur.role?.name).join(',') || '',
+          },
+        });
+      } else if (existingToken.userId !== user.id) {
+        await this.prisma.token_dispositivo.update({
+          where: { id_token: existingToken.id_token },
+          data: { userId: user.id },
+        });
+      }
     }
 
     // Solo roles permitidos en el aula
-    const roles = user.roles.map(ur => ur.role.name);
+    const roles = user.roles.map((ur) => ur.role.name);
     const ALLOWED_ROLES = ['PARTICIPANTE', 'FACILITADOR', 'ADMIN'];
-    const canAccess = roles.some(r => ALLOWED_ROLES.includes(r.toUpperCase()));
+    const canAccess = roles.some((r) =>
+      ALLOWED_ROLES.includes(r.toUpperCase()),
+    );
 
-    if (!canAccess) throw new UnauthorizedException('No tiene permisos para acceder al Aula Virtual');
+    if (!canAccess)
+      throw new UnauthorizedException(
+        'Acceso Restringido: Usted no tiene permisos como Participante, Facilitador o Administrador para ingresar al Aula Virtual. Comuníquese con soporte técnico.',
+      );
 
     // Validación de estado de inscripciones para PARTICIPANTE puro
-    if (roles.includes('PARTICIPANTE') && !roles.some(r => ['ADMIN', 'FACILITADOR'].includes(r))) {
+    if (
+      roles.includes('PARTICIPANTE') &&
+      !roles.some((r) => ['ADMIN', 'FACILITADOR'].includes(r))
+    ) {
       const inscripciones = await this.prisma.programaInscripcion.findMany({
         where: { personaId: user.id },
-        include: { estadoInscripcion: true }
+        include: { estadoInscripcion: true },
       });
 
       if (inscripciones.length === 0) {
-        throw new UnauthorizedException('No tiene ninguna inscripción registrada en ningún programa.');
+        throw new UnauthorizedException(
+          'Su cuenta no registra ninguna inscripción a nuestros programas. Por favor, asegúrese de haberse inscrito correctamente o contacte con el administrador.',
+        );
       }
 
       // Verificamos si tiene al menos una inscripción que lo habilite (INSCRITO)
       const INSCRITO_ID = '89da2cd1-ac47-41fb-9f48-5850128d78db';
       const CONFIRMADO_ID = 'adfbbf09-a486-4b79-8fe0-04cf85d83cae';
 
-      const habilitado = inscripciones.some(ins =>
-        ins.estadoInscripcionId === INSCRITO_ID ||
-        ins.estadoInscripcionId === CONFIRMADO_ID
+      const habilitado = inscripciones.some(
+        (ins) =>
+          ins.estadoInscripcionId === INSCRITO_ID ||
+          ins.estadoInscripcionId === CONFIRMADO_ID,
       );
 
       if (!habilitado) {
         // Encontrar el estado predominante si no está habilitado para ser específicos.
-        const estadosStr = inscripciones.map(i => i.estadoInscripcion.nombre.toUpperCase());
+        const estadosStr = inscripciones.map((i) =>
+          i.estadoInscripcion.nombre.toUpperCase(),
+        );
 
         if (estadosStr.includes('PREINSCRITO')) {
-          throw new UnauthorizedException('Aún no está habilitado para el Aula Virtual. Le enviaremos un correo electrónico cuando su preinscripción sea revisada y validada a INSCRITO.');
+          throw new UnauthorizedException(
+            'Aún no está habilitado en el Aula Virtual. Su estado es PREINSCRITO. Se le notificará por correo cuando su inscripción sea validada.',
+          );
         } else if (estadosStr.includes('HABILITACIÓN DE PAGO')) {
-          throw new UnauthorizedException('Su inscripción se encuentra retenida en verificación de HABILITACIÓN DE PAGO. Por favor sea paciente.');
+          throw new UnauthorizedException(
+            'Su acceso está en pausa: HABILITACIÓN DE PAGO pendiente. Nuestro equipo de administración está verificando su pago, por favor sea paciente.',
+          );
         } else if (estadosStr.includes('BAJA')) {
-          throw new UnauthorizedException('Usted ha sido dado de BAJA de su(s) programa(s). Contacte a coordinación.');
+          throw new UnauthorizedException(
+            'Acceso denegado: Usted ha sido dado de BAJA del programa. Para mayor información comuníquese con la coordinación.',
+          );
         } else if (estadosStr.includes('INHABILITADO')) {
-          throw new UnauthorizedException('Usted se encuentra INHABILITADO en el sistema de este programa.');
+          throw new UnauthorizedException(
+            'Su perfil se encuentra INHABILITADO temporalmente. Contacte con el administrador para resolver su situación.',
+          );
         } else if (estadosStr.includes('DEVOLUCIÓN')) {
-          throw new UnauthorizedException('Su trámite se encuentra en DEVOLUCIÓN.');
+          throw new UnauthorizedException(
+            'Su trámite de inscripción ha sido devuelto (Estado: DEVOLUCIÓN). Revise sus observaciones y reinicie el proceso.',
+          );
         } else {
-          throw new UnauthorizedException(`Su estado actual de inscripción es: ${estadosStr[0]}. No tiene acceso permitido por ahora.`);
+          throw new UnauthorizedException(
+            `Acceso no disponible. Estado actual: ${estadosStr[0]}. Solo los usuarios "INSCRITOS" o "CONFIRMADOS" pueden acceder.`,
+          );
         }
       }
     }
@@ -95,7 +149,12 @@ export class LmsService {
 
     const config = await this.prisma.profe.findFirst({
       where: { estado: 'activo' },
-      select: { color: true, colorSecundario: true, nombre: true, logoPrincipal: true }
+      select: {
+        color: true,
+        colorSecundario: true,
+        nombre: true,
+        logoPrincipal: true,
+      },
     });
 
     return {
@@ -117,14 +176,14 @@ export class LmsService {
         resumenProfesional: user.resumenProfesional,
         habilidades: user.habilidades,
         idiomas: user.idiomas,
+        requiresPasswordChange: user.requiresPasswordChange,
       },
       config: config || {
-        color: '#1474a6',
-        colorSecundario: '#4f46e5',
-        nombre: 'Aula Profe'
-      }
+        color: '#51c951ff',
+        colorSecundario: '#0A1D37',
+        nombre: 'Aula Profe',
+      },
     };
-
   }
 
   async getDocencia(userId: string) {
@@ -140,18 +199,20 @@ export class LmsService {
         facilitadorId: true,
         estado: true,
         createdAt: true,
-      }
+      },
     });
 
     // 2. Módulos globales donde el facilitador está directamente asignado (programa_modulo.fac_id)
     const globalMasterModulos = await this.prisma.programaModulo.findMany({
       where: { facilitadorId: userId, esGlobal: true, estado: 'activo' },
-      include: { programa: true }
+      include: { programa: true },
     });
 
     // Construir entradas virtuales para cada módulo global (una por módulo maestro)
-    const globalMaestroIds = new Set<string>(globalMasterModulos.map(m => m.id));
-    const virtualGlobalAssignments: any[] = globalMasterModulos.map(ma => ({
+    const globalMaestroIds = new Set<string>(
+      globalMasterModulos.map((m) => m.id),
+    );
+    const virtualGlobalAssignments: any[] = globalMasterModulos.map((ma) => ({
       id: `global-${ma.id}`,
       programaDosId: null,
       moduloId: null,
@@ -164,7 +225,7 @@ export class LmsService {
     }));
 
     // También incluir globales desde programaDosFacilitador.moduloMaestroId (si no ya están)
-    for (const d of base.filter(b => b.moduloMaestroId && !b.programaDosId)) {
+    for (const d of base.filter((b) => b.moduloMaestroId && !b.programaDosId)) {
       if (!globalMaestroIds.has(d.moduloMaestroId!)) {
         globalMaestroIds.add(d.moduloMaestroId!);
         virtualGlobalAssignments.push({
@@ -182,88 +243,114 @@ export class LmsService {
     }
 
     // Solo asignaciones regulares (con programaDosId)
-    const baseRegular = base.filter(d => !!d.programaDosId);
+    const baseRegular = base.filter((d) => !!d.programaDosId);
     const allAssignments = [...baseRegular, ...virtualGlobalAssignments];
 
     // Hidratar cada registro individualmente de forma segura
-    const results = await Promise.all(allAssignments.map(async (d) => {
-      try {
-        let programaDos: any = null;
-        let studentCount = 0;
+    const results = await Promise.all(
+      allAssignments.map(async (d) => {
+        try {
+          let programaDos: any = null;
+          let studentCount = 0;
 
-        if (d.programaDosId) {
-          // ── MÓDULO OPERATIVO (programaModuloDos) ──
-          programaDos = await this.prisma.programaDos.findUnique({
-            where: { id: d.programaDosId },
-            include: {
-              tipo: { select: { id: true, nombre: true, notaMaxima: true, notaReprobacion: true } },
-              sede: true,
-              inscripciones: {
-                where: {
-                  estado: { in: ['activo', 'aprobado'] },
-                  ...(d.turnoId ? { turnoId: d.turnoId } : {})
+          if (d.programaDosId) {
+            // ── MÓDULO OPERATIVO (programaModuloDos) ──
+            programaDos = await this.prisma.programaDos
+              .findUnique({
+                where: { id: d.programaDosId },
+                include: {
+                  tipo: {
+                    select: {
+                      id: true,
+                      nombre: true,
+                      notaMaxima: true,
+                      notaReprobacion: true,
+                    },
+                  },
+                  sede: true,
+                  inscripciones: {
+                    where: {
+                      estado: { in: ['activo', 'aprobado'] },
+                      ...(d.turnoId ? { turnoId: d.turnoId } : {}),
+                    },
+                    select: { id: true },
+                  },
                 },
-                select: { id: true }
-              }
+              })
+              .catch(() => null);
+            studentCount = programaDos?.inscripciones?.length ?? 0;
+          } else if (d.moduloMaestroId && d.isGlobalMaster) {
+            // ── MÓDULO GLOBAL (programaModulo isGlobal) ──
+            // Usar el dato ya cargado si está disponible, si no buscar
+            const master =
+              d._masterModulo ??
+              (await this.prisma.programaModulo
+                .findUnique({
+                  where: { id: d.moduloMaestroId },
+                  include: { programa: true },
+                })
+                .catch(() => null));
+
+            if (master) {
+              // Contar inscritos en TODAS las ofertas del programa maestro
+              const totalInscritos =
+                await this.prisma.programaInscripcion.count({
+                  where: {
+                    programa: { programaId: master.programaId },
+                    estado: { in: ['activo', 'aprobado'] },
+                  },
+                });
+              studentCount = totalInscritos;
+              programaDos = {
+                id: null,
+                nombre:
+                  master.programa?.nombre || master.nombre || 'Gestión Central',
+                tipo: { nombre: 'MÓDULO GLOBAL' },
+                sede: { nombre: 'Todas las Sedes' },
+                codigo: 'GLOBAL',
+                banner: master.programa?.banner,
+              };
             }
-          }).catch(() => null);
-          studentCount = programaDos?.inscripciones?.length ?? 0;
-        } else if (d.moduloMaestroId && d.isGlobalMaster) {
-          // ── MÓDULO GLOBAL (programaModulo isGlobal) ──
-          // Usar el dato ya cargado si está disponible, si no buscar
-          const master = d._masterModulo ?? await this.prisma.programaModulo.findUnique({
-            where: { id: d.moduloMaestroId },
-            include: { programa: true }
-          }).catch(() => null);
-
-          if (master) {
-            // Contar inscritos en TODAS las ofertas del programa maestro
-            const totalInscritos = await this.prisma.programaInscripcion.count({
-              where: {
-                programa: { programaId: master.programaId },
-                estado: { in: ['activo', 'aprobado'] }
-              }
-            });
-            studentCount = totalInscritos;
-            programaDos = {
-              id: null,
-              nombre: master.programa?.nombre || master.nombre || 'Gestión Central',
-              tipo: { nombre: 'MÓDULO GLOBAL' },
-              sede: { nombre: 'Todas las Sedes' },
-              codigo: 'GLOBAL',
-              banner: master.programa?.banner
-            };
           }
+
+          // Módulo operativo (programaModuloDos) o maestro
+          let modulo: any = null;
+          if (d.moduloId) {
+            modulo = await this.prisma.programaModuloDos
+              .findUnique({ where: { id: d.moduloId } })
+              .catch(() => null);
+          } else if (d.moduloMaestroId) {
+            modulo =
+              d._masterModulo ??
+              (await this.prisma.programaModulo
+                .findUnique({
+                  where: { id: d.moduloMaestroId },
+                })
+                .catch(() => null));
+          }
+
+          // Turno
+          const turno = d.turnoId
+            ? await this.prisma.programaDosTurno
+              .findUnique({
+                where: { id: d.turnoId },
+                include: { turnoConfig: true },
+              })
+              .catch(() => null)
+            : null;
+
+          return { ...d, programaDos, modulo, turno, studentCount };
+        } catch (err) {
+          console.error('Error hydrating docencia:', err);
+          return null;
         }
-
-        // Módulo operativo (programaModuloDos) o maestro
-        let modulo: any = null;
-        if (d.moduloId) {
-          modulo = await this.prisma.programaModuloDos.findUnique({ where: { id: d.moduloId } }).catch(() => null);
-        } else if (d.moduloMaestroId) {
-          modulo = d._masterModulo ?? await this.prisma.programaModulo.findUnique({
-            where: { id: d.moduloMaestroId }
-          }).catch(() => null);
-        }
-
-        // Turno
-        const turno = d.turnoId
-          ? await this.prisma.programaDosTurno.findUnique({
-            where: { id: d.turnoId },
-            include: { turnoConfig: true }
-          }).catch(() => null)
-          : null;
-
-        return { ...d, programaDos, modulo, turno, studentCount };
-      } catch (err) {
-        console.error('Error hydrating docencia:', err);
-        return null;
-      }
-    }));
+      }),
+    );
 
     // Filtrar válidos
-    const validResults = results.filter((r): r is NonNullable<typeof r> =>
-      r !== null && (!!r.programaDosId || r.isGlobalMaster)
+    const validResults = results.filter(
+      (r): r is NonNullable<typeof r> =>
+        r !== null && (!!r.programaDosId || r.isGlobalMaster),
     );
 
     // ── AGRUPAR POR PROGRAMA ──
@@ -281,7 +368,7 @@ export class LmsService {
           sede: r.programaDos?.sede?.nombre ?? 'Todas las Sedes',
           codigo: r.programaDos?.codigo ?? 'GLOBAL',
           isGlobal: r.isGlobalMaster && !r.programaDosId,
-          modulos: []
+          modulos: [],
         });
       }
 
@@ -295,7 +382,7 @@ export class LmsService {
         turno: r.turno?.turnoConfig?.nombre ?? 'Global',
         turnoId: r.turnoId ?? null,
         isGlobal: r.isGlobalMaster ?? false,
-        studentCount: r.studentCount
+        studentCount: r.studentCount,
       });
     }
 
@@ -309,46 +396,61 @@ export class LmsService {
 
   async getEstudiantesPorCurso(moduloId: string, turnoId: string) {
     // Estrategia 1: buscar como moduloId de programaModuloDos
-    const modulo = await this.prisma.programaModuloDos.findUnique({
-      where: { id: moduloId },
-      include: { programaDos: true }
-    }).catch(() => null);
+    const modulo = await this.prisma.programaModuloDos
+      .findUnique({
+        where: { id: moduloId },
+        include: { programaDos: true },
+      })
+      .catch(() => null);
 
     let programaDosId: string | null = modulo?.programaDos?.id ?? null;
 
     // Estrategia 2: Si no encontró módulo nuevo, intentar como módulo tradicional (Maestro)
     let isGlobalMaster = false;
     if (!programaDosId) {
-      const moduloTra = await this.prisma.programaModulo.findUnique({
-        where: { id: moduloId },
-        include: { programa: { include: { programaDos: true } } }
-      }).catch(() => null);
+      const moduloTra = await this.prisma.programaModulo
+        .findUnique({
+          where: { id: moduloId },
+          include: { programa: { include: { programaDos: true } } },
+        })
+        .catch(() => null);
 
       if (moduloTra) {
         isGlobalMaster = moduloTra.esGlobal;
         // Si es global, queremos todos los programaDosIds vinculados
-        const allProgDosIds = moduloTra.programa.programaDos.map(p => p.id);
+        const allProgDosIds = moduloTra.programa.programaDos.map((p) => p.id);
 
         if (isGlobalMaster) {
           // Si es global, retornamos todos los estudiantes de todos los programaDos
           const inscripciones = await this.prisma.programaInscripcion.findMany({
             where: {
               programaId: { in: allProgDosIds },
-              estado: { in: ['activo', 'aprobado'] }
+              estado: { in: ['activo', 'aprobado'] },
             },
             include: {
               persona: {
-                select: { id: true, nombre: true, apellidos: true, imagen: true, correo: true }
-              }
+                select: {
+                  id: true,
+                  nombre: true,
+                  apellidos: true,
+                  imagen: true,
+                  correo: true,
+                },
+              },
             },
-            orderBy: [{ persona: { apellidos: 'asc' } }, { persona: { nombre: 'asc' } }]
+            orderBy: [
+              { persona: { apellidos: 'asc' } },
+              { persona: { nombre: 'asc' } },
+            ],
           });
           return inscripciones.map((i: any) => ({
             ...i,
             persona: {
               ...i.persona,
-              nombreCompleto: `${i.persona?.nombre || ''} ${i.persona?.apellidos || ''}`.trim() || 'Estudiante'
-            }
+              nombreCompleto:
+                `${i.persona?.nombre || ''} ${i.persona?.apellidos || ''}`.trim() ||
+                'Estudiante',
+            },
           }));
         } else if (allProgDosIds.length > 0) {
           programaDosId = allProgDosIds[0];
@@ -358,9 +460,11 @@ export class LmsService {
 
     // Estrategia 3: Si no encontró módulo, intentar como programaDosId directamente
     if (!programaDosId) {
-      const progDos = await this.prisma.programaDos.findUnique({
-        where: { id: moduloId }
-      }).catch(() => null);
+      const progDos = await this.prisma.programaDos
+        .findUnique({
+          where: { id: moduloId },
+        })
+        .catch(() => null);
       if (progDos) programaDosId = progDos.id;
     }
 
@@ -368,11 +472,16 @@ export class LmsService {
 
     const where: any = {
       programaId: programaDosId,
-      estado: { in: ['activo', 'aprobado'] }
+      estado: { in: ['activo', 'aprobado'] },
     };
 
     // Solo filtrar por turno si viene un valor válido
-    if (turnoId && turnoId !== 'undefined' && turnoId !== 'null' && turnoId !== 'global') {
+    if (
+      turnoId &&
+      turnoId !== 'undefined' &&
+      turnoId !== 'null' &&
+      turnoId !== 'global'
+    ) {
       where.turnoId = turnoId;
     }
 
@@ -385,22 +494,24 @@ export class LmsService {
             nombre: true,
             apellidos: true,
             imagen: true,
-            correo: true
-          }
-        }
+            correo: true,
+          },
+        },
       },
       orderBy: [
         { persona: { apellidos: 'asc' } },
-        { persona: { nombre: 'asc' } }
-      ]
+        { persona: { nombre: 'asc' } },
+      ],
     });
 
     return inscripciones.map((i: any) => ({
       ...i,
       persona: {
         ...i.persona,
-        nombreCompleto: `${i.persona?.nombre || ''} ${i.persona?.apellidos || ''}`.trim() || 'Estudiante'
-      }
+        nombreCompleto:
+          `${i.persona?.nombre || ''} ${i.persona?.apellidos || ''}`.trim() ||
+          'Estudiante',
+      },
     }));
   }
 
@@ -410,33 +521,33 @@ export class LmsService {
     const categorias = await this.prisma.mod_categoria_calificacion.findMany({
       where: {
         OR: [{ moduloId }, { moduloMaestroId: moduloId }],
-        estado: 'activo'
+        estado: 'activo',
       },
       include: {
         config: true,
         actividades: {
           where: { estado: 'activo', esCalificable: true },
           include: {
-            notas: { where: { userId }, take: 1 }
-          }
-        }
-      }
+            notas: { where: { userId }, take: 1 },
+          },
+        },
+      },
     });
 
     if (categorias.length === 0) return { total: 0, breakdown: [] };
 
     let totalPonderado = 0;
-    const breakdown = categorias.map(cat => {
+    const breakdown = categorias.map((cat) => {
       const activities = cat.actividades || [];
       const pesoCat = cat.config?.peso || 0;
 
       if (activities.length === 0) {
-        return { 
-          nombre: cat.config?.nombre, 
-          peso: pesoCat, 
-          promedio: 0, 
+        return {
+          nombre: cat.config?.nombre,
+          peso: pesoCat,
+          promedio: 0,
           aporte: 0,
-          actividadesCount: 0
+          actividadesCount: 0,
         };
       }
 
@@ -458,13 +569,13 @@ export class LmsService {
         peso: pesoCat,
         promedio: Math.round(promedio * 100) / 100,
         aporte: Math.round(aporte * 100) / 100,
-        actividadesCount: activities.length
+        actividadesCount: activities.length,
       };
     });
 
     return {
       total: Math.round(totalPonderado * 100) / 100,
-      breakdown
+      breakdown,
     };
   }
 
@@ -473,7 +584,7 @@ export class LmsService {
    */
   async getMisCursos(userId: string) {
     try {
-      const inscripciones = await this.prisma.programaInscripcion.findMany({
+      const inscripciones = (await this.prisma.programaInscripcion.findMany({
         where: {
           personaId: userId,
           estado: 'activo',
@@ -486,28 +597,32 @@ export class LmsService {
               sede: true,
               modulos: {
                 where: { estado: { not: 'eliminado' } },
-                orderBy: { orden: 'asc' }
+                orderBy: { orden: 'asc' },
               },
               programa: {
                 include: {
                   modulos: {
                     where: { estado: 'activo' },
                     orderBy: { orden: 'asc' },
-                    include: { facilitador: { select: { nombre: true, apellidos: true } } }
-                  }
-                }
-              }
-            }
+                    include: {
+                      facilitador: {
+                        select: { nombre: true, apellidos: true },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
           turno: {
             include: {
-              turnoConfig: true
-            }
+              turnoConfig: true,
+            },
           },
         },
-      }) as any[];
+      })) as any[];
 
-      const docencias = await this.prisma.programaDosFacilitador.findMany({
+      const docencias = (await this.prisma.programaDosFacilitador.findMany({
         where: {
           facilitadorId: userId,
           estado: 'activo',
@@ -520,44 +635,71 @@ export class LmsService {
           turnoId: true,
           facilitadorId: true,
           estado: true,
-        }
-      }) as any[];
+        },
+      })) as any[];
 
       // Hidratar docencias de forma segura
-      const docenciasHydrated = await Promise.all(docencias.map(async (d: any) => {
-        try {
-          const programaDos = d.programaDosId ? await this.prisma.programaDos.findUnique({
-            where: { id: d.programaDosId },
-            include: {
-              tipo: true, version: true, sede: true,
-              inscripciones: { where: { estado: 'activo' }, select: { id: true } }
-            }
-          }).catch(() => null) : null;
+      const docenciasHydrated = await Promise.all(
+        docencias.map(async (d: any) => {
+          try {
+            const programaDos = d.programaDosId
+              ? await this.prisma.programaDos
+                .findUnique({
+                  where: { id: d.programaDosId },
+                  include: {
+                    tipo: true,
+                    version: true,
+                    sede: true,
+                    inscripciones: {
+                      where: { estado: 'activo' },
+                      select: { id: true },
+                    },
+                  },
+                })
+                .catch(() => null)
+              : null;
 
-          const modulo = d.moduloId ? await this.prisma.programaModuloDos.findUnique({
-            where: { id: d.moduloId },
-            include: {
-              mod_unidades: {
-                include: { _count: { select: { actividades: true } } }
-              }
-            }
-          }).catch(() => null) : (d.moduloMaestroId ? await this.prisma.programaModulo.findUnique({
-            where: { id: d.moduloMaestroId },
-            include: {
-              mod_unidades: {
-                include: { _count: { select: { actividades: true } } }
-              }
-            }
-          }).catch(() => null) : null);
+            const modulo = d.moduloId
+              ? await this.prisma.programaModuloDos
+                .findUnique({
+                  where: { id: d.moduloId },
+                  include: {
+                    mod_unidades: {
+                      include: { _count: { select: { actividades: true } } },
+                    },
+                  },
+                })
+                .catch(() => null)
+              : d.moduloMaestroId
+                ? await this.prisma.programaModulo
+                  .findUnique({
+                    where: { id: d.moduloMaestroId },
+                    include: {
+                      mod_unidades: {
+                        include: {
+                          _count: { select: { actividades: true } },
+                        },
+                      },
+                    },
+                  })
+                  .catch(() => null)
+                : null;
 
-          const turno = d.turnoId ? await this.prisma.programaDosTurno.findUnique({
-            where: { id: d.turnoId },
-            include: { turnoConfig: true }
-          }).catch(() => null) : null;
+            const turno = d.turnoId
+              ? await this.prisma.programaDosTurno
+                .findUnique({
+                  where: { id: d.turnoId },
+                  include: { turnoConfig: true },
+                })
+                .catch(() => null)
+              : null;
 
-          return { ...d, programaDos, modulo, turno };
-        } catch { return { ...d, programaDos: null, modulo: null, turno: null }; }
-      }));
+            return { ...d, programaDos, modulo, turno };
+          } catch {
+            return { ...d, programaDos: null, modulo: null, turno: null };
+          }
+        }),
+      );
 
       // --- AGRUPACIÓN PARA ESTUDIANTE ---
       const estudianteProgramas: any[] = [];
@@ -576,7 +718,10 @@ export class LmsService {
             if (!globalProgsMap.has(gm.id)) {
               // Progreso del módulo global
               const totalMod = await this.prisma.mod_actividad.count({
-                where: { unidad: { moduloMaestroId: gm.id, estado: 'activo' }, estado: 'activo' }
+                where: {
+                  unidad: { moduloMaestroId: gm.id, estado: 'activo' },
+                  estado: 'activo',
+                },
               });
               const compMod = await this.prisma.mod_actividad.count({
                 where: {
@@ -585,18 +730,32 @@ export class LmsService {
                   OR: [
                     { tarea: { entregas: { some: { userId } } } },
                     { foro: { posts: { some: { userId } } } },
-                    { cuestionario: { intentos: { some: { userId, estado: 'finalizado' } } } }
-                  ]
-                }
+                    {
+                      cuestionario: {
+                        intentos: { some: { userId, estado: 'finalizado' } },
+                      },
+                    },
+                  ],
+                },
               });
 
               // Buscar si hay un facilitador asignado específicamente a este módulo global para esta oferta
-              const facGlobal = await this.prisma.programaDosFacilitador.findFirst({
-                where: { moduloMaestroId: gm.id, programaDosId: progDos.id, estado: 'activo' },
-                include: { facilitador: { select: { nombre: true, apellidos: true } } }
-              });
+              const facGlobal =
+                await this.prisma.programaDosFacilitador.findFirst({
+                  where: {
+                    moduloMaestroId: gm.id,
+                    programaDosId: progDos.id,
+                    estado: 'activo',
+                  },
+                  include: {
+                    facilitador: { select: { nombre: true, apellidos: true } },
+                  },
+                });
 
-              const gradesGlobal = await this.calculateModuloNotaTotal(userId, gm.id);
+              const gradesGlobal = await this.calculateModuloNotaTotal(
+                userId,
+                gm.id,
+              );
 
               globalProgsMap.set(gm.id, {
                 id: gm.id,
@@ -611,25 +770,34 @@ export class LmsService {
                 progreso: {
                   total: totalMod,
                   completadas: compMod,
-                  porcentaje: totalMod > 0 ? Math.round((compMod / totalMod) * 100) : 0
+                  porcentaje:
+                    totalMod > 0 ? Math.round((compMod / totalMod) * 100) : 0,
                 },
                 banner: progDos.banner,
                 pro_banner: progDos.banner,
-                modulos: [{
-                  id: gm.id,
-                  nombre: gm.nombre,
-                  codigo: gm.codigo || 'M0',
-                  facilitador: facGlobal ? `${facGlobal.facilitador.nombre} ${facGlobal.facilitador.apellidos}` :
-                    gm.facilitador ? `${gm.facilitador.nombre} ${gm.facilitador.apellidos}` : 'Super Admin',
-                  isGlobal: true,
-                  notaFinal: gradesGlobal.total,
-                  notaDetalle: gradesGlobal.breakdown,
-                  progreso: {
-                    total: totalMod,
-                    completadas: compMod,
-                    porcentaje: totalMod > 0 ? Math.round((compMod / totalMod) * 100) : 0
-                  }
-                }]
+                modulos: [
+                  {
+                    id: gm.id,
+                    nombre: gm.nombre,
+                    codigo: gm.codigo || 'M0',
+                    facilitador: facGlobal
+                      ? `${facGlobal.facilitador.nombre} ${facGlobal.facilitador.apellidos}`
+                      : gm.facilitador
+                        ? `${gm.facilitador.nombre} ${gm.facilitador.apellidos}`
+                        : 'Super Admin',
+                    isGlobal: true,
+                    notaFinal: gradesGlobal.total,
+                    notaDetalle: gradesGlobal.breakdown,
+                    progreso: {
+                      total: totalMod,
+                      completadas: compMod,
+                      porcentaje:
+                        totalMod > 0
+                          ? Math.round((compMod / totalMod) * 100)
+                          : 0,
+                    },
+                  },
+                ],
               });
             }
           }
@@ -640,13 +808,16 @@ export class LmsService {
         // 1. Módulos LMS (Nueva Estructura)
         if (progDos.modulos && progDos.modulos.length > 0) {
           for (const m of progDos.modulos) {
-            const facAsignado = await this.prisma.programaDosFacilitador.findFirst({
-              where: { moduloId: m.id, estado: 'activo' },
-              include: { facilitador: { select: { nombre: true, apellidos: true } } }
-            });
+            const facAsignado =
+              await this.prisma.programaDosFacilitador.findFirst({
+                where: { moduloId: m.id, estado: 'activo' },
+                include: {
+                  facilitador: { select: { nombre: true, apellidos: true } },
+                },
+              });
 
             const totalMod = await this.prisma.mod_actividad.count({
-              where: { unidad: { moduloId: m.id }, estado: 'activo' }
+              where: { unidad: { moduloId: m.id }, estado: 'activo' },
             });
             const compMod = await this.prisma.mod_actividad.count({
               where: {
@@ -655,12 +826,19 @@ export class LmsService {
                 OR: [
                   { tarea: { entregas: { some: { userId } } } },
                   { foro: { posts: { some: { userId } } } },
-                  { cuestionario: { intentos: { some: { userId, estado: 'finalizado' } } } }
-                ]
-              }
+                  {
+                    cuestionario: {
+                      intentos: { some: { userId, estado: 'finalizado' } },
+                    },
+                  },
+                ],
+              },
             });
 
-            const gradesInfo = await this.calculateModuloNotaTotal(userId, m.id);
+            const gradesInfo = await this.calculateModuloNotaTotal(
+              userId,
+              m.id,
+            );
 
             modulosList.push({
               id: m.id,
@@ -668,26 +846,33 @@ export class LmsService {
               codigo: m.codigo,
               fechaInicio: m.fechaInicio,
               fechaFin: m.fechaFin,
-              facilitador: facAsignado ? `${facAsignado.facilitador.nombre} ${facAsignado.facilitador.apellidos}` : 'Por asignar',
+              facilitador: facAsignado
+                ? `${facAsignado.facilitador.nombre} ${facAsignado.facilitador.apellidos}`
+                : 'Por asignar',
               notaFinal: gradesInfo.total,
               notaDetalle: gradesInfo.breakdown,
               progreso: {
                 total: totalMod,
                 completadas: compMod,
-                porcentaje: totalMod > 0 ? Math.round((compMod / totalMod) * 100) : 0
-              }
+                porcentaje:
+                  totalMod > 0 ? Math.round((compMod / totalMod) * 100) : 0,
+              },
             });
           }
         }
 
         // 2. Fallback Tradicional
-        if (modulosList.length === 0 && progDos.programa?.modulos && progDos.programa.modulos.length > 0) {
+        if (
+          modulosList.length === 0 &&
+          progDos.programa?.modulos &&
+          progDos.programa.modulos.length > 0
+        ) {
           const regularMasters = progDos.programa.modulos
             .filter((m: any) => !m.esGlobal && m.estado === 'activo')
             .sort((a: any, b: any) => (a.orden || 0) - (b.orden || 0));
           for (const m of regularMasters) {
             const totalMod = await this.prisma.mod_actividad.count({
-              where: { unidad: { moduloId: m.id }, estado: 'activo' }
+              where: { unidad: { moduloId: m.id }, estado: 'activo' },
             });
             const compMod = await this.prisma.mod_actividad.count({
               where: {
@@ -696,12 +881,19 @@ export class LmsService {
                 OR: [
                   { tarea: { entregas: { some: { userId } } } },
                   { foro: { posts: { some: { userId } } } },
-                  { cuestionario: { intentos: { some: { userId, estado: 'finalizado' } } } }
-                ]
-              }
+                  {
+                    cuestionario: {
+                      intentos: { some: { userId, estado: 'finalizado' } },
+                    },
+                  },
+                ],
+              },
             });
 
-            const gradesInfo = await this.calculateModuloNotaTotal(userId, m.id);
+            const gradesInfo = await this.calculateModuloNotaTotal(
+              userId,
+              m.id,
+            );
 
             modulosList.push({
               id: m.id,
@@ -713,14 +905,21 @@ export class LmsService {
               progreso: {
                 total: totalMod,
                 completadas: compMod,
-                porcentaje: totalMod > 0 ? Math.round((compMod / totalMod) * 100) : 0
-              }
+                porcentaje:
+                  totalMod > 0 ? Math.round((compMod / totalMod) * 100) : 0,
+              },
             });
           }
         }
 
-        const totalProg = modulosList.reduce((acc, m) => acc + (m.progreso?.total || 0), 0);
-        const compProg = modulosList.reduce((acc, m) => acc + (m.progreso?.completadas || 0), 0);
+        const totalProg = modulosList.reduce(
+          (acc, m) => acc + (m.progreso?.total || 0),
+          0,
+        );
+        const compProg = modulosList.reduce(
+          (acc, m) => acc + (m.progreso?.completadas || 0),
+          0,
+        );
 
         estudianteProgramas.push({
           id: progDos.id,
@@ -739,10 +938,11 @@ export class LmsService {
           progreso: {
             total: totalProg,
             completadas: compProg,
-            porcentaje: totalProg > 0 ? Math.round((compProg / totalProg) * 100) : 0
+            porcentaje:
+              totalProg > 0 ? Math.round((compProg / totalProg) * 100) : 0,
           },
           banner: progDos.banner,
-          pro_banner: progDos.banner
+          pro_banner: progDos.banner,
         });
       }
 
@@ -764,7 +964,7 @@ export class LmsService {
             codigo: d.programaDos.codigo,
             banner: d.programaDos.banner,
             pro_banner: d.programaDos.banner,
-            modulos: []
+            modulos: [],
           });
         }
 
@@ -779,7 +979,7 @@ export class LmsService {
             fechaFin: d.modulo?.fechaFin,
             turno: d.turno?.turnoConfig?.nombre || 'Mañana',
             turnoId: d.turnoId,
-            studentCount: d.programaDos.inscripciones?.length ?? 0
+            studentCount: d.programaDos.inscripciones?.length ?? 0,
           });
         }
       }
@@ -787,7 +987,7 @@ export class LmsService {
       return {
         estudiante: [
           ...Array.from(globalProgsMap.values()),
-          ...estudianteProgramas
+          ...estudianteProgramas,
         ],
         facilitador: Array.from(facilitadorMap.values()),
       };
@@ -800,27 +1000,29 @@ export class LmsService {
   async getCourseContent(id: string, userId: string, passedTurnoId?: string) {
     // 0. Verificar si el usuario es facilitador antes de cargar para decidir qué filtrar
     // 0. Verificar si es Facilitador del módulo o programa
-    const isFacilitadorUser = await this.prisma.programaDosFacilitador.findFirst({
-      where: {
-        facilitadorId: userId,
-        OR: [
-          { moduloId: id },
-          { programaDosId: id },
-          { moduloMaestroId: id }
-        ]
-      }
-    }).then(async f => {
-      if (f) return true;
-      // Si no está en la tabla de asignaciones específicas, revisar si es el facilitador directo del modulo maestro
-      try {
-        const directMasterFac = await this.prisma.programaModulo.findFirst({
-          where: { id, facilitadorId: userId }
-        });
-        return !!directMasterFac;
-      } catch {
-        return false;
-      }
-    });
+    const isFacilitadorUser = await this.prisma.programaDosFacilitador
+      .findFirst({
+        where: {
+          facilitadorId: userId,
+          OR: [
+            { moduloId: id },
+            { programaDosId: id },
+            { moduloMaestroId: id },
+          ],
+        },
+      })
+      .then(async (f) => {
+        if (f) return true;
+        // Si no está en la tabla de asignaciones específicas, revisar si es el facilitador directo del modulo maestro
+        try {
+          const directMasterFac = await this.prisma.programaModulo.findFirst({
+            where: { id, facilitadorId: userId },
+          });
+          return !!directMasterFac;
+        } catch {
+          return false;
+        }
+      });
 
     // 1. Intentar encontrar como Módulo LMS (Nueva Estructura)
     let modulo = await this.prisma.programaModuloDos.findUnique({
@@ -833,45 +1035,46 @@ export class LmsService {
             ...(isFacilitadorUser ? {} : { estado: 'activo' }),
             ...(passedTurnoId ? { turnoId: passedTurnoId } : {}), // <--- FILTRO POR TURNO
           },
-          orderBy: [
-            { semana: 'asc' },
-            { orden: 'asc' }
-          ],
+          orderBy: [{ semana: 'asc' }, { orden: 'asc' }],
           include: {
             actividades: {
-              where: isFacilitadorUser ? { estado: { not: 'eliminado' } } : { estado: 'activo' },
+              where: isFacilitadorUser
+                ? { estado: { not: 'eliminado' } }
+                : { estado: 'activo' },
               orderBy: { orden: 'asc' },
               include: {
                 foro: {
                   include: {
                     _count: { select: { posts: true } },
-                    posts: { where: { userId: userId }, take: 1 }
-                  }
+                    posts: { where: { userId: userId }, take: 1 },
+                  },
                 },
                 tarea: {
                   include: {
                     _count: { select: { entregas: true } },
-                    entregas: { where: { userId: userId }, take: 1 }
-                  }
+                    entregas: { where: { userId: userId }, take: 1 },
+                  },
                 },
                 cuestionario: {
                   include: {
                     _count: { select: { intentos: true } },
-                    intentos: { where: { userId: userId }, take: 1 }
-                  }
+                    intentos: { where: { userId: userId }, take: 1 },
+                  },
                 },
                 categoria: { include: { config: true } },
                 notas: { where: { userId: userId }, take: 1 },
-                asistencia: true
-              }
+                asistencia: true,
+              },
             },
             recursos: {
-              where: isFacilitadorUser ? { estado: { not: 'eliminado' } } : { estado: 'activo' },
-              orderBy: { orden: 'asc' }
-            }
-          }
-        }
-      }
+              where: isFacilitadorUser
+                ? { estado: { not: 'eliminado' } }
+                : { estado: 'activo' },
+              orderBy: { orden: 'asc' },
+            },
+          },
+        },
+      },
     });
 
     // 1b. Si no encontró como ModuloDos, buscar como ModuloMaestro (Global)
@@ -882,50 +1085,54 @@ export class LmsService {
           mod_unidades: {
             where: {
               estado: { not: 'eliminado' },
-              ...(isFacilitadorUser ? {} : { estado: 'activo' })
+              ...(isFacilitadorUser ? {} : { estado: 'activo' }),
             },
             orderBy: [{ semana: 'asc' }, { orden: 'asc' }],
             include: {
               actividades: {
-                where: isFacilitadorUser ? { estado: { not: 'eliminado' } } : { estado: 'activo' },
+                where: isFacilitadorUser
+                  ? { estado: { not: 'eliminado' } }
+                  : { estado: 'activo' },
                 orderBy: { orden: 'asc' },
                 include: {
                   foro: {
                     include: {
                       _count: { select: { posts: true } },
-                      posts: { where: { userId: userId }, take: 1 }
-                    }
+                      posts: { where: { userId: userId }, take: 1 },
+                    },
                   },
                   tarea: {
                     include: {
                       _count: { select: { entregas: true } },
-                      entregas: { where: { userId: userId }, take: 1 }
-                    }
+                      entregas: { where: { userId: userId }, take: 1 },
+                    },
                   },
                   cuestionario: {
                     include: {
                       _count: { select: { intentos: true } },
-                      intentos: { where: { userId: userId }, take: 1 }
-                    }
+                      intentos: { where: { userId: userId }, take: 1 },
+                    },
                   },
                   categoria: { include: { config: true } },
                   notas: { where: { userId: userId }, take: 1 },
-                  asistencia: true
-                }
+                  asistencia: true,
+                },
               },
               recursos: {
-                where: isFacilitadorUser ? { estado: { not: 'eliminado' } } : { estado: 'activo' },
-                orderBy: { orden: 'asc' }
-              }
-            }
-          }
-        }
+                where: isFacilitadorUser
+                  ? { estado: { not: 'eliminado' } }
+                  : { estado: 'activo' },
+                orderBy: { orden: 'asc' },
+              },
+            },
+          },
+        },
       });
 
       if (master) {
         // Para módulos globales, el contexto debe ser el Programa Maestro, no una sede específica
         const pMaestro = await this.prisma.programa.findUnique({
-          where: { id: master.programaId }
+          where: { id: master.programaId },
         });
 
         const virtualContext = {
@@ -934,7 +1141,7 @@ export class LmsService {
           codigo: pMaestro?.codigo || 'GLOBAL',
           banner: pMaestro?.banner,
           sede: { nombre: 'Todas las Sedes' },
-          tipo: { nombre: 'Inducción / Módulo Maestro' }
+          tipo: { nombre: 'Inducción / Módulo Maestro' },
         };
 
         modulo = {
@@ -942,7 +1149,7 @@ export class LmsService {
           programaDos: virtualContext,
           programaDosId: null, // Evitar anclaje a una sede
           masterProgramaId: master.programaId, // Guardamos para la query de participantes
-          isGlobal: true
+          isGlobal: true,
         } as any;
       }
     }
@@ -952,11 +1159,18 @@ export class LmsService {
       if (isFacilitadorUser) {
         if ((modulo as any).isGlobal) {
           studentCount = await this.prisma.programaInscripcion.count({
-            where: { programa: { programaId: (modulo as any).masterProgramaId }, estado: { in: ['activo', 'aprobado'] } }
+            where: {
+              programa: { programaId: (modulo as any).masterProgramaId },
+              estado: { in: ['activo', 'aprobado'] },
+            },
           });
         } else if ((modulo as any).programaDosId) {
           studentCount = await this.prisma.programaInscripcion.count({
-            where: { programaId: (modulo as any).programaDosId, ...(passedTurnoId ? { turnoId: passedTurnoId } : {}), estado: { in: ['activo', 'aprobado'] } }
+            where: {
+              programaId: (modulo as any).programaDosId,
+              ...(passedTurnoId ? { turnoId: passedTurnoId } : {}),
+              estado: { in: ['activo', 'aprobado'] },
+            },
           });
         }
       }
@@ -964,13 +1178,15 @@ export class LmsService {
       (modulo as any).studentCount = studentCount;
 
       // Hidratar actividades con información de entrega para el usuario actual
-      (modulo as any).mod_unidades = modulo.mod_unidades.map(u => ({
+      (modulo as any).mod_unidades = modulo.mod_unidades.map((u) => ({
         ...u,
         actividades: u.actividades.map((act: any) => {
           const userSubmitted =
-            (act.tarea?.entregas?.length > 0) ||
-            (act.foro?.posts?.length > 0) ||
-            (act.cuestionario?.intentos?.some((i: any) => i.estado === 'finalizado'));
+            act.tarea?.entregas?.length > 0 ||
+            act.foro?.posts?.length > 0 ||
+            act.cuestionario?.intentos?.some(
+              (i: any) => i.estado === 'finalizado',
+            );
 
           const gradeInfo = act.notas?.[0];
 
@@ -980,9 +1196,13 @@ export class LmsService {
             userGrade: gradeInfo?.nota ?? null,
             userComment: gradeInfo?.observacion ?? null,
             isGraded: !!gradeInfo,
-            respuestasCount: act.tarea?._count?.entregas || act.foro?._count?.posts || act.cuestionario?._count?.intentos || 0
+            respuestasCount:
+              act.tarea?._count?.entregas ||
+              act.foro?._count?.posts ||
+              act.cuestionario?._count?.intentos ||
+              0,
           };
-        })
+        }),
       }));
     }
 
@@ -992,10 +1212,14 @@ export class LmsService {
       const p2 = await this.prisma.programaDos.findUnique({
         where: { id },
         include: {
-          modulos: { where: { estado: { not: 'eliminado' } }, orderBy: { orden: 'asc' }, take: 1 },
+          modulos: {
+            where: { estado: { not: 'eliminado' } },
+            orderBy: { orden: 'asc' },
+            take: 1,
+          },
           tipo: true,
           sede: true,
-        }
+        },
       });
 
       if (p2) {
@@ -1021,7 +1245,7 @@ export class LmsService {
       // 2b. Módulo tradicional -> buscar espejo en LMS
       const moduloTra = await this.prisma.programaModulo.findUnique({
         where: { id },
-        include: { programa: { include: { programaDos: { take: 1 } } } }
+        include: { programa: { include: { programaDos: { take: 1 } } } },
       });
 
       if (moduloTra) {
@@ -1033,16 +1257,16 @@ export class LmsService {
             where: {
               programaDosId: pDos.id,
               nombre: moduloTra.nombre,
-              estado: { not: 'eliminado' }
-            }
+              estado: { not: 'eliminado' },
+            },
           });
 
-          // Fallback final: Si el nombre no coincide pero el programa tiene módulos activos, 
+          // Fallback final: Si el nombre no coincide pero el programa tiene módulos activos,
           // probablemente el facilitador creó el contenido ahí pero con otro nombre.
           if (!espejo) {
             espejo = await this.prisma.programaModuloDos.findFirst({
               where: { programaDosId: pDos.id, estado: { not: 'eliminado' } },
-              orderBy: { orden: 'asc' }
+              orderBy: { orden: 'asc' },
             });
           }
 
@@ -1059,21 +1283,35 @@ export class LmsService {
           participantes: [],
           currentTurnoId: undefined,
           _isVirtualCourse: true,
-          _isTraditionalModule: true
+          _isTraditionalModule: true,
         };
       }
 
       // 2c. Intentar como Programa Tradicional (programa -> programaDos -> módulo)
       const p1 = await this.prisma.programa.findUnique({
         where: { id },
-        include: { programaDos: { include: { modulos: { where: { estado: 'activo' }, take: 1 } } } }
+        include: {
+          programaDos: {
+            include: { modulos: { where: { estado: 'activo' }, take: 1 } },
+          },
+        },
       });
-      if (p1 && p1.programaDos.length > 0 && p1.programaDos[0].modulos.length > 0) {
-        return this.getCourseContent(p1.programaDos[0].modulos[0].id, userId, passedTurnoId);
+      if (
+        p1 &&
+        p1.programaDos.length > 0 &&
+        p1.programaDos[0].modulos.length > 0
+      ) {
+        return this.getCourseContent(
+          p1.programaDos[0].modulos[0].id,
+          userId,
+          passedTurnoId,
+        );
       }
 
       // Si llegamos aquí, el ID no existe en ninguna tabla
-      throw new NotFoundException(`No se encontró ningún curso o módulo con el ID: ${id}`);
+      throw new NotFoundException(
+        `No se encontró ningún curso o módulo con el ID: ${id}`,
+      );
     }
 
     // 4. Resolver TurnoId y Participantes
@@ -1083,11 +1321,8 @@ export class LmsService {
       const facilitator = await this.prisma.programaDosFacilitador.findFirst({
         where: {
           facilitadorId: userId,
-          OR: [
-            { moduloId: modulo.id },
-            { moduloMaestroId: modulo.id }
-          ]
-        }
+          OR: [{ moduloId: modulo.id }, { moduloMaestroId: modulo.id }],
+        },
       });
 
       if (facilitator) {
@@ -1099,9 +1334,8 @@ export class LmsService {
             personaId: userId,
             ...((modulo as any).isGlobal
               ? { programa: { programaId: (modulo as any).masterProgramaId } }
-              : { programaId: modulo.programaDosId || undefined }
-            )
-          }
+              : { programaId: modulo.programaDosId || undefined }),
+          },
         });
         if (studentEnr) turnoId = studentEnr.turnoId || undefined;
       }
@@ -1112,10 +1346,9 @@ export class LmsService {
       where: {
         ...((modulo as any).isGlobal
           ? { programa: { programaId: (modulo as any).masterProgramaId } }
-          : { programaId: modulo.programaDosId }
-        ),
+          : { programaId: modulo.programaDosId }),
         ...(turnoId ? { turnoId } : {}), // <--- FILTRO DE TURNO
-        estado: { in: ['activo', 'aprobado'] }
+        estado: { in: ['activo', 'aprobado'] },
       },
       include: {
         persona: {
@@ -1124,22 +1357,24 @@ export class LmsService {
             nombre: true,
             apellidos: true,
             imagen: true,
-            correo: true
-          }
-        }
-      }
+            correo: true,
+          },
+        },
+      },
     });
 
     return {
       ...modulo,
-      participantes: participantes.map(p => ({
+      participantes: participantes.map((p) => ({
         ...p,
         persona: {
           ...p.persona,
-          nombreCompleto: `${p.persona?.nombre || ''} ${p.persona?.apellidos || ''}`.trim() || 'Estudiante'
-        }
+          nombreCompleto:
+            `${p.persona?.nombre || ''} ${p.persona?.apellidos || ''}`.trim() ||
+            'Estudiante',
+        },
       })),
-      currentTurnoId: turnoId
+      currentTurnoId: turnoId,
     };
   }
 
@@ -1152,13 +1387,12 @@ export class LmsService {
         cuestionario: {
           include: {
             preguntas: {
-              include: { opciones: true }
-            }
-          }
+              include: { opciones: true },
+            },
+          },
         },
-        categoria: true
-      }
-
+        categoria: true,
+      },
     });
     if (!actividad) throw new NotFoundException('Actividad no encontrada');
     return actividad;
@@ -1168,27 +1402,35 @@ export class LmsService {
     return this.prisma.mod_foro_post.findMany({
       where: { foroId, padreId: null },
       include: {
-        user: { select: { id: true, nombre: true, apellidos: true, imagen: true } },
+        user: {
+          select: { id: true, nombre: true, apellidos: true, imagen: true },
+        },
         respuestas: {
           include: {
-            user: { select: { id: true, nombre: true, apellidos: true, imagen: true } },
-            respuestas: true
-          }
-        }
+            user: {
+              select: { id: true, nombre: true, apellidos: true, imagen: true },
+            },
+            respuestas: true,
+          },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
   }
 
-  async crearPost(foroId: string, userId: string, data: { mensaje: string, padreId?: string }) {
+  async crearPost(
+    foroId: string,
+    userId: string,
+    data: { mensaje: string; padreId?: string },
+  ) {
     try {
       return await this.prisma.mod_foro_post.create({
         data: {
           foroId,
           userId,
           mensaje: data.mensaje,
-          padreId: data.padreId || null
-        }
+          padreId: data.padreId || null,
+        },
       });
     } catch (err) {
       console.error(`[ERROR] LmsService.crearPost → FAILED:`, err);
@@ -1196,10 +1438,14 @@ export class LmsService {
     }
   }
 
-  async submitTarea(tareaId: string, userId: string, data: { texto?: string, archivoUrl?: string } = {}) {
+  async submitTarea(
+    tareaId: string,
+    userId: string,
+    data: { texto?: string; archivoUrl?: string } = {},
+  ) {
     // Upsert entrega
     const entrega = await this.prisma.mod_entrega.findFirst({
-      where: { tareaId, userId }
+      where: { tareaId, userId },
     });
 
     if (entrega) {
@@ -1208,8 +1454,8 @@ export class LmsService {
         data: {
           texto: data.texto,
           archivoUrl: data.archivoUrl,
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       });
     }
 
@@ -1218,20 +1464,24 @@ export class LmsService {
         tareaId,
         userId,
         texto: data.texto,
-        archivoUrl: data.archivoUrl
-      }
+        archivoUrl: data.archivoUrl,
+      },
     });
   }
 
   // --- FACILITADOR ACTIONS ---
 
-  private async validarPuntajeCategoria(categoriaId: string, nuevoPuntaje: number, actividadId?: string) {
+  private async validarPuntajeCategoria(
+    categoriaId: string,
+    nuevoPuntaje: number,
+    actividadId?: string,
+  ) {
     if (!categoriaId) return;
 
     const categoria = await this.prisma.mod_categoria_calificacion.findFirst({
       where: {
         id: categoriaId,
-        estado: 'activo'
+        estado: 'activo',
       },
       include: {
         config: true,
@@ -1239,20 +1489,23 @@ export class LmsService {
           where: {
             esCalificable: true,
             estado: 'activo',
-            ...(actividadId ? { NOT: { id: actividadId } } : {})
-          }
-        }
-      }
+            ...(actividadId ? { NOT: { id: actividadId } } : {}),
+          },
+        },
+      },
     });
 
     if (!categoria || !categoria.config) return;
 
-    const sumaActual = categoria.actividades.reduce((acc, act) => acc + act.puntajeMax, 0);
+    const sumaActual = categoria.actividades.reduce(
+      (acc, act) => acc + act.puntajeMax,
+      0,
+    );
     const limite = categoria.config.peso;
 
     if (sumaActual + nuevoPuntaje > limite) {
       throw new BadRequestException(
-        `El puntaje total en la categoría "${categoria.config.nombre}" excede el límite de ${limite}. Actualmente tienes ${sumaActual} puntos asignados. Puedes asignar máximo ${limite - sumaActual} puntos más.`
+        `El puntaje total en la categoría "${categoria.config.nombre}" excede el límite de ${limite}. Actualmente tienes ${sumaActual} puntos asignados. Puedes asignar máximo ${limite - sumaActual} puntos más.`,
       );
     }
   }
@@ -1260,7 +1513,7 @@ export class LmsService {
   async crearActividad(userId: string, data: any) {
     // 1. Verificar que el usuario es facilitador del modulo
     const unit = await this.prisma.mod_unidad_tematica.findUnique({
-      where: { id: data.unidadId }
+      where: { id: data.unidadId },
     });
     if (!unit) throw new NotFoundException('Unidad temática no encontrada');
 
@@ -1276,9 +1529,9 @@ export class LmsService {
         where: {
           facilitadorId: userId,
           moduloId: unit.moduloId,
-          estado: 'activo'
+          estado: 'activo',
         },
-        include: { modulo: true }
+        include: { modulo: true },
       });
       if (isFacilitador) canEdit = true;
     } else if (unit.moduloMaestroId) {
@@ -1287,21 +1540,23 @@ export class LmsService {
         where: {
           facilitadorId: userId,
           moduloMaestroId: unit.moduloMaestroId,
-          estado: 'activo'
-        }
+          estado: 'activo',
+        },
       });
 
       if (isFacilitador) {
         canEdit = true;
       } else {
         // 2. Fallback: verificar si es facilitador en CUALQUIER módulo de este programa (acceso heredado para globales)
-        const masterMod = await this.prisma.programaModulo.findUnique({ where: { id: unit.moduloMaestroId } });
+        const masterMod = await this.prisma.programaModulo.findUnique({
+          where: { id: unit.moduloMaestroId },
+        });
         isFacilitador = await this.prisma.programaDosFacilitador.findFirst({
           where: {
             facilitadorId: userId,
             programaDos: { programaId: masterMod?.programaId },
-            estado: 'activo'
-          }
+            estado: 'activo',
+          },
         });
         if (isFacilitador) {
           canEdit = true;
@@ -1317,13 +1572,14 @@ export class LmsService {
       const isAdmin = await this.prisma.userRole.findFirst({
         where: {
           userId,
-          role: { name: { in: ['ADMIN', 'SUPER_ADMIN', 'ADMINISTRADOR'] } }
-        }
+          role: { name: { in: ['ADMIN', 'SUPER_ADMIN', 'ADMINISTRADOR'] } },
+        },
       });
       if (isAdmin) canEdit = true;
     }
 
-    if (!canEdit) throw new ForbiddenException('No tienes permisos en este módulo');
+    if (!canEdit)
+      throw new ForbiddenException('No tienes permisos en este módulo');
 
     // 1.5 Validar sumatoria de puntajes si es calificable (Desactivado para sistema promediado)
     // if (data.esCalificable !== false && data.categoriaId) {
@@ -1343,8 +1599,8 @@ export class LmsService {
           fechaInicio: new Date(data.fechaInicio),
           fechaFin: new Date(data.fechaFin),
           categoriaId: data.categoriaId || null,
-          estado: 'activo'
-        }
+          estado: 'activo',
+        },
       });
 
       // 3. Crear subtipo si aplica
@@ -1352,8 +1608,8 @@ export class LmsService {
         await tx.mod_foro.create({
           data: {
             actividadId: actividad.id,
-            permitirFiles: data.permitirFiles ?? true
-          }
+            permitirFiles: data.permitirFiles ?? true,
+          },
         });
       } else if (data.tipo === 'TAREA') {
         await tx.mod_tarea.create({
@@ -1362,19 +1618,23 @@ export class LmsService {
             allowFiles: data.allowFiles ?? true,
             allowText: data.allowText ?? true,
             maxArchivos: data.maxArchivos || 1,
-            tiposArch: data.tiposArch || 'pdf,doc,docx,jpg,png,zip,rar'
-          }
+            tiposArch: data.tiposArch || 'pdf,doc,docx,jpg,png,zip,rar',
+          },
         });
       } else if (data.tipo === 'CUESTIONARIO' || data.tipo === 'FORMULARIO') {
         await tx.mod_cuestionario.create({
           data: {
             actividadId: actividad.id,
             duracion: data.duracion || 60,
-            maxIntentos: data.maxIntentos || 1
-          }
+            maxIntentos: data.maxIntentos || 1,
+          },
         });
       } else if (data.tipo === 'ASISTENCIA') {
-        const esPresencial = data.esPresencial ?? data.mod_asi_presencial ?? data.asistencia?.esPresencial ?? true;
+        const esPresencial =
+          data.esPresencial ??
+          data.mod_asi_presencial ??
+          data.asistencia?.esPresencial ??
+          true;
         await tx.mod_asistencia.create({
           data: {
             actividadId: actividad.id,
@@ -1382,24 +1642,26 @@ export class LmsService {
             moduloId: unit.moduloId || null,
             moduloMaestroId: unit.moduloMaestroId || null,
             turnoId: unit.turnoId || null,
-            esPresencial
-          }
+            esPresencial,
+          },
         });
       }
 
       // 4. Notificar a los estudiantes
-      let modId = unit.moduloId || unit.moduloMaestroId;
+      const modId = unit.moduloId || unit.moduloMaestroId;
       let modName = 'Módulo';
-      let whereInscritos: any = { estado: 'activo' };
+      const whereInscritos: any = { estado: 'activo' };
 
       if (unit.moduloId) {
-        const mod = await tx.programaModuloDos.findUnique({ where: { id: unit.moduloId } });
+        const mod = await tx.programaModuloDos.findUnique({
+          where: { id: unit.moduloId },
+        });
         modName = mod?.nombre || 'Módulo';
         whereInscritos.programaId = mod?.programaDosId;
       } else if (unit.moduloMaestroId) {
         const mod = await tx.programaModulo.findUnique({
           where: { id: unit.moduloMaestroId },
-          include: { programa: true }
+          include: { programa: true },
         });
         modName = mod?.nombre || 'Módulo';
         whereInscritos.programa = { programaId: mod?.programaId };
@@ -1410,7 +1672,7 @@ export class LmsService {
       }
 
       const inscritos = await tx.programaInscripcion.findMany({
-        where: whereInscritos
+        where: whereInscritos,
       });
 
       for (const insc of inscritos) {
@@ -1420,10 +1682,13 @@ export class LmsService {
             titulo: `Nueva Actividad: ${actividad.titulo}`,
             mensaje: `Se ha publicado una nueva actividad en el módulo ${modName}.`,
             tipo: 'NUEVA_ACTIVIDAD',
-            linkRef: `/aula/curso/${modId}/actividad/${actividad.id}`
+            linkRef: `/aula/curso/${modId}/actividad/${actividad.id}`,
           });
         } catch (e) {
-          console.error(`[ERROR] Notification failed for user ${insc.personaId}:`, e);
+          console.error(
+            `[ERROR] Notification failed for user ${insc.personaId}:`,
+            e,
+          );
         }
       }
 
@@ -1434,7 +1699,7 @@ export class LmsService {
   async updateActividad(userId: string, actId: string, data: any) {
     const act = await this.prisma.mod_actividad.findUnique({
       where: { id: actId },
-      include: { unidad: true }
+      include: { unidad: true },
     });
     if (!act) throw new NotFoundException('Actividad no encontrada');
 
@@ -1445,17 +1710,19 @@ export class LmsService {
         where: {
           facilitadorId: userId,
           moduloId: act.unidad.moduloId,
-          estado: 'activo'
-        }
+          estado: 'activo',
+        },
       });
     } else if (act.unidad.moduloMaestroId) {
-      const masterMod = await this.prisma.programaModulo.findUnique({ where: { id: act.unidad.moduloMaestroId } });
+      const masterMod = await this.prisma.programaModulo.findUnique({
+        where: { id: act.unidad.moduloMaestroId },
+      });
       isFacilitador = await this.prisma.programaDosFacilitador.findFirst({
         where: {
           facilitadorId: userId,
           programaDos: { programaId: masterMod?.programaId },
-          estado: 'activo'
-        }
+          estado: 'activo',
+        },
       });
     }
 
@@ -1463,11 +1730,13 @@ export class LmsService {
       const isAdmin = await this.prisma.userRole.findFirst({
         where: {
           userId,
-          role: { name: { in: ['ADMIN', 'SUPER_ADMIN', 'ADMINISTRADOR'] } }
-        }
+          role: { name: { in: ['ADMIN', 'SUPER_ADMIN', 'ADMINISTRADOR'] } },
+        },
       });
       if (!isAdmin) {
-        throw new ForbiddenException('No autorizado para editar actividades en este módulo');
+        throw new ForbiddenException(
+          'No autorizado para editar actividades en este módulo',
+        );
       }
     }
 
@@ -1487,8 +1756,8 @@ export class LmsService {
         puntajeMax: data.puntajeMax,
         esCalificable: data.esCalificable,
         categoriaId: data.categoriaId || null,
-        estado: data.estado || 'activo'
-      }
+        estado: data.estado || 'activo',
+      },
     });
 
     // 2. Actualizar Datos Específicos por Tipo
@@ -1499,33 +1768,36 @@ export class LmsService {
           allowFiles: data.allowFiles ?? true,
           allowText: data.allowText ?? true,
           maxArchivos: data.maxArchivos,
-          tiposArch: data.tiposArch
-        }
+          tiposArch: data.tiposArch,
+        },
       });
     } else if (act.tipo === 'FORO') {
       await this.prisma.mod_foro.updateMany({
         where: { actividadId: actId },
         data: {
-          permitirFiles: data.permitirFiles ?? true
-        }
+          permitirFiles: data.permitirFiles ?? true,
+        },
       });
     } else if (act.tipo === 'CUESTIONARIO' || act.tipo === 'FORMULARIO') {
       await this.prisma.mod_cuestionario.updateMany({
         where: { actividadId: actId },
         data: {
           duracion: data.duracion || 60,
-          maxIntentos: data.maxIntentos || 1
-        }
+          maxIntentos: data.maxIntentos || 1,
+        },
       });
     } else if (act.tipo === 'ASISTENCIA') {
       // Determinar la modalidad: puede venir como esPresencial o mod_asi_presencial
-      const esPresencial = data.esPresencial ?? data.mod_asi_presencial ?? data.asistencia?.esPresencial;
+      const esPresencial =
+        data.esPresencial ??
+        data.mod_asi_presencial ??
+        data.asistencia?.esPresencial;
       await this.prisma.mod_asistencia.updateMany({
         where: { actividadId: actId },
         data: {
           fecha: data.fechaInicio ? new Date(data.fechaInicio) : undefined,
-          ...(esPresencial !== undefined ? { esPresencial } : {})
-        }
+          ...(esPresencial !== undefined ? { esPresencial } : {}),
+        },
       });
     }
 
@@ -1539,8 +1811,8 @@ export class LmsService {
         unidad: true,
         tarea: { select: { id: true } },
         foro: { select: { id: true } },
-        cuestionario: { select: { id: true } }
-      }
+        cuestionario: { select: { id: true } },
+      },
     });
 
     if (!act) throw new NotFoundException('Actividad no encontrada');
@@ -1552,17 +1824,19 @@ export class LmsService {
         where: {
           facilitadorId: userId,
           moduloId: act.unidad.moduloId,
-          estado: 'activo'
-        }
+          estado: 'activo',
+        },
       });
     } else if (act.unidad.moduloMaestroId) {
-      const masterMod = await this.prisma.programaModulo.findUnique({ where: { id: act.unidad.moduloMaestroId } });
+      const masterMod = await this.prisma.programaModulo.findUnique({
+        where: { id: act.unidad.moduloMaestroId },
+      });
       isFacilitador = await this.prisma.programaDosFacilitador.findFirst({
         where: {
           facilitadorId: userId,
           programaDos: { programaId: masterMod?.programaId },
-          estado: 'activo'
-        }
+          estado: 'activo',
+        },
       });
     }
 
@@ -1570,11 +1844,13 @@ export class LmsService {
       const isAdmin = await this.prisma.userRole.findFirst({
         where: {
           userId,
-          role: { name: { in: ['ADMIN', 'SUPER_ADMIN', 'ADMINISTRADOR'] } }
-        }
+          role: { name: { in: ['ADMIN', 'SUPER_ADMIN', 'ADMINISTRADOR'] } },
+        },
       });
       if (!isAdmin) {
-        throw new ForbiddenException('No tiene permisos para eliminar actividades en este módulo');
+        throw new ForbiddenException(
+          'No tiene permisos para eliminar actividades en este módulo',
+        );
       }
     }
 
@@ -1582,65 +1858,102 @@ export class LmsService {
     let hasResponses = false;
 
     if (act.tipo === 'TAREA' && act.tarea) {
-      const count = await this.prisma.mod_entrega.count({ where: { tareaId: act.tarea.id } });
+      const count = await this.prisma.mod_entrega.count({
+        where: { tareaId: act.tarea.id },
+      });
       if (count > 0) hasResponses = true;
     } else if (act.tipo === 'FORO' && act.foro) {
-      const count = await this.prisma.mod_foro_post.count({ where: { foroId: act.foro.id } });
+      const count = await this.prisma.mod_foro_post.count({
+        where: { foroId: act.foro.id },
+      });
       if (count > 0) hasResponses = true;
-    } else if ((act.tipo === 'CUESTIONARIO' || act.tipo === 'FORMULARIO') && act.cuestionario) {
-      const count = await this.prisma.mod_intento.count({ where: { cuestionarioId: act.cuestionario.id } });
+    } else if (
+      (act.tipo === 'CUESTIONARIO' || act.tipo === 'FORMULARIO') &&
+      act.cuestionario
+    ) {
+      const count = await this.prisma.mod_intento.count({
+        where: { cuestionarioId: act.cuestionario.id },
+      });
       if (count > 0) hasResponses = true;
     } else if (act.tipo === 'ASISTENCIA') {
-      const session = await this.prisma.mod_asistencia.findFirst({ where: { actividadId: actId } });
+      const session = await this.prisma.mod_asistencia.findFirst({
+        where: { actividadId: actId },
+      });
       if (session) {
-        const count = await this.prisma.mod_asistencia_reg.count({ where: { asistenciaId: session.id } });
+        const count = await this.prisma.mod_asistencia_reg.count({
+          where: { asistenciaId: session.id },
+        });
         if (count > 0) hasResponses = true;
       }
     }
 
     if (hasResponses) {
-      throw new BadRequestException('No se puede eliminar la actividad porque ya cuenta con respuestas o registros de estudiantes.');
+      throw new BadRequestException(
+        'No se puede eliminar la actividad porque ya cuenta con respuestas o registros de estudiantes.',
+      );
     }
 
-    // 3. Proceder con el borrado suave (soft delete)
-    return this.prisma.mod_actividad.update({
-      where: { id: actId },
-      data: { estado: 'eliminado' }
+    // 3. Proceder con el borrado suave (soft delete) en transacción para limpiar asistencia si es necesario
+    return this.prisma.$transaction(async (tx) => {
+      // Si es asistencia, borrar físicamente los registros asociados (porque mod_asistencia no tiene 'estado')
+      if (act.tipo === 'ASISTENCIA') {
+        const session = await tx.mod_asistencia.findUnique({
+          where: { actividadId: actId },
+        });
+
+        if (session) {
+          // Primero borrar registros (si existen)
+          await tx.mod_asistencia_reg.deleteMany({
+            where: { asistenciaId: session.id },
+          });
+          // Luego borrar la sesión
+          await tx.mod_asistencia.delete({
+            where: { id: session.id },
+          });
+        }
+      }
+
+      // Marcar actividad como eliminada
+      return tx.mod_actividad.update({
+        where: { id: actId },
+        data: { estado: 'eliminado' },
+      });
     });
   }
 
   async getCategoriasCalificacion(moduloId: string) {
     const data = await this.prisma.mod_categoria_calificacion.findMany({
       where: {
-        OR: [
-          { moduloId: moduloId },
-          { moduloMaestroId: moduloId }
-        ],
-        estado: 'activo'
+        OR: [{ moduloId: moduloId }, { moduloMaestroId: moduloId }],
+        estado: 'activo',
       },
       include: {
         config: true,
         actividades: {
-          where: { esCalificable: true, estado: 'activo' }
-        }
-      }
+          where: { esCalificable: true, estado: 'activo' },
+        },
+      },
     });
 
-    return data.map(c => ({
+    return data.map((c) => ({
       id: c.id,
       nombre: c.config.nombre,
       ponderacion: c.config.peso,
       puntosAsignados: c.actividades.reduce((acc, a) => acc + a.puntajeMax, 0),
       esEvalFinal: c.config.esEvalFinal,
-      configId: c.configId
+      configId: c.configId,
     }));
   }
 
-  async crearCategoriaCalificacion(facilitadorId: string, moduloId: string, data: any) {
+  async crearCategoriaCalificacion(
+    facilitadorId: string,
+    moduloId: string,
+    data: any,
+  ) {
     // 1. Verificar permisos
     let isFacilitador = await this.prisma.programaDosFacilitador.findFirst({
       where: { facilitadorId, moduloId, estado: 'activo' },
-      include: { programaDos: true }
+      include: { programaDos: true },
     });
 
     let tipoId: string | undefined = isFacilitador?.programaDos?.tipoId;
@@ -1650,24 +1963,27 @@ export class LmsService {
     if (!isFacilitador) {
       const master = await this.prisma.programaModulo.findUnique({
         where: { id: moduloId },
-        include: { programa: true }
+        include: { programa: true },
       });
       if (master) {
         isMaster = true;
         tipoId = master.programa.tipoId;
         // Verificar si es facilitador de CUALQUIER oferta de este programa
-        isFacilitador = await this.prisma.programaDosFacilitador.findFirst({
+        isFacilitador = (await this.prisma.programaDosFacilitador.findFirst({
           where: {
             facilitadorId,
             estado: 'activo',
-            programaDos: { programaId: master.programaId }
-          }
-        }) as any;
+            programaDos: { programaId: master.programaId },
+          },
+        })) as any;
       }
     }
 
     if (!isFacilitador) throw new ForbiddenException('No autorizado');
-    if (!tipoId) throw new BadRequestException('No se pudo determinar el tipo de programa');
+    if (!tipoId)
+      throw new BadRequestException(
+        'No se pudo determinar el tipo de programa',
+      );
 
     // 2. Crear un config dinámico
     const config = await this.prisma.mod_tipo_calificacion_config.create({
@@ -1675,8 +1991,8 @@ export class LmsService {
         tipoProgramaId: tipoId,
         nombre: data.nombre,
         peso: data.ponderacion,
-        estado: 'activo'
-      }
+        estado: 'activo',
+      },
     });
 
     // 3. Vincular al módulo
@@ -1684,16 +2000,16 @@ export class LmsService {
       data: {
         ...(isMaster ? { moduloMaestroId: moduloId } : { moduloId }),
         configId: config.id,
-        estado: 'activo'
+        estado: 'activo',
       },
-      include: { config: true }
+      include: { config: true },
     });
   }
 
   async verificarPago(inscripcionId: string) {
     const inscripcion = await this.prisma.programaInscripcion.findUnique({
       where: { id: inscripcionId },
-      include: { programa: true }
+      include: { programa: true },
     });
     if (!inscripcion) throw new NotFoundException('Inscripción no encontrada');
 
@@ -1703,10 +2019,12 @@ export class LmsService {
 
     return {
       inscripcionId,
-      pagoCompleto: baucher ? baucher.monto >= inscripcion.programa.costo : false,
+      pagoCompleto: baucher
+        ? baucher.monto >= inscripcion.programa.costo
+        : false,
       montoPagado: baucher?.monto || 0,
       costoRequerido: inscripcion.programa.costo,
-      confirmado: baucher?.confirmado || false
+      confirmado: baucher?.confirmado || false,
     };
   }
   async getModuloUnidades(userId: string, moduloId: string, turnoId?: string) {
@@ -1714,31 +2032,33 @@ export class LmsService {
     const isFacilitador = await this.prisma.programaDosFacilitador.findFirst({
       where: {
         facilitadorId: userId,
-        OR: [
-          { moduloId: moduloId },
-          { moduloMaestroId: moduloId }
-        ]
-      }
+        OR: [{ moduloId: moduloId }, { moduloMaestroId: moduloId }],
+      },
     });
 
     // Fallback: facilitador directo en programaModulo (campo facilitadorId)
     if (!isFacilitador) {
-      const directMaster = await this.prisma.programaModulo.findFirst({
-        where: { id: moduloId, facilitadorId: userId }
-      }).catch(() => null);
-      if (!directMaster) throw new ForbiddenException('No autorizado para este módulo');
+      const directMaster = await this.prisma.programaModulo
+        .findFirst({
+          where: { id: moduloId, facilitadorId: userId },
+        })
+        .catch(() => null);
+      if (!directMaster)
+        throw new ForbiddenException('No autorizado para este módulo');
     }
 
     // Para módulo maestro, las unidades se buscan por moduloMaestroId
-    const isMaster = await this.prisma.programaModulo.findUnique({ where: { id: moduloId } }).catch(() => null);
+    const isMaster = await this.prisma.programaModulo
+      .findUnique({ where: { id: moduloId } })
+      .catch(() => null);
     if (isMaster) {
       return this.prisma.mod_unidad_tematica.findMany({
         where: {
           moduloMaestroId: moduloId,
           estado: 'activo',
-          ...(turnoId ? { turnoId } : {})
+          ...(turnoId ? { turnoId } : {}),
         },
-        orderBy: { semana: 'asc' }
+        orderBy: { semana: 'asc' },
       });
     }
 
@@ -1746,9 +2066,9 @@ export class LmsService {
       where: {
         moduloId,
         estado: 'activo',
-        ...(turnoId ? { turnoId } : {})
+        ...(turnoId ? { turnoId } : {}),
       },
-      orderBy: { semana: 'asc' }
+      orderBy: { semana: 'asc' },
     });
   }
 
@@ -1757,11 +2077,13 @@ export class LmsService {
     let isMasterGlobal = false;
 
     // 1. ¿Es un módulo maestro global (programaModulo)?
-    const masterModulo = await this.prisma.programaModulo.findUnique({ where: { id: moduloId } }).catch(() => null);
+    const masterModulo = await this.prisma.programaModulo
+      .findUnique({ where: { id: moduloId } })
+      .catch(() => null);
     if (masterModulo) {
       // Verificar que el usuario es facilitador de este módulo maestro
       const isFacilitador = await this.prisma.programaDosFacilitador.findFirst({
-        where: { facilitadorId: userId, moduloMaestroId: moduloId }
+        where: { facilitadorId: userId, moduloMaestroId: moduloId },
       });
       const isDirectFac = masterModulo.facilitadorId === userId;
 
@@ -1772,26 +2094,33 @@ export class LmsService {
           where: {
             facilitadorId: userId,
             estado: 'activo',
-            programaDos: { programaId: masterModulo.programaId }
-          }
+            programaDos: { programaId: masterModulo.programaId },
+          },
         });
         if (fac) isProgramFac = true;
       }
 
-      if (!isFacilitador && !isDirectFac && !isProgramFac) throw new ForbiddenException('No autorizado para este módulo global');
+      if (!isFacilitador && !isDirectFac && !isProgramFac)
+        throw new ForbiddenException('No autorizado para este módulo global');
       isMasterGlobal = true;
     } else {
       // 2. ¿Es un módulo LMS real (programaModuloDos)?
-      const moduloReal = await this.prisma.programaModuloDos.findUnique({ where: { id: moduloId } });
+      const moduloReal = await this.prisma.programaModuloDos.findUnique({
+        where: { id: moduloId },
+      });
 
       if (!moduloReal) {
         // 3. Puede ser un ProgramaDos ID (curso virtual sin módulos creados aún)
-        const p2 = await this.prisma.programaDos.findUnique({ where: { id: moduloId } });
+        const p2 = await this.prisma.programaDos.findUnique({
+          where: { id: moduloId },
+        });
         if (p2) {
-          const isFacilitador = await this.prisma.programaDosFacilitador.findFirst({
-            where: { facilitadorId: userId, programaDosId: moduloId }
-          });
-          if (!isFacilitador) throw new UnauthorizedException('No autorizado para este programa');
+          const isFacilitador =
+            await this.prisma.programaDosFacilitador.findFirst({
+              where: { facilitadorId: userId, programaDosId: moduloId },
+            });
+          if (!isFacilitador)
+            throw new UnauthorizedException('No autorizado para este programa');
 
           // Crear el primer módulo automáticamente
           const nuevoModulo = await this.prisma.programaModuloDos.create({
@@ -1804,12 +2133,12 @@ export class LmsService {
               estado: 'activo',
               fechaInicio: p2.fechaInicioClases,
               fechaFin: p2.fechaFinInscripcion,
-            }
+            },
           });
 
           await this.prisma.programaDosFacilitador.updateMany({
             where: { facilitadorId: userId, programaDosId: moduloId },
-            data: { moduloId: nuevoModulo.id }
+            data: { moduloId: nuevoModulo.id },
           });
 
           realModuloId = nuevoModulo.id;
@@ -1822,62 +2151,70 @@ export class LmsService {
           where: {
             facilitadorId: userId,
             estado: 'activo',
-            OR: [
-              { moduloId: realModuloId },
-              { moduloMaestroId: realModuloId }
-            ]
-          }
+            OR: [{ moduloId: realModuloId }, { moduloMaestroId: realModuloId }],
+          },
         });
 
         // FALLBACK para Master Modules
         if (!isFacilitador && isMasterGlobal) {
-          const masterMod = await this.prisma.programaModulo.findUnique({ where: { id: realModuloId } });
+          const masterMod = await this.prisma.programaModulo.findUnique({
+            where: { id: realModuloId },
+          });
           isFacilitador = await this.prisma.programaDosFacilitador.findFirst({
             where: {
               facilitadorId: userId,
               estado: 'activo',
-              programaDos: { programaId: masterMod?.programaId }
-            }
+              programaDos: { programaId: masterMod?.programaId },
+            },
           });
         }
 
-        if (!isFacilitador) throw new ForbiddenException('No autorizado para este módulo');
+        if (!isFacilitador)
+          throw new ForbiddenException('No autorizado para este módulo');
       }
     }
 
     // Para módulos maestros globales, usar moduloMaestroId en lugar de moduloId
     return this.prisma.mod_unidad_tematica.create({
       data: {
-        ...(isMasterGlobal ? { moduloMaestroId: realModuloId } : { moduloId: realModuloId }),
+        ...(isMasterGlobal
+          ? { moduloMaestroId: realModuloId }
+          : { moduloId: realModuloId }),
         titulo: data.titulo || 'Nueva Unidad',
         descripcion: data.descripcion,
         semana: Number(data.semana) || 1,
         orden: Number(data.orden) || 0,
         fechaInicio: data.fechaInicio ? new Date(data.fechaInicio) : new Date(),
-        fechaFin: data.fechaFin ? new Date(data.fechaFin) : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        fechaFin: data.fechaFin
+          ? new Date(data.fechaFin)
+          : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
         estado: 'activo',
-        turnoId: data.turnoId || undefined
-      }
+        turnoId: data.turnoId || undefined,
+      },
     });
   }
 
-  async updateModuloUnidad(userId: string, moduloId: string, unidadId: string, data: any) {
-    let isFacilitador = await this.prisma.programaDosFacilitador.findFirst({
+  async updateModuloUnidad(
+    userId: string,
+    moduloId: string,
+    unidadId: string,
+    data: any,
+  ) {
+    const isFacilitador = await this.prisma.programaDosFacilitador.findFirst({
       where: {
         facilitadorId: userId,
         estado: 'activo',
-        OR: [
-          { moduloId: moduloId },
-          { moduloMaestroId: moduloId }
-        ]
-      }
+        OR: [{ moduloId: moduloId }, { moduloMaestroId: moduloId }],
+      },
     });
 
     if (!isFacilitador) {
       // Fallback 1: facilitador directo en programaModulo
-      const masterMod = await this.prisma.programaModulo.findUnique({
-        where: { id: moduloId }
-      }).catch(() => null);
+      const masterMod = await this.prisma.programaModulo
+        .findUnique({
+          where: { id: moduloId },
+        })
+        .catch(() => null);
 
       const isDirectFac = masterMod?.facilitadorId === userId;
 
@@ -1888,13 +2225,14 @@ export class LmsService {
           where: {
             facilitadorId: userId,
             estado: 'activo',
-            programaDos: { programaId: masterMod.programaId }
-          }
+            programaDos: { programaId: masterMod.programaId },
+          },
         });
         if (fac) isProgramFac = true;
       }
 
-      if (!isDirectFac && !isProgramFac) throw new UnauthorizedException('No autorizado para este módulo');
+      if (!isDirectFac && !isProgramFac)
+        throw new UnauthorizedException('No autorizado para este módulo');
     }
 
     return this.prisma.mod_unidad_tematica.update({
@@ -1906,27 +2244,30 @@ export class LmsService {
         orden: data.orden !== undefined ? Number(data.orden) : undefined,
         fechaInicio: data.fechaInicio ? new Date(data.fechaInicio) : undefined,
         fechaFin: data.fechaFin ? new Date(data.fechaFin) : undefined,
-        estado: data.estado
-      }
+        estado: data.estado,
+      },
     });
   }
 
-  async eliminarModuloUnidad(userId: string, moduloId: string, unidadId: string) {
-    let isFacilitador = await this.prisma.programaDosFacilitador.findFirst({
+  async eliminarModuloUnidad(
+    userId: string,
+    moduloId: string,
+    unidadId: string,
+  ) {
+    const isFacilitador = await this.prisma.programaDosFacilitador.findFirst({
       where: {
         facilitadorId: userId,
         estado: 'activo',
-        OR: [
-          { moduloId: moduloId },
-          { moduloMaestroId: moduloId }
-        ]
-      }
+        OR: [{ moduloId: moduloId }, { moduloMaestroId: moduloId }],
+      },
     });
     if (!isFacilitador) {
       // Fallback 1: facilitador directo en programaModulo
-      const masterMod = await this.prisma.programaModulo.findUnique({
-        where: { id: moduloId }
-      }).catch(() => null);
+      const masterMod = await this.prisma.programaModulo
+        .findUnique({
+          where: { id: moduloId },
+        })
+        .catch(() => null);
 
       const isDirectFac = masterMod?.facilitadorId === userId;
 
@@ -1937,25 +2278,28 @@ export class LmsService {
           where: {
             facilitadorId: userId,
             estado: 'activo',
-            programaDos: { programaId: masterMod.programaId }
-          }
+            programaDos: { programaId: masterMod.programaId },
+          },
         });
         if (fac) isProgramFac = true;
       }
 
-      if (!isDirectFac && !isProgramFac) throw new UnauthorizedException('No autorizado para este módulo');
+      if (!isDirectFac && !isProgramFac)
+        throw new UnauthorizedException('No autorizado para este módulo');
     }
 
     return this.prisma.mod_unidad_tematica.update({
       where: { id: unidadId },
-      data: { estado: 'eliminado' } // Soft delete
+      data: { estado: 'eliminado' }, // Soft delete
     });
   }
 
   // ─── RECURSOS (PDF, LINKS, VIDEOS) ──────────────────────────
 
   async crearRecurso(userId: string, data: any) {
-    const unit = await this.prisma.mod_unidad_tematica.findUnique({ where: { id: data.unidadId } });
+    const unit = await this.prisma.mod_unidad_tematica.findUnique({
+      where: { id: data.unidadId },
+    });
     if (!unit) throw new NotFoundException('Unidad no encontrada');
 
     return this.prisma.mod_recurso.create({
@@ -1966,19 +2310,30 @@ export class LmsService {
         url: data.url,
         descripcion: data.descripcion,
         orden: data.orden || 0,
-        estado: 'activo'
-      }
+        estado: 'activo',
+      },
     });
   }
+
+
 
   async deleteRecurso(userId: string, id: string) {
     return this.prisma.mod_recurso.update({
       where: { id },
-      data: { estado: 'eliminado' }
+      data: { estado: 'eliminado' },
     });
   }
 
-  async updateRecurso(userId: string, id: string, data: { titulo?: string; tipo?: string; url?: string; descripcion?: string }) {
+  async updateRecurso(
+    userId: string,
+    id: string,
+    data: {
+      titulo?: string;
+      tipo?: string;
+      url?: string;
+      descripcion?: string;
+    },
+  ) {
     const recurso = await this.prisma.mod_recurso.findUnique({ where: { id } });
     if (!recurso) throw new NotFoundException('Recurso no encontrado');
 
@@ -1989,19 +2344,22 @@ export class LmsService {
         ...(data.tipo ? { tipo: data.tipo as any } : {}),
         url: data.url ?? recurso.url,
         descripcion: data.descripcion ?? recurso.descripcion,
-      }
+      },
     });
   }
 
-  async reordenarRecursos(userId: string, items: { id: string, orden: number }[]) {
+  async reordenarRecursos(
+    userId: string,
+    items: { id: string; orden: number }[],
+  ) {
     try {
       return await this.prisma.$transaction(
-        items.map(item =>
+        items.map((item) =>
           this.prisma.mod_recurso.update({
             where: { id: item.id },
-            data: { orden: item.orden }
-          })
-        )
+            data: { orden: item.orden },
+          }),
+        ),
       );
     } catch (err) {
       console.error(`[ERROR] LmsService.reordenarRecursos:`, err);
@@ -2009,15 +2367,18 @@ export class LmsService {
     }
   }
 
-  async reordenarActividades(userId: string, items: { id: string, orden: number }[]) {
+  async reordenarActividades(
+    userId: string,
+    items: { id: string; orden: number }[],
+  ) {
     try {
       return await this.prisma.$transaction(
-        items.map(item =>
+        items.map((item) =>
           this.prisma.mod_actividad.update({
             where: { id: item.id },
-            data: { orden: item.orden }
-          })
-        )
+            data: { orden: item.orden },
+          }),
+        ),
       );
     } catch (err) {
       console.error(`[ERROR] LmsService.reordenarActividades:`, err);
@@ -2033,8 +2394,8 @@ export class LmsService {
       include: {
         unidad: true,
         tarea: true,
-        foro: { include: { posts: true } }
-      }
+        foro: { include: { posts: true } },
+      },
     });
 
     if (!act) throw new NotFoundException('Actividad no encontrada');
@@ -2044,8 +2405,8 @@ export class LmsService {
       where: {
         facilitadorId: userId,
         moduloId: act.unidad.moduloId || undefined,
-        estado: 'activo'
-      }
+        estado: 'activo',
+      },
     });
 
     if (act.tipo === 'TAREA' && act.tarea) {
@@ -2055,23 +2416,25 @@ export class LmsService {
       const entregas = await this.prisma.mod_entrega.findMany({
         where: whereClause,
         include: {
-          user: { select: { id: true, nombre: true, apellidos: true, imagen: true } }
+          user: {
+            select: { id: true, nombre: true, apellidos: true, imagen: true },
+          },
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
       });
 
       // Obtener notas para estas entregas
-      const userIds = [...new Set(entregas.map(e => e.userId))];
+      const userIds = [...new Set(entregas.map((e) => e.userId))];
       const notas = await this.prisma.mod_nota_actividad.findMany({
         where: {
           actividadId,
-          userId: { in: userIds }
-        }
+          userId: { in: userIds },
+        },
       });
 
-      return entregas.map(e => ({
+      return entregas.map((e) => ({
         ...e,
-        nota: notas.find(n => n.userId === e.userId) || null
+        nota: notas.find((n) => n.userId === e.userId) || null,
       }));
     }
 
@@ -2082,19 +2445,23 @@ export class LmsService {
       const posts = await this.prisma.mod_foro_post.findMany({
         where: whereClause,
         include: {
-          user: { select: { id: true, nombre: true, apellidos: true, imagen: true } }
-        }
+          user: {
+            select: { id: true, nombre: true, apellidos: true, imagen: true },
+          },
+        },
       });
 
       const notas = await this.prisma.mod_nota_actividad.findMany({
-        where: { actividadId, userId: { in: posts.map(p => p.userId) } }
+        where: { actividadId, userId: { in: posts.map((p) => p.userId) } },
       });
 
-      return posts.map(p => {
-        const nota = notas.find(n => n.userId === p.userId);
+      return posts.map((p) => {
+        const nota = notas.find((n) => n.userId === p.userId);
         return {
           ...p,
-          nota: nota ? { nota: nota.nota, observacion: nota.observacion } : null
+          nota: nota
+            ? { nota: nota.nota, observacion: nota.observacion }
+            : null,
         };
       });
     }
@@ -2102,11 +2469,20 @@ export class LmsService {
     return [];
   }
 
-  async calificarEntrega(userId: string, data: { actividadId: string, targetUserId: string, nota: number, retro?: string, tipoTarget: 'TAREA' | 'FORO' }) {
+  async calificarEntrega(
+    userId: string,
+    data: {
+      actividadId: string;
+      targetUserId: string;
+      nota: number;
+      retro?: string;
+      tipoTarget: 'TAREA' | 'FORO';
+    },
+  ) {
     // 1. Verificar facultativo
     const act = await this.prisma.mod_actividad.findUnique({
       where: { id: data.actividadId },
-      include: { unidad: true, tarea: true, foro: true }
+      include: { unidad: true, tarea: true, foro: true },
     });
     if (!act) throw new NotFoundException('Actividad no encontrada');
 
@@ -2115,17 +2491,17 @@ export class LmsService {
         facilitadorId: userId,
         OR: [
           { moduloId: act.unidad.moduloId || undefined },
-          { moduloMaestroId: act.unidad.moduloMaestroId || undefined }
+          { moduloMaestroId: act.unidad.moduloMaestroId || undefined },
         ],
-        estado: 'activo'
-      }
+        estado: 'activo',
+      },
     });
     if (!isFacReal) throw new UnauthorizedException('No autorizado');
 
     // 2. Si es TAREA, actualizar mod_entrega
     if (data.tipoTarget === 'TAREA' && act.tarea) {
       const entrega = await this.prisma.mod_entrega.findFirst({
-        where: { tareaId: act.tarea.id, userId: data.targetUserId }
+        where: { tareaId: act.tarea.id, userId: data.targetUserId },
       });
       if (entrega) {
         await this.prisma.mod_entrega.update({
@@ -2133,8 +2509,8 @@ export class LmsService {
           data: {
             nota: data.nota,
             retroalimentacion: data.retro,
-            calificada: true
-          }
+            calificada: true,
+          },
         });
       }
     }
@@ -2144,20 +2520,20 @@ export class LmsService {
       where: {
         actividadId_userId: {
           actividadId: data.actividadId,
-          userId: data.targetUserId
-        }
+          userId: data.targetUserId,
+        },
       },
       update: {
         nota: data.nota,
-        observacion: data.retro
+        observacion: data.retro,
       },
       create: {
         actividadId: data.actividadId,
         userId: data.targetUserId,
         nota: data.nota,
         observacion: data.retro,
-        entroRegistro: true
-      }
+        entroRegistro: true,
+      },
     });
 
     // 4. Notificar al estudiante
@@ -2167,168 +2543,363 @@ export class LmsService {
         titulo: `Actividad Calificada: ${act.titulo}`,
         mensaje: `Tu entrega en "${act.titulo}" ha sido calificada con ${data.nota} puntos.`,
         tipo: 'ENTREGA_CALIFICADA',
-        linkRef: `/aula/curso/${act.unidad.moduloId}/actividad/${act.id}`
+        linkRef: `/aula/curso/${act.unidad.moduloId}/actividad/${act.id}`,
       });
     } catch (e) {
-      console.error('Error enviando notificación de calificación:', e);
+      console.error('Error enviando notificacion de calificacion:', e);
     }
 
     return notaOficial;
   }
 
-  async getReporteCalificaciones(userId: string, moduloId: string, turnoId?: string) {
-    // 1. Verificar facultador
-    const isFacilitador = await this.prisma.programaDosFacilitador.findFirst({
-      where: {
-        facilitadorId: userId,
-        OR: [
-          { moduloId: moduloId },
-          { moduloMaestroId: moduloId }
-        ],
-        estado: 'activo'
-      }
-    });
+  /**
+   * Para ESTUDIANTES: sus propias notas por modulo, agrupadas por categoria.
+   */
+  async getMisCalificacionesPorModulo(userId: string, moduloId: string) {
+    // 1. Obtener todas las categorías configuradas para este módulo
+    const categoriasModulo =
+      await this.prisma.mod_categoria_calificacion.findMany({
+        where: {
+          OR: [{ moduloId }, { moduloMaestroId: moduloId }],
+          estado: 'activo',
+        },
+        include: { config: true },
+        orderBy: { config: { orden: 'asc' } },
+      });
 
-    if (!isFacilitador) {
-      const directMaster = await this.prisma.programaModulo.findFirst({
-        where: { id: moduloId, facilitadorId: userId }
-      }).catch(() => null);
-      if (!directMaster) throw new ForbiddenException('No autorizado para ver este reporte');
-    }
-
-    // 2. Obtener todas las actividades calificables
     const actividades = await this.prisma.mod_actividad.findMany({
       where: {
         unidad: {
-          OR: [
-            { moduloId: moduloId },
-            { moduloMaestroId: moduloId }
-          ],
-          estado: 'activo'
+          OR: [{ moduloId }, { moduloMaestroId: moduloId }],
+          estado: 'activo',
         },
         esCalificable: true,
-        estado: { not: 'eliminado' }
+        estado: { not: 'eliminado' },
       },
-      include: {
-        categoria: { include: { config: true } }
-      },
-      orderBy: [
-        { unidad: { semana: 'asc' } },
-        { orden: 'asc' }
-      ]
+      include: { categoria: { include: { config: true } } },
+      orderBy: [{ unidad: { semana: 'asc' } }, { orden: 'asc' }],
     });
 
-    // 3. Obtener estudiantes
+    const notas = await this.prisma.mod_nota_actividad.findMany({
+      where: { actividadId: { in: actividades.map((a) => a.id) }, userId },
+    });
+    const notaMap = new Map(notas.map((n) => [n.actividadId, n]));
+
+    const catMap = new Map<
+      string,
+      {
+        nombre: string;
+        peso: number;
+        orden: number;
+        esEvalFinal: boolean;
+        actividades: any[];
+      }
+    >();
+    for (const cat of categoriasModulo) {
+      catMap.set(cat.id, {
+        nombre: cat.config?.nombre ?? 'General',
+        peso: cat.config?.peso ?? 0,
+        orden: cat.config?.orden ?? 99,
+        esEvalFinal: cat.config?.esEvalFinal ?? false,
+        actividades: [],
+      });
+    }
+
+    for (const act of actividades) {
+      const catId = act.categoriaId;
+      if (!catId) continue;
+
+      const config = (act.categoria as any)?.config;
+      if (!catMap.has(catId)) {
+        catMap.set(catId, {
+          nombre: config?.nombre ?? 'General',
+          peso: config?.peso ?? 0,
+          orden: config?.orden ?? 99,
+          esEvalFinal: config?.esEvalFinal ?? false,
+          actividades: [],
+        });
+      }
+      const nota = notaMap.get(act.id);
+      catMap.get(catId)!.actividades.push({
+        id: act.id,
+        titulo: act.titulo,
+        tipo: act.tipo,
+        puntajeMax: act.puntajeMax ?? 100,
+        nota: nota ? nota.nota : null,
+        observacion: nota?.observacion ?? null,
+        completado: !!nota,
+      });
+    }
+
+    let totalPonderado = 0;
+    const categorias = [...catMap.values()]
+      .sort((a, b) => a.orden - b.orden)
+      .map((cat) => {
+        const suma = cat.actividades.reduce((acc, a) => {
+          const n = a.nota ?? 0;
+          return acc + (n / (a.puntajeMax || 100)) * 100;
+        }, 0);
+        const promedio =
+          cat.actividades.length > 0 ? suma / cat.actividades.length : 0;
+        const aporte = (promedio * cat.peso) / 100;
+        totalPonderado += aporte;
+        return {
+          nombre: cat.nombre,
+          ponderacion: cat.peso,
+          esEvalFinal: cat.esEvalFinal,
+          totalCategoria: Math.round(promedio * 10) / 10,
+          aporteNota: Math.round(aporte * 10) / 10,
+          actividades: cat.actividades,
+        };
+      });
+
+    const moduloInfo = await this.prisma.programaModuloDos
+      .findUnique({
+        where: { id: moduloId },
+        include: {
+          programaDos: {
+            include: {
+              tipo: { select: { notaMaxima: true, notaReprobacion: true } },
+            },
+          },
+        },
+      })
+      .catch(() => null);
+
+    return {
+      categorias,
+      totalAcumulado: Math.round(totalPonderado * 10) / 10,
+      notaMaxima: (moduloInfo?.programaDos as any)?.tipo?.notaMaxima ?? 100,
+      notaReprobacion:
+        (moduloInfo?.programaDos as any)?.tipo?.notaReprobacion ?? 60,
+    };
+  }
+
+  async getReporteCalificaciones(
+    userId: string,
+    moduloId: string,
+    turnoId?: string,
+  ) {
+    // 1. Verificar facilitador
+    const isFacilitador = await this.prisma.programaDosFacilitador.findFirst({
+      where: {
+        facilitadorId: userId,
+        OR: [{ moduloId: moduloId }, { moduloMaestroId: moduloId }],
+        estado: 'activo',
+      },
+    });
+
+    if (!isFacilitador) {
+      const directMaster = await this.prisma.programaModulo
+        .findFirst({ where: { id: moduloId, facilitadorId: userId } })
+        .catch(() => null);
+      if (!directMaster)
+        throw new ForbiddenException('No autorizado para ver este reporte');
+    }
+
+    // 2. Obtener tipo de programa para traer la configuración académica (mod_tipo_calificacion_config)
+    let tipoId: string | null = null;
+    const modDos = await this.prisma.programaModuloDos.findUnique({
+      where: { id: moduloId },
+      include: { programaDos: true }
+    }).catch(() => null);
+
+    if (modDos) {
+      tipoId = modDos.programaDos.tipoId;
+    } else {
+      const modMaestro = await this.prisma.programaModulo.findUnique({
+        where: { id: moduloId },
+        include: { programa: true }
+      }).catch(() => null);
+      if (modMaestro) tipoId = modMaestro.programa.tipoId;
+    }
+
+    // 3. Obtener categorías configuradas (fuente de verdad del programa académico)
+    const configCategorias = tipoId ? await this.prisma.mod_tipo_calificacion_config.findMany({
+      where: { tipoProgramaId: tipoId, estado: 'activo' },
+      orderBy: { orden: 'asc' }
+    }) : [];
+
+    // 4. Obtener las instancias reales del módulo (para saber si hay actividades en categorías extras o diferentes)
+    const instanciasCategorias = await this.prisma.mod_categoria_calificacion.findMany({
+      where: {
+        OR: [{ moduloId }, { moduloMaestroId: moduloId }],
+        estado: 'activo'
+      },
+      include: { config: true }
+    });
+
+    // 5. Obtener actividades calificables
+    const actividades = await this.prisma.mod_actividad.findMany({
+      where: {
+        unidad: {
+          OR: [{ moduloId }, { moduloMaestroId: moduloId }],
+          estado: 'activo',
+        },
+        esCalificable: true,
+        estado: { not: 'eliminado' },
+      },
+      include: { categoria: { include: { config: true } } },
+      orderBy: [{ unidad: { semana: 'asc' } }, { orden: 'asc' }],
+    });
+
+    // 6. Obtener estudiantes
     const estudiantes = await this.getEstudiantesPorCurso(moduloId, turnoId as any);
 
-    // 4. Obtener todas las notas de los estudiantes para estas actividades
+    // 7. Obtener todas las notas
     const todasLasNotas = await this.prisma.mod_nota_actividad.findMany({
       where: {
-        actividadId: { in: actividades.map(a => a.id) },
-        userId: { in: estudiantes.map(e => e.personaId) }
-      }
+        actividadId: { in: actividades.map((a) => a.id) },
+        userId: { in: estudiantes.map((e) => e.personaId) },
+      },
     });
 
-    // 4.5 Obtener asistencias para insignias y reporte
+    // 8. Asistencia para reporte
     const sesiones = await this.prisma.mod_asistencia.findMany({
       where: {
-        OR: [
-          { moduloId: moduloId },
-          { moduloMaestroId: moduloId }
+        AND: [
+          { OR: [{ moduloId: moduloId }, { moduloMaestroId: moduloId }] },
+          {
+            OR: [
+              { actividadId: null },
+              { actividad: { estado: { not: 'eliminado' } } }
+            ]
+          }
         ]
-      }
+      },
     });
     const asistenciasEntregadas = await this.prisma.mod_asistencia_reg.findMany({
       where: {
-        asistenciaId: { in: sesiones.map(s => s.id) },
-        userId: { in: estudiantes.map(e => e.personaId) }
+        asistenciaId: { in: sesiones.map((s) => s.id) },
+        userId: { in: estudiantes.map((e) => e.personaId) },
+      },
+    });
+
+    // 9. Construir mapa de categorías (ConfigId -> Actividades)
+    const catMap = new Map<string, {
+      configId: string | null;
+      nombre: string;
+      peso: number;
+      orden: number;
+      esEvalFinal: boolean;
+      actividades: any[];
+    }>();
+
+    // Primero poblar con la configuración oficial del programa
+    configCategorias.forEach(cfg => {
+      catMap.set(cfg.id, {
+        configId: cfg.id,
+        nombre: cfg.nombre,
+        peso: cfg.peso || 0,
+        orden: cfg.orden || 99,
+        esEvalFinal: cfg.esEvalFinal || false,
+        actividades: []
+      });
+    });
+
+    // Repartir actividades en las categorías
+    actividades.forEach(act => {
+      const configId = (act.categoria as any)?.configId;
+      if (configId && catMap.has(configId)) {
+        catMap.get(configId)!.actividades.push(act);
+      } else {
+        // Categoría huérfana o no oficial
+        const orphanKey = act.categoriaId || 'general';
+        if (!catMap.has(orphanKey)) {
+          catMap.set(orphanKey, {
+            configId: null,
+            nombre: (act.categoria as any)?.config?.nombre || (act.categoria as any)?.nombre || 'General',
+            peso: (act.categoria as any)?.config?.peso || (act.categoria as any)?.peso || 0,
+            orden: 100,
+            esEvalFinal: false,
+            actividades: []
+          });
+        }
+        catMap.get(orphanKey)!.actividades.push(act);
       }
     });
 
-    // 4.6 Obtener insignias actuales
-    const insigniasUser = await this.prisma.mod_insignia_user.findMany({
-      where: { userId: { in: estudiantes.map(e => e.personaId) } },
-      include: { insignia: true }
-    });
+    const categoriasSorted = Array.from(catMap.values()).sort((a, b) => a.orden - b.orden);
 
-    // 5. Armar la matriz de datos
-    const reportData = estudiantes.map(est => {
+    // 10. Armar reporte por estudiante
+    const reportData = estudiantes.map((est) => {
+      const apellidos = est.persona?.apellidos || '';
+      const nombres = est.persona?.nombre || '';
+
       const fila: any = {
         userId: est.personaId,
-        nombreCompleto: est.persona.nombreCompleto,
+        nombre: apellidos ? `${apellidos.toUpperCase()}, ${nombres}` : (est.persona.nombreCompleto || 'Estudiante'),
         scores: {},
+        desglose: [],
         total: 0,
-        asistencia: 0,
-        insignias: insigniasUser.filter(iu => iu.userId === est.personaId).map(iu => iu.insignia) || []
+        asistencia: 0
       };
 
-      // Calcular asistencia %
+      // Asistencia %
       const misAsis = asistenciasEntregadas.filter(a => a.userId === est.personaId);
       if (sesiones.length > 0) {
         const presentes = misAsis.filter(a => a.estado === 'P' || a.estado === 'T').length;
         fila.asistencia = Math.round((presentes / sesiones.length) * 100);
       }
 
-      actividades.forEach(act => {
-        const nota = todasLasNotas.find(n => n.actividadId === act.id && n.userId === est.personaId);
-        fila.scores[act.id] = nota ? nota.nota : 0;
-      });
-
       let totalPonderado = 0;
 
-      // Agrupar actividades por categoría para calcular el promedio (Nuevo sistema: Todos sobre 100 y promedio)
-      const cats = [...new Set(actividades.map(a => a.categoriaId))].filter(Boolean);
-      cats.forEach(catId => {
-        const actvsInCat = actividades.filter(a => a.categoriaId === catId);
-        const configCat = actvsInCat[0]?.categoria?.config;
-        const pesoCat = configCat?.peso || 0;
+      categoriasSorted.forEach(cat => {
+        const actsInCat = cat.actividades;
+        let promedioCat = 0;
 
-        if (actvsInCat.length > 0) {
-          const sumaNotasNormalizadas = actvsInCat.reduce((sum, act) => {
+        if (actsInCat.length > 0) {
+          const sumaNormalizada = actsInCat.reduce((sum, act) => {
             const n = todasLasNotas.find(nota => nota.actividadId === act.id && nota.userId === est.personaId);
             const notaObtenida = n ? n.nota : 0;
             const maxAct = act.puntajeMax || 100;
-            // Normalizar nota a 100 pts para promediar parejo
-            const notaNormalizada = (notaObtenida / maxAct) * 100;
-            return sum + notaNormalizada;
+            fila.scores[act.id] = notaObtenida;
+            return sum + ((notaObtenida / maxAct) * 100);
           }, 0);
-
-          const promedioCat = sumaNotasNormalizadas / actvsInCat.length;
-          totalPonderado += (promedioCat * pesoCat) / 100;
+          promedioCat = sumaNormalizada / actsInCat.length;
         }
+
+        const aporte = (promedioCat * cat.peso) / 100;
+        totalPonderado += aporte;
+
+        fila.desglose.push({
+          nombre: cat.nombre,
+          peso: cat.peso,
+          promedio: Math.round(promedioCat * 10) / 10,
+          aporte: Math.round(aporte * 10) / 10
+        });
       });
 
-      fila.total = Math.round(totalPonderado * 100) / 100;
+      fila.total = Math.round(totalPonderado * 10) / 10;
 
-      // --- CREATIVIDAD: OTORGAR INSIGNIAS AUTOMÁTICAS ---
-      // 1. Alumno Estrella (Nota > 90)
-      if (fila.total >= 90) this.awardInsigniaSilent(est.personaId, 'ALUMNO_ESTRELLA');
-      // 2. Asistencia Perfecta (100%)
-      if (fila.asistencia === 100 && sesiones.length > 5) this.awardInsigniaSilent(est.personaId, 'ASISTENCIA_PERFECTA');
-
-      // Persistir en mod_nota_final si el curso ya tiene una configuración
+      // Persistir nota final de forma asíncrona (sin esperar para el reporte)
       this.persistNotaFinal(est.personaId, moduloId, fila.total);
 
       return fila;
     });
 
-    return {
-      headers: actividades.map(a => ({
-        id: a.id,
-        titulo: a.titulo,
-        tipo: a.tipo,
-        puntajeMax: a.puntajeMax,
-        categoriaId: a.categoriaId,
-        categoriaNombre: a.categoria?.config?.nombre || 'General',
-        categoriaOrden: a.categoria?.config?.orden || 0,
-        orden: a.orden
-      })).sort((a, b) => {
-        if (a.categoriaOrden !== b.categoriaOrden) return a.categoriaOrden - b.categoriaOrden;
-        return (a.orden || 0) - (b.orden || 0);
-      }),
-      estudiantes: reportData.sort((a, b) => b.total - a.total), // Sort by grade desc
-      asistenciasPosibles: sesiones.length
+    const finalReport = {
+      notaMaxima: (modDos?.programaDos as any)?.tipo?.notaMaxima || 100,
+      notaReprobacion: (modDos?.programaDos as any)?.tipo?.notaReprobacion || 60,
+      categorias: categoriasSorted.map(c => ({
+        configId: c.configId,
+        nombre: c.nombre,
+        peso: c.peso,
+        esEvalFinal: c.esEvalFinal || false,
+        orden: c.orden || 0
+      })),
+      headers: actividades.map(act => ({
+        id: act.id,
+        titulo: act.titulo,
+        tipo: act.tipo,
+        puntajeMax: act.puntajeMax ?? 100,
+        categoriaId: (act.categoria as any)?.configId || null,
+        categoriaNombre: (act.categoria as any)?.config?.nombre || (act.categoria as any)?.nombre || 'General'
+      })),
+      estudiantes: reportData.sort((a, b) => a.nombre.localeCompare(b.nombre))
     };
+
+    return finalReport;
   }
 
   private async awardInsigniaSilent(userId: string, tipo: string) {
@@ -2336,32 +2907,37 @@ export class LmsService {
       const ins = await this.prisma.mod_insignia.findFirst({ where: { tipo } });
       if (!ins) return;
       const exists = await this.prisma.mod_insignia_user.findFirst({
-        where: { userId, insigniaId: ins.id }
+        where: { userId, insigniaId: ins.id },
       });
       if (!exists) {
-        await this.prisma.mod_insignia_user.create({ data: { userId, insigniaId: ins.id } });
+        await this.prisma.mod_insignia_user.create({
+          data: { userId, insigniaId: ins.id },
+        });
       }
     } catch (e) { }
   }
 
-  private async persistNotaFinal(userId: string, moduloId: string, nota: number) {
+  private async persistNotaFinal(
+    userId: string,
+    moduloId: string,
+    nota: number,
+  ) {
     try {
       const isAprobado = nota >= 70;
       const estadoCalif = isAprobado ? 'aprobado' : 'reprobado';
 
       // Intentamos encontrar si ya existe
       const exists = await this.prisma.mod_nota_final.findFirst({
-        where: { userId, moduloId }
+        where: { userId, moduloId },
       });
       if (exists) {
         await this.prisma.mod_nota_final.update({
           where: { id: exists.id },
-          data: { notaTotal: nota, estadoCalif }
+          data: { notaTotal: nota, estadoCalif },
         });
       } else {
         await this.prisma.mod_nota_final.create({
-
-          data: { userId, moduloId, notaTotal: nota, estadoCalif }
+          data: { userId, moduloId, notaTotal: nota, estadoCalif },
         });
       }
     } catch (e) {
@@ -2374,42 +2950,47 @@ export class LmsService {
   async getCamposExtraPerfil(userId: string) {
     const campos = await this.prisma.mod_campo_extra.findMany({
       where: { estado: 'activo' },
-      orderBy: { orden: 'asc' }
+      orderBy: { orden: 'asc' },
     });
 
     const respuestas = await this.prisma.mod_campo_extra_respuesta.findMany({
-      where: { userId }
+      where: { userId },
     });
 
-    return campos.map(c => {
-      const respuesta = respuestas.find(r => r.campoExtraId === c.id);
+    return campos.map((c) => {
+      const respuesta = respuestas.find((r) => r.campoExtraId === c.id);
       return {
         ...c,
-        valorActual: respuesta ? respuesta.valor : null
+        valorActual: respuesta ? respuesta.valor : null,
       };
     });
   }
 
-  async guardarRespuestasCampoExtra(userId: string, respuestas: { campoExtraId: string, valor: string }[]) {
+  async guardarRespuestasCampoExtra(
+    userId: string,
+    respuestas: { campoExtraId: string; valor: string }[],
+  ) {
     if (!respuestas || respuestas.length === 0) return { success: true };
 
-    const ops = respuestas.map(res => {
-      if (!res.valor) return null;
-      return this.prisma.mod_campo_extra_respuesta.upsert({
-        where: {
-          campoExtraId_userId: {
+    const ops = respuestas
+      .map((res) => {
+        if (!res.valor) return null;
+        return this.prisma.mod_campo_extra_respuesta.upsert({
+          where: {
+            campoExtraId_userId: {
+              campoExtraId: res.campoExtraId,
+              userId: userId,
+            },
+          },
+          update: { valor: res.valor },
+          create: {
             campoExtraId: res.campoExtraId,
-            userId: userId
-          }
-        },
-        update: { valor: res.valor },
-        create: {
-          campoExtraId: res.campoExtraId,
-          userId: userId,
-          valor: res.valor
-        }
-      });
-    }).filter(o => o !== null);
+            userId: userId,
+            valor: res.valor,
+          },
+        });
+      })
+      .filter((o) => o !== null);
 
     if (ops.length > 0) {
       await this.prisma.$transaction(ops);
@@ -2420,12 +3001,12 @@ export class LmsService {
   async getPerfil(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { roles: { include: { role: true } } }
+      include: { roles: { include: { role: true } } },
     });
 
     if (!user) throw new NotFoundException('Usuario no encontrado');
 
-    const roles = user.roles.map(ur => ur.role.name);
+    const roles = user.roles.map((ur) => ur.role.name);
 
     return {
       id: user.id,
@@ -2444,6 +3025,7 @@ export class LmsService {
       resumenProfesional: user.resumenProfesional,
       habilidades: user.habilidades,
       idiomas: user.idiomas,
+      requiresPasswordChange: user.requiresPasswordChange,
     };
   }
 
@@ -2452,10 +3034,52 @@ export class LmsService {
       return { success: false, message: 'No hay datos para actualizar.' };
     }
 
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        correo: true,
+        requiresPasswordChange: true,
+        resetPasswordToken: true,
+        resetPasswordExpires: true,
+        roles: { include: { role: true } },
+      }
+    });
+
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+
+    // VALIDACIÓN DE CÓDIGO DE VERIFICACIÓN
+    // Si cambia correo O cambia contraseña Y tiene flag de reseteo activo, exigir código
+    const isEmailChanging = data.email && data.email !== user.correo;
+    const isPasswordChanging = !!data.password;
+
+    if (isEmailChanging) {
+      if (!data.verificationCode) {
+        throw new BadRequestException(
+          isEmailChanging
+            ? 'Se requiere código de verificación para cambiar su correo electrónico.'
+            : 'Se requiere código de verificación para establecer su nueva contraseña permanente.',
+        );
+      }
+      if (user.resetPasswordToken !== data.verificationCode) {
+        throw new BadRequestException('El código de verificación es inválido.');
+      }
+      if (user.resetPasswordExpires && new Date() > user.resetPasswordExpires) {
+        throw new BadRequestException('El código de verificación ha expirado.');
+      }
+    }
+
     const ALLOWED_FIELDS = [
-      'celular', 'direccion', 'facebook', 'tiktok',
-      'resumenProfesional', 'habilidades', 'idiomas', 'imagen',
-      'password', 'verificationCode', 
+      'celular',
+      'direccion',
+      'facebook',
+      'tiktok',
+      'resumenProfesional',
+      'habilidades',
+      'idiomas',
+      'imagen',
+      'password',
+      'tokenDispositivo',
     ];
 
     const safeData: any = {};
@@ -2466,6 +3090,27 @@ export class LmsService {
           safeData.password = await bcrypt.hash(data[key], 10);
           // Si cambia la contraseña, asumimos que ya cumplió con el requisito de cambio
           safeData.requiresPasswordChange = false;
+        } else if (key === 'tokenDispositivo' && data[key]) {
+          // Lógica especial para guardar token de dispositivo en tabla relacional
+          const token = data[key];
+          const existingToken = await this.prisma.token_dispositivo.findFirst({
+            where: { token },
+          });
+
+          if (!existingToken) {
+            await this.prisma.token_dispositivo.create({
+              data: {
+                token,
+                userId: userId,
+                tipo_usuario: user.roles?.map((ur: any) => ur.role?.name).join(',') || '',
+              },
+            });
+          } else if (existingToken.userId !== userId) {
+            await this.prisma.token_dispositivo.update({
+              where: { id_token: existingToken.id_token },
+              data: { userId },
+            });
+          }
         } else {
           safeData[key] = data[key];
         }
@@ -2473,7 +3118,21 @@ export class LmsService {
     }
 
     if (Object.keys(safeData).length === 0) {
-      return { success: false, message: 'No hay campos permitidos para actualizar.' };
+      return {
+        success: false,
+        message: 'No hay campos permitidos para actualizar.',
+      };
+    }
+
+    // Si cambió el correo exitosamente
+    if (isEmailChanging && data.email) {
+      safeData.correo = data.email;
+    }
+
+    // Limpiar tokens post-verificación exitosa
+    if (isEmailChanging || isPasswordChanging) {
+      safeData.resetPasswordToken = null;
+      safeData.resetPasswordExpires = null;
     }
 
     try {
@@ -2486,14 +3145,14 @@ export class LmsService {
         where: { id: userId },
         data: safeData,
         include: {
-          roles: { include: { role: true } }
-        }
+          roles: { include: { role: true } },
+        },
       });
-      
-      const roles = updated.roles.map(ur => ur.role.name);
 
-      return { 
-        success: true, 
+      const roles = updated.roles.map((ur) => ur.role.name);
+
+      return {
+        success: true,
         message: 'Perfil actualizado correctamente.',
         user: {
           id: updated.id,
@@ -2512,14 +3171,64 @@ export class LmsService {
           resumenProfesional: updated.resumenProfesional,
           habilidades: updated.habilidades,
           idiomas: updated.idiomas,
-        }
+        },
       };
     } catch (e) {
       console.error('[LmsService][updatePerfil] Error Crítico:', e);
       if (e.code === 'P2002') {
-        throw new BadRequestException('El dato enviado ya está en uso por otro usuario.');
+        throw new BadRequestException(
+          'El dato enviado ya está en uso por otro usuario.',
+        );
       }
-      throw new BadRequestException('Error al actualizar el perfil institucional: ' + (e.message || 'Error desconocido'));
+      throw new BadRequestException(
+        'Error al actualizar el perfil institucional: ' +
+        (e.message || 'Error desconocido'),
+      );
     }
+  }
+
+  async requestEmailVerification(userId: string, email: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+
+    // Verificar si el correo ya existe para OTRO usuario
+    if (email && email !== user.correo) {
+      const emailExists = await this.prisma.user.findUnique({ where: { correo: email } });
+      if (emailExists) {
+        throw new BadRequestException('Este correo electrónico ya se encuentra registrado en el sistema por otro usuario');
+      }
+    }
+
+    // Generar un token numérico de 6 dígitos
+    const token = Math.floor(100000 + Math.random() * 900000).toString();
+    const expires = new Date();
+    expires.setMinutes(expires.getMinutes() + 15); // Expira en 15 minutos
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        resetPasswordToken: token,
+        resetPasswordExpires: expires,
+      },
+    });
+
+    await this.mailService
+      .sendPasswordResetEmail(email || user.correo, token, user.nombre)
+      .catch((err) => {
+        console.error('[LmsService] Error enviando email de verificación:', err);
+      });
+
+    return { success: true, message: 'Código de verificación enviado correctamente.' };
+  }
+
+  async testPush(userId: string, tipo?: string) {
+    const defaultTipo = tipo || 'TEST_PUSH';
+    return this.notiService.emit({
+      userId,
+      titulo: `Test: ${defaultTipo}`,
+      mensaje: `Esta es una notificación de prueba de tipo ${defaultTipo}.`,
+      tipo: defaultTipo,
+      linkRef: '/aula',
+    });
   }
 }

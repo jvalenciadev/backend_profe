@@ -23,6 +23,6 @@ export class Sede {
     public horario?: string | null,
     public turno?: string | null,
     public ubicacion?: string | null,
-    public departamento?: any
-  ) { }
+    public departamento?: any,
+  ) {}
 }

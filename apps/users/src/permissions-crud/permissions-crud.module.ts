@@ -5,7 +5,11 @@ import { PERMISSION_REPOSITORY } from './domain/repositories/permissions-crud.re
 import { PrismaPermissionRepository } from './infrastructure/database/prisma-permissions-crud.repository';
 import { PermissionsCrudController } from './infrastructure/controllers/permissions-crud.controller';
 import {
-  GetPermissionsUseCase, GetPermissionByIdUseCase, CreatePermissionUseCase, UpdatePermissionUseCase, DeletePermissionUseCase
+  GetPermissionsUseCase,
+  GetPermissionByIdUseCase,
+  CreatePermissionUseCase,
+  UpdatePermissionUseCase,
+  DeletePermissionUseCase,
 } from './application/use-cases/permissions-crud.use-cases';
 
 @Module({
@@ -19,6 +23,6 @@ import {
     UpdatePermissionUseCase,
     DeletePermissionUseCase,
   ],
-  exports: [GetPermissionsUseCase, GetPermissionByIdUseCase]
+  exports: [GetPermissionsUseCase, GetPermissionByIdUseCase],
 })
-export class PermissionsCrudModule { }
+export class PermissionsCrudModule {}

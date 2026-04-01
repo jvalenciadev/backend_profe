@@ -4,7 +4,10 @@ import type { IEventoPreguntaRepository } from '../../domain/repositories/evento
 
 @Injectable()
 export class GetEventoPreguntasUseCase {
-  constructor(@Inject(EVENTOPREGUNTA_REPOSITORY) private readonly repo: IEventoPreguntaRepository) {}
+  constructor(
+    @Inject(EVENTOPREGUNTA_REPOSITORY)
+    private readonly repo: IEventoPreguntaRepository,
+  ) {}
   async execute(filter?: any, ability?: any): Promise<any[]> {
     return this.repo.findAll(filter, ability);
   }
@@ -12,7 +15,10 @@ export class GetEventoPreguntasUseCase {
 
 @Injectable()
 export class GetEventoPreguntaByIdUseCase {
-  constructor(@Inject(EVENTOPREGUNTA_REPOSITORY) private readonly repo: IEventoPreguntaRepository) {}
+  constructor(
+    @Inject(EVENTOPREGUNTA_REPOSITORY)
+    private readonly repo: IEventoPreguntaRepository,
+  ) {}
   async execute(id: string, ability?: any): Promise<any> {
     const res = await this.repo.findById(id, ability);
     if (!res) throw new NotFoundException('Registro no encontrado');
@@ -22,7 +28,10 @@ export class GetEventoPreguntaByIdUseCase {
 
 @Injectable()
 export class CreateEventoPreguntaUseCase {
-  constructor(@Inject(EVENTOPREGUNTA_REPOSITORY) private readonly repo: IEventoPreguntaRepository) {}
+  constructor(
+    @Inject(EVENTOPREGUNTA_REPOSITORY)
+    private readonly repo: IEventoPreguntaRepository,
+  ) {}
   async execute(data: any, userId?: string, tenantId?: string): Promise<any> {
     return this.repo.create(data, userId, tenantId);
   }
@@ -30,16 +39,31 @@ export class CreateEventoPreguntaUseCase {
 
 @Injectable()
 export class UpdateEventoPreguntaUseCase {
-  constructor(@Inject(EVENTOPREGUNTA_REPOSITORY) private readonly repo: IEventoPreguntaRepository) {}
-  async execute(id: string, data: any, userId?: string, ability?: any): Promise<any> {
+  constructor(
+    @Inject(EVENTOPREGUNTA_REPOSITORY)
+    private readonly repo: IEventoPreguntaRepository,
+  ) {}
+  async execute(
+    id: string,
+    data: any,
+    userId?: string,
+    ability?: any,
+  ): Promise<any> {
     return this.repo.update(id, data, userId, ability);
   }
 }
 
 @Injectable()
 export class DeleteEventoPreguntaUseCase {
-  constructor(@Inject(EVENTOPREGUNTA_REPOSITORY) private readonly repo: IEventoPreguntaRepository) {}
-  async execute(id: string, userId?: string, ability?: any): Promise<{ message: string }> {
+  constructor(
+    @Inject(EVENTOPREGUNTA_REPOSITORY)
+    private readonly repo: IEventoPreguntaRepository,
+  ) {}
+  async execute(
+    id: string,
+    userId?: string,
+    ability?: any,
+  ): Promise<{ message: string }> {
     await this.repo.delete(id, userId, ability);
     return { message: 'Eliminado correctamente' };
   }

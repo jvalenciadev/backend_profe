@@ -5,7 +5,11 @@ import { TURNO_REPOSITORY } from './domain/repositories/turno.repository.interfa
 import { PrismaTurnoRepository } from './infrastructure/database/prisma-turno.repository';
 import { TurnoController } from './infrastructure/controllers/turno.controller';
 import {
-  GetTurnosUseCase, GetTurnoByIdUseCase, CreateTurnoUseCase, UpdateTurnoUseCase, DeleteTurnoUseCase
+  GetTurnosUseCase,
+  GetTurnoByIdUseCase,
+  CreateTurnoUseCase,
+  UpdateTurnoUseCase,
+  DeleteTurnoUseCase,
 } from './application/use-cases/turno.use-cases';
 
 @Module({
@@ -19,6 +23,6 @@ import {
     UpdateTurnoUseCase,
     DeleteTurnoUseCase,
   ],
-  exports: [GetTurnosUseCase, GetTurnoByIdUseCase]
+  exports: [GetTurnosUseCase, GetTurnoByIdUseCase],
 })
 export class TurnoModule {}

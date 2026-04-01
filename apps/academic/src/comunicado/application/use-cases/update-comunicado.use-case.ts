@@ -1,4 +1,9 @@
-import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { COMUNICADO_REPOSITORY } from '../../domain/repositories/comunicado.repository.interface';
 import type { IComunicadoRepository } from '../../domain/repositories/comunicado.repository.interface';
 import { Comunicado } from '../../domain/entities/comunicado.entity';
@@ -9,9 +14,13 @@ export class UpdateComunicadoUseCase {
   constructor(
     @Inject(COMUNICADO_REPOSITORY)
     private readonly repository: IComunicadoRepository,
-  ) { }
+  ) {}
 
-  async execute(id: string, dto: UpdateComunicadoDto, userId?: string): Promise<Comunicado> {
+  async execute(
+    id: string,
+    dto: UpdateComunicadoDto,
+    userId?: string,
+  ): Promise<Comunicado> {
     try {
       const existing = await this.repository.findById(id);
       if (!existing) {
@@ -29,7 +38,7 @@ export class UpdateComunicadoUseCase {
       console.error('Error detallado al actualizar comunicado:', error);
       if (error instanceof NotFoundException) throw error;
       throw new BadRequestException('Error al actualizar el comunicado', {
-        cause: error instanceof Error ? error.message : error
+        cause: error instanceof Error ? error.message : error,
       });
     }
   }
@@ -40,7 +49,7 @@ export class DeleteComunicadoUseCase {
   constructor(
     @Inject(COMUNICADO_REPOSITORY)
     private readonly repository: IComunicadoRepository,
-  ) { }
+  ) {}
 
   async execute(id: string, userId?: string): Promise<boolean> {
     try {
@@ -53,7 +62,9 @@ export class DeleteComunicadoUseCase {
       return await this.repository.delete(id);
     } catch (error) {
       if (error instanceof NotFoundException) throw error;
-      throw new BadRequestException('Error al eliminar el comunicado', { cause: error });
+      throw new BadRequestException('Error al eliminar el comunicado', {
+        cause: error,
+      });
     }
   }
 }

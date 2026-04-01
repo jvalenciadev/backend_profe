@@ -1,7 +1,23 @@
-import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard, PoliciesGuard, CheckPolicies } from '@app/common';
 import {
-  GetTurnosUseCase, GetTurnoByIdUseCase, CreateTurnoUseCase, UpdateTurnoUseCase, DeleteTurnoUseCase
+  GetTurnosUseCase,
+  GetTurnoByIdUseCase,
+  CreateTurnoUseCase,
+  UpdateTurnoUseCase,
+  DeleteTurnoUseCase,
 } from '../../application/use-cases/turno.use-cases';
 
 @Controller('turnos')
@@ -13,7 +29,7 @@ export class TurnoController {
     private readonly createTurnoUseCase: CreateTurnoUseCase,
     private readonly updateTurnoUseCase: UpdateTurnoUseCase,
     private readonly deleteTurnoUseCase: DeleteTurnoUseCase,
-  ) { }
+  ) {}
 
   @Get()
   @CheckPolicies((ability: any) => ability.can('read', 'ProgramaTurno'))
@@ -30,7 +46,11 @@ export class TurnoController {
   @Post()
   @CheckPolicies((ability: any) => ability.can('create', 'ProgramaTurno'))
   create(@Body() data: any, @Req() req: any) {
-    return this.createTurnoUseCase.execute(data, req.user?.id, req.user?.tenantId);
+    return this.createTurnoUseCase.execute(
+      data,
+      req.user?.id,
+      req.user?.tenantId,
+    );
   }
 
   @Put(':id')

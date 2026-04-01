@@ -8,7 +8,7 @@ export class PrismaDuracionRepository implements IDuracionRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly caslPrisma: CaslPrismaService,
-  ) { }
+  ) {}
 
   async findAll(filter: any = {}, ability?: any): Promise<any[]> {
     const { tenantId, search, ...rest } = filter;
@@ -18,7 +18,11 @@ export class PrismaDuracionRepository implements IDuracionRepository {
     if (hasStatus) where.estado = { not: 'eliminado' };
 
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'ProgramaDuracion');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'read',
+        'ProgramaDuracion',
+      );
       where = { AND: [where, caslWhere] };
     }
 
@@ -31,26 +35,48 @@ export class PrismaDuracionRepository implements IDuracionRepository {
   async findById(id: string, ability?: any): Promise<any | null> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'ProgramaDuracion');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'read',
+        'ProgramaDuracion',
+      );
       where = { AND: [where, caslWhere] };
     }
     return await (this.prisma as any).programaDuracion.findFirst({ where });
   }
 
-  async create(data: any, userId?: string, forcedTenantId?: string): Promise<any> {
+  async create(
+    data: any,
+    userId?: string,
+    forcedTenantId?: string,
+  ): Promise<any> {
     return await (this.prisma as any).programaDuracion.create({
-      data: { ...data, createdBy: userId }
+      data: { ...data, createdBy: userId },
     });
   }
 
-  async update(id: string, data: any, userId?: string, ability?: any): Promise<any> {
+  async update(
+    id: string,
+    data: any,
+    userId?: string,
+    ability?: any,
+  ): Promise<any> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'update', 'ProgramaDuracion');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'update',
+        'ProgramaDuracion',
+      );
       where = { AND: [where, caslWhere] };
     }
-    const exists = await (this.prisma as any).programaDuracion.findFirst({ where });
-    if (!exists) throw new Error('No tiene permisos para editar este registro o no existe');
+    const exists = await (this.prisma as any).programaDuracion.findFirst({
+      where,
+    });
+    if (!exists)
+      throw new Error(
+        'No tiene permisos para editar este registro o no existe',
+      );
 
     return await (this.prisma as any).programaDuracion.update({
       where: { id },
@@ -61,11 +87,20 @@ export class PrismaDuracionRepository implements IDuracionRepository {
   async delete(id: string, userId?: string, ability?: any): Promise<void> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'delete', 'ProgramaDuracion');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'delete',
+        'ProgramaDuracion',
+      );
       where = { AND: [where, caslWhere] };
     }
-    const exists = await (this.prisma as any).programaDuracion.findFirst({ where });
-    if (!exists) throw new Error('No tiene permisos para eliminar este registro o no existe');
+    const exists = await (this.prisma as any).programaDuracion.findFirst({
+      where,
+    });
+    if (!exists)
+      throw new Error(
+        'No tiene permisos para eliminar este registro o no existe',
+      );
 
     const hasStatus = true;
     if (hasStatus) {

@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@app/database';
-import { IDepartamentoRepository, DepartamentoFilters } from '../../domain/repositories/departamento.repository.interface';
+import {
+  IDepartamentoRepository,
+  DepartamentoFilters,
+} from '../../domain/repositories/departamento.repository.interface';
 import { Departamento } from '../../domain/entities/departamento.entity';
 
 @Injectable()
@@ -22,11 +25,15 @@ export class PrismaDepartamentoRepository implements IDepartamentoRepository {
   }
 
   async findById(id: string): Promise<Departamento | null> {
-    const record = await (this.prisma.departamento as any).findUnique({ where: { id } });
+    const record = await (this.prisma.departamento as any).findUnique({
+      where: { id },
+    });
     return record ? this.mapToDomain(record) : null;
   }
 
-  async findAll(filters: DepartamentoFilters = {}): Promise<{ data: Departamento[]; total: number }> {
+  async findAll(
+    filters: DepartamentoFilters = {},
+  ): Promise<{ data: Departamento[]; total: number }> {
     const { search, estado, page = 1, limit = 20 } = filters;
     const where: any = { estado: { not: 'eliminado' } };
     if (estado && estado !== 'todos') where.estado = estado;

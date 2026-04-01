@@ -4,9 +4,9 @@ import { NotificacionesService } from './notificaciones.service';
 import { DatabaseModule } from '@app/database';
 
 @Module({
-    imports: [DatabaseModule],
-    controllers: [NotificacionesController],
-    providers: [NotificacionesService],
-    exports: [NotificacionesService]
+  imports: [DatabaseModule],
+  controllers: [NotificacionesController],
+  providers: [NotificacionesService],
+  exports: [NotificacionesService],
 })
-export class NotificacionesModule { }
+export class NotificacionesModule {}

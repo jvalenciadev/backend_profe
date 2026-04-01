@@ -8,7 +8,7 @@ export class PrismaEventoPreguntaRepository implements IEventoPreguntaRepository
   constructor(
     private readonly prisma: PrismaService,
     private readonly caslPrisma: CaslPrismaService,
-  ) { }
+  ) {}
 
   async findAll(filter: any = {}, ability?: any): Promise<any[]> {
     const { tenantId, search, ...rest } = filter;
@@ -18,61 +18,91 @@ export class PrismaEventoPreguntaRepository implements IEventoPreguntaRepository
     if (hasStatus) where.estado = { not: 'eliminado' };
 
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'EventoPregunta');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'read',
+        'EventoPregunta',
+      );
       where = { AND: [where, caslWhere] };
     }
 
     return await (this.prisma as any).evento_pregunta.findMany({
       where,
       orderBy: { createdAt: 'desc' },
-      include: { opciones: true }
+      include: { opciones: true },
     });
   }
 
   async findById(id: string, ability?: any): Promise<any | null> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'EventoPregunta');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'read',
+        'EventoPregunta',
+      );
       where = { AND: [where, caslWhere] };
     }
     return await (this.prisma as any).evento_pregunta.findFirst({
       where,
-      include: { opciones: true }
+      include: { opciones: true },
     });
   }
 
-  async create(data: any, userId?: string, forcedTenantId?: string): Promise<any> {
+  async create(
+    data: any,
+    userId?: string,
+    forcedTenantId?: string,
+  ): Promise<any> {
     const { opciones, ...rest } = data;
     return await (this.prisma as any).evento_pregunta.create({
       data: {
         ...rest,
         createdBy: userId,
-        opciones: opciones ? {
-          create: opciones.map((opt: any) => ({
-            texto: opt.texto,
-            esCorrecta: opt.esCorrecta,
-            createdBy: userId
-          }))
-        } : undefined
+        opciones: opciones
+          ? {
+              create: opciones.map((opt: any) => ({
+                texto: opt.texto,
+                esCorrecta: opt.esCorrecta,
+                createdBy: userId,
+              })),
+            }
+          : undefined,
       },
-      include: { opciones: true }
+      include: { opciones: true },
     });
   }
 
-  async update(id: string, data: any, userId?: string, ability?: any): Promise<any> {
+  async update(
+    id: string,
+    data: any,
+    userId?: string,
+    ability?: any,
+  ): Promise<any> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'update', 'EventoPregunta');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'update',
+        'EventoPregunta',
+      );
       where = { AND: [where, caslWhere] };
     }
-    const exists = await (this.prisma as any).evento_pregunta.findFirst({ where });
-    if (!exists) throw new Error('No tiene permisos para editar este registro o no existe');
+    const exists = await (this.prisma as any).evento_pregunta.findFirst({
+      where,
+    });
+    if (!exists)
+      throw new Error(
+        'No tiene permisos para editar este registro o no existe',
+      );
 
     const { opciones, id: _id, createdAt: _ca, updatedAt: _ua, ...rest } = data;
 
     // Si hay opciones, las actualizamos (borramos y creamos para simplificar)
     if (opciones) {
-      await (this.prisma as any).evento_opciones.deleteMany({ where: { preguntaId: id } });
+      await (this.prisma as any).evento_opciones.deleteMany({
+        where: { preguntaId: id },
+      });
     }
 
     return await (this.prisma as any).evento_pregunta.update({
@@ -80,26 +110,37 @@ export class PrismaEventoPreguntaRepository implements IEventoPreguntaRepository
       data: {
         ...rest,
         updatedBy: userId,
-        opciones: opciones ? {
-          create: opciones.map((opt: any) => ({
-            texto: opt.texto,
-            esCorrecta: opt.esCorrecta,
-            createdBy: userId
-          }))
-        } : undefined
+        opciones: opciones
+          ? {
+              create: opciones.map((opt: any) => ({
+                texto: opt.texto,
+                esCorrecta: opt.esCorrecta,
+                createdBy: userId,
+              })),
+            }
+          : undefined,
       },
-      include: { opciones: true }
+      include: { opciones: true },
     });
   }
 
   async delete(id: string, userId?: string, ability?: any): Promise<void> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'delete', 'EventoPregunta');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'delete',
+        'EventoPregunta',
+      );
       where = { AND: [where, caslWhere] };
     }
-    const exists = await (this.prisma as any).evento_pregunta.findFirst({ where });
-    if (!exists) throw new Error('No tiene permisos para eliminar este registro o no existe');
+    const exists = await (this.prisma as any).evento_pregunta.findFirst({
+      where,
+    });
+    if (!exists)
+      throw new Error(
+        'No tiene permisos para eliminar este registro o no existe',
+      );
 
     const hasStatus = true;
     if (hasStatus) {

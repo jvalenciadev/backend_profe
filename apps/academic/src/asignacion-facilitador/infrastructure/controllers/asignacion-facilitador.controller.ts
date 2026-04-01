@@ -1,7 +1,23 @@
-import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard, PoliciesGuard, CheckPolicies } from '@app/common';
 import {
-  GetAsignacionFacilitadorsUseCase, GetAsignacionFacilitadorByIdUseCase, CreateAsignacionFacilitadorUseCase, UpdateAsignacionFacilitadorUseCase, DeleteAsignacionFacilitadorUseCase
+  GetAsignacionFacilitadorsUseCase,
+  GetAsignacionFacilitadorByIdUseCase,
+  CreateAsignacionFacilitadorUseCase,
+  UpdateAsignacionFacilitadorUseCase,
+  DeleteAsignacionFacilitadorUseCase,
 } from '../../application/use-cases/asignacion-facilitador.use-cases';
 
 @Controller('asignaciones-facilitadores')
@@ -28,26 +44,52 @@ export class AsignacionFacilitadorController {
   }
 
   @Post()
-  @CheckPolicies((ability: any) => ability.can('create', 'AsignacionFacilitador'))
+  @CheckPolicies((ability: any) =>
+    ability.can('create', 'AsignacionFacilitador'),
+  )
   create(@Body() data: any, @Req() req: any) {
-    return this.createAsignacionFacilitadorUseCase.execute(data, req.user?.id, req.user?.tenantId);
+    return this.createAsignacionFacilitadorUseCase.execute(
+      data,
+      req.user?.id,
+      req.user?.tenantId,
+    );
   }
 
   @Put(':id')
-  @CheckPolicies((ability: any) => ability.can('update', 'AsignacionFacilitador'))
+  @CheckPolicies((ability: any) =>
+    ability.can('update', 'AsignacionFacilitador'),
+  )
   updatePut(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updateAsignacionFacilitadorUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updateAsignacionFacilitadorUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Patch(':id')
-  @CheckPolicies((ability: any) => ability.can('update', 'AsignacionFacilitador'))
+  @CheckPolicies((ability: any) =>
+    ability.can('update', 'AsignacionFacilitador'),
+  )
   updatePatch(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updateAsignacionFacilitadorUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updateAsignacionFacilitadorUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Delete(':id')
-  @CheckPolicies((ability: any) => ability.can('delete', 'AsignacionFacilitador'))
+  @CheckPolicies((ability: any) =>
+    ability.can('delete', 'AsignacionFacilitador'),
+  )
   remove(@Param('id') id: string, @Req() req: any) {
-    return this.deleteAsignacionFacilitadorUseCase.execute(id, req.user?.id, req.ability);
+    return this.deleteAsignacionFacilitadorUseCase.execute(
+      id,
+      req.user?.id,
+      req.ability,
+    );
   }
 }

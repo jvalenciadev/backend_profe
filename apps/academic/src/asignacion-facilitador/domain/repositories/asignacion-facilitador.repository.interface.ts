@@ -1,6 +1,7 @@
 import { AsignacionFacilitador } from '../entities/asignacion-facilitador.entity';
 
-export const ASIGNACIONFACILITADOR_REPOSITORY = 'ASIGNACIONFACILITADOR_REPOSITORY';
+export const ASIGNACIONFACILITADOR_REPOSITORY =
+  'ASIGNACIONFACILITADOR_REPOSITORY';
 
 export interface IAsignacionFacilitadorRepository {
   findAll(filter?: any, ability?: any): Promise<any[]>;

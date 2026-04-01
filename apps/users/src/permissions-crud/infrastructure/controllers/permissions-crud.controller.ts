@@ -1,7 +1,23 @@
-import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard, PoliciesGuard, CheckPolicies } from '@app/common';
 import {
-  GetPermissionsUseCase, GetPermissionByIdUseCase, CreatePermissionUseCase, UpdatePermissionUseCase, DeletePermissionUseCase
+  GetPermissionsUseCase,
+  GetPermissionByIdUseCase,
+  CreatePermissionUseCase,
+  UpdatePermissionUseCase,
+  DeletePermissionUseCase,
 } from '../../application/use-cases/permissions-crud.use-cases';
 
 @Controller('permissions')
@@ -13,7 +29,7 @@ export class PermissionsCrudController {
     private readonly createPermissionUseCase: CreatePermissionUseCase,
     private readonly updatePermissionUseCase: UpdatePermissionUseCase,
     private readonly deletePermissionUseCase: DeletePermissionUseCase,
-  ) { }
+  ) {}
 
   @Get()
   @CheckPolicies((ability: any) => ability.can('read', 'Permission'))
@@ -30,19 +46,33 @@ export class PermissionsCrudController {
   @Post()
   @CheckPolicies((ability: any) => ability.can('create', 'Permission'))
   create(@Body() data: any, @Req() req: any) {
-    return this.createPermissionUseCase.execute(data, req.user?.id, req.user?.tenantId);
+    return this.createPermissionUseCase.execute(
+      data,
+      req.user?.id,
+      req.user?.tenantId,
+    );
   }
 
   @Put(':id')
   @CheckPolicies((ability: any) => ability.can('update', 'Permission'))
   updatePut(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updatePermissionUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updatePermissionUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Patch(':id')
   @CheckPolicies((ability: any) => ability.can('update', 'Permission'))
   updatePatch(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updatePermissionUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updatePermissionUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Delete(':id')

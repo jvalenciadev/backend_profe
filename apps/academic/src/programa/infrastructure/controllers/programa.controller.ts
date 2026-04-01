@@ -1,8 +1,24 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard, PoliciesGuard, CheckPolicies } from '@app/common';
-import { GetProgramasUseCase, GetProgramaByIdUseCase } from '../../application/use-cases/get-programas.use-case';
+import {
+  GetProgramasUseCase,
+  GetProgramaByIdUseCase,
+} from '../../application/use-cases/get-programas.use-case';
 import { CreateProgramaUseCase } from '../../application/use-cases/create-programa.use-case';
-import { UpdateProgramaUseCase, DeleteProgramaUseCase } from '../../application/use-cases/update-programa.use-case';
+import {
+  UpdateProgramaUseCase,
+  DeleteProgramaUseCase,
+} from '../../application/use-cases/update-programa.use-case';
 
 @Controller('programas-maestros')
 @UseGuards(JwtAuthGuard, PoliciesGuard)
@@ -13,7 +29,7 @@ export class ProgramaController {
     private readonly createProgramaUseCase: CreateProgramaUseCase,
     private readonly updateProgramaUseCase: UpdateProgramaUseCase,
     private readonly deleteProgramaUseCase: DeleteProgramaUseCase,
-  ) { }
+  ) {}
 
   @Get()
   @CheckPolicies((ability: any) => ability.can('read', 'Programa'))
@@ -26,7 +42,12 @@ export class ProgramaController {
       page,
       limit,
     });
-    return { ...result, page, limit, totalPages: Math.ceil(result.total / limit) };
+    return {
+      ...result,
+      page,
+      limit,
+      totalPages: Math.ceil(result.total / limit),
+    };
   }
 
   @Get(':id')

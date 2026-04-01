@@ -5,20 +5,30 @@ import { ASIGNACIONFACILITADOR_REPOSITORY } from './domain/repositories/asignaci
 import { PrismaAsignacionFacilitadorRepository } from './infrastructure/database/prisma-asignacion-facilitador.repository';
 import { AsignacionFacilitadorController } from './infrastructure/controllers/asignacion-facilitador.controller';
 import {
-  GetAsignacionFacilitadorsUseCase, GetAsignacionFacilitadorByIdUseCase, CreateAsignacionFacilitadorUseCase, UpdateAsignacionFacilitadorUseCase, DeleteAsignacionFacilitadorUseCase
+  GetAsignacionFacilitadorsUseCase,
+  GetAsignacionFacilitadorByIdUseCase,
+  CreateAsignacionFacilitadorUseCase,
+  UpdateAsignacionFacilitadorUseCase,
+  DeleteAsignacionFacilitadorUseCase,
 } from './application/use-cases/asignacion-facilitador.use-cases';
 
 @Module({
   imports: [DatabaseModule, CaslModule],
   controllers: [AsignacionFacilitadorController],
   providers: [
-    { provide: ASIGNACIONFACILITADOR_REPOSITORY, useClass: PrismaAsignacionFacilitadorRepository },
+    {
+      provide: ASIGNACIONFACILITADOR_REPOSITORY,
+      useClass: PrismaAsignacionFacilitadorRepository,
+    },
     GetAsignacionFacilitadorsUseCase,
     GetAsignacionFacilitadorByIdUseCase,
     CreateAsignacionFacilitadorUseCase,
     UpdateAsignacionFacilitadorUseCase,
     DeleteAsignacionFacilitadorUseCase,
   ],
-  exports: [GetAsignacionFacilitadorsUseCase, GetAsignacionFacilitadorByIdUseCase]
+  exports: [
+    GetAsignacionFacilitadorsUseCase,
+    GetAsignacionFacilitadorByIdUseCase,
+  ],
 })
 export class AsignacionFacilitadorModule {}

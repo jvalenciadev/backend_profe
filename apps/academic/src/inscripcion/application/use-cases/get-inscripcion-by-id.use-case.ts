@@ -5,16 +5,16 @@ import { Inscripcion } from '../../domain/entities/inscripcion.entity';
 
 @Injectable()
 export class GetInscripcionByIdUseCase {
-    constructor(
-        @Inject(INSCRIPCION_REPOSITORY)
-        private readonly repository: IInscripcionRepository,
-    ) { }
+  constructor(
+    @Inject(INSCRIPCION_REPOSITORY)
+    private readonly repository: IInscripcionRepository,
+  ) {}
 
-    async execute(id: string): Promise<Inscripcion> {
-        const inscripcion = await this.repository.findById(id);
-        if (!inscripcion) {
-            throw new NotFoundException('Inscripción no encontrada');
-        }
-        return inscripcion;
+  async execute(id: string): Promise<Inscripcion> {
+    const inscripcion = await this.repository.findById(id);
+    if (!inscripcion) {
+      throw new NotFoundException('Inscripción no encontrada');
     }
+    return inscripcion;
+  }
 }

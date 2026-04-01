@@ -5,9 +5,9 @@ import { RecordatoriosController } from './recordatorios.controller';
 import { NotificacionesModule } from '../notificaciones/notificaciones.module';
 
 @Module({
-    imports: [DatabaseModule, NotificacionesModule],
-    controllers: [RecordatoriosController],
-    providers: [RecordatoriosService],
-    exports: [RecordatoriosService]
+  imports: [DatabaseModule, NotificacionesModule],
+  controllers: [RecordatoriosController],
+  providers: [RecordatoriosService],
+  exports: [RecordatoriosService],
 })
-export class RecordatoriosModule { }
+export class RecordatoriosModule {}

@@ -11,6 +11,9 @@ export class CreateDistritoUseCase {
   ) {}
 
   async execute(data: any): Promise<Distrito> {
-    return await this.repository.create({ ...data, estado: data.estado || 'activo' });
+    return await this.repository.create({
+      ...data,
+      estado: data.estado || 'activo',
+    });
   }
 }

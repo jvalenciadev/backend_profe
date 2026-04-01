@@ -5,7 +5,11 @@ import { EVENTOTIPO_REPOSITORY } from './domain/repositories/evento-tipo.reposit
 import { PrismaEventoTipoRepository } from './infrastructure/database/prisma-evento-tipo.repository';
 import { EventoTipoController } from './infrastructure/controllers/evento-tipo.controller';
 import {
-  GetEventoTiposUseCase, GetEventoTipoByIdUseCase, CreateEventoTipoUseCase, UpdateEventoTipoUseCase, DeleteEventoTipoUseCase
+  GetEventoTiposUseCase,
+  GetEventoTipoByIdUseCase,
+  CreateEventoTipoUseCase,
+  UpdateEventoTipoUseCase,
+  DeleteEventoTipoUseCase,
 } from './application/use-cases/evento-tipo.use-cases';
 
 @Module({
@@ -19,6 +23,6 @@ import {
     UpdateEventoTipoUseCase,
     DeleteEventoTipoUseCase,
   ],
-  exports: [GetEventoTiposUseCase, GetEventoTipoByIdUseCase]
+  exports: [GetEventoTiposUseCase, GetEventoTipoByIdUseCase],
 })
 export class EventoTipoModule {}

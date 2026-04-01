@@ -12,8 +12,16 @@ export interface EvaluacionPeriodoFilters {
 export interface IEvaluacionPeriodoRepository {
   create(data: Omit<EvaluacionPeriodo, 'id'>): Promise<EvaluacionPeriodo>;
   findById(id: string): Promise<EvaluacionPeriodo | null>;
-  findActiveOverlap(gestion: string, semestre: string): Promise<EvaluacionPeriodo | null>;
-  findAll(filters?: EvaluacionPeriodoFilters): Promise<{ data: EvaluacionPeriodo[]; total: number }>;
-  update(id: string, data: Partial<EvaluacionPeriodo>): Promise<EvaluacionPeriodo>;
+  findActiveOverlap(
+    gestion: string,
+    semestre: string,
+  ): Promise<EvaluacionPeriodo | null>;
+  findAll(
+    filters?: EvaluacionPeriodoFilters,
+  ): Promise<{ data: EvaluacionPeriodo[]; total: number }>;
+  update(
+    id: string,
+    data: Partial<EvaluacionPeriodo>,
+  ): Promise<EvaluacionPeriodo>;
   delete(id: string): Promise<boolean>;
 }

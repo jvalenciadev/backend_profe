@@ -4,7 +4,9 @@ import type { ITurnoRepository } from '../../domain/repositories/turno.repositor
 
 @Injectable()
 export class GetTurnosUseCase {
-  constructor(@Inject(TURNO_REPOSITORY) private readonly repo: ITurnoRepository) {}
+  constructor(
+    @Inject(TURNO_REPOSITORY) private readonly repo: ITurnoRepository,
+  ) {}
   async execute(filter?: any, ability?: any): Promise<any[]> {
     return this.repo.findAll(filter, ability);
   }
@@ -12,7 +14,9 @@ export class GetTurnosUseCase {
 
 @Injectable()
 export class GetTurnoByIdUseCase {
-  constructor(@Inject(TURNO_REPOSITORY) private readonly repo: ITurnoRepository) {}
+  constructor(
+    @Inject(TURNO_REPOSITORY) private readonly repo: ITurnoRepository,
+  ) {}
   async execute(id: string, ability?: any): Promise<any> {
     const res = await this.repo.findById(id, ability);
     if (!res) throw new NotFoundException('Registro no encontrado');
@@ -22,7 +26,9 @@ export class GetTurnoByIdUseCase {
 
 @Injectable()
 export class CreateTurnoUseCase {
-  constructor(@Inject(TURNO_REPOSITORY) private readonly repo: ITurnoRepository) {}
+  constructor(
+    @Inject(TURNO_REPOSITORY) private readonly repo: ITurnoRepository,
+  ) {}
   async execute(data: any, userId?: string, tenantId?: string): Promise<any> {
     return this.repo.create(data, userId, tenantId);
   }
@@ -30,16 +36,29 @@ export class CreateTurnoUseCase {
 
 @Injectable()
 export class UpdateTurnoUseCase {
-  constructor(@Inject(TURNO_REPOSITORY) private readonly repo: ITurnoRepository) {}
-  async execute(id: string, data: any, userId?: string, ability?: any): Promise<any> {
+  constructor(
+    @Inject(TURNO_REPOSITORY) private readonly repo: ITurnoRepository,
+  ) {}
+  async execute(
+    id: string,
+    data: any,
+    userId?: string,
+    ability?: any,
+  ): Promise<any> {
     return this.repo.update(id, data, userId, ability);
   }
 }
 
 @Injectable()
 export class DeleteTurnoUseCase {
-  constructor(@Inject(TURNO_REPOSITORY) private readonly repo: ITurnoRepository) {}
-  async execute(id: string, userId?: string, ability?: any): Promise<{ message: string }> {
+  constructor(
+    @Inject(TURNO_REPOSITORY) private readonly repo: ITurnoRepository,
+  ) {}
+  async execute(
+    id: string,
+    userId?: string,
+    ability?: any,
+  ): Promise<{ message: string }> {
     await this.repo.delete(id, userId, ability);
     return { message: 'Eliminado correctamente' };
   }

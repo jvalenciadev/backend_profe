@@ -1,7 +1,23 @@
-import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard, PoliciesGuard, CheckPolicies } from '@app/common';
 import {
-  GetProgramaModuloVersionsUseCase, GetProgramaModuloVersionByIdUseCase, CreateProgramaModuloVersionUseCase, UpdateProgramaModuloVersionUseCase, DeleteProgramaModuloVersionUseCase
+  GetProgramaModuloVersionsUseCase,
+  GetProgramaModuloVersionByIdUseCase,
+  CreateProgramaModuloVersionUseCase,
+  UpdateProgramaModuloVersionUseCase,
+  DeleteProgramaModuloVersionUseCase,
 } from '../../application/use-cases/programa-modulo-version.use-cases';
 
 @Controller('programa-modulo-versiones')
@@ -28,26 +44,52 @@ export class ProgramaModuloVersionController {
   }
 
   @Post()
-  @CheckPolicies((ability: any) => ability.can('create', 'ProgramaModuloVersion'))
+  @CheckPolicies((ability: any) =>
+    ability.can('create', 'ProgramaModuloVersion'),
+  )
   create(@Body() data: any, @Req() req: any) {
-    return this.createProgramaModuloVersionUseCase.execute(data, req.user?.id, req.user?.tenantId);
+    return this.createProgramaModuloVersionUseCase.execute(
+      data,
+      req.user?.id,
+      req.user?.tenantId,
+    );
   }
 
   @Put(':id')
-  @CheckPolicies((ability: any) => ability.can('update', 'ProgramaModuloVersion'))
+  @CheckPolicies((ability: any) =>
+    ability.can('update', 'ProgramaModuloVersion'),
+  )
   updatePut(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updateProgramaModuloVersionUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updateProgramaModuloVersionUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Patch(':id')
-  @CheckPolicies((ability: any) => ability.can('update', 'ProgramaModuloVersion'))
+  @CheckPolicies((ability: any) =>
+    ability.can('update', 'ProgramaModuloVersion'),
+  )
   updatePatch(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updateProgramaModuloVersionUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updateProgramaModuloVersionUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Delete(':id')
-  @CheckPolicies((ability: any) => ability.can('delete', 'ProgramaModuloVersion'))
+  @CheckPolicies((ability: any) =>
+    ability.can('delete', 'ProgramaModuloVersion'),
+  )
   remove(@Param('id') id: string, @Req() req: any) {
-    return this.deleteProgramaModuloVersionUseCase.execute(id, req.user?.id, req.ability);
+    return this.deleteProgramaModuloVersionUseCase.execute(
+      id,
+      req.user?.id,
+      req.ability,
+    );
   }
 }

@@ -4,16 +4,16 @@ import { BancoProfesional } from '../../domain/entities/banco-profesional.entity
 
 @Injectable()
 export class GetMyProfileUseCase {
-    constructor(
-        @Inject('BANCO_PROFESIONAL_REPOSITORY')
-        private readonly repository: IBancoProfesionalRepository
-    ) { }
+  constructor(
+    @Inject('BANCO_PROFESIONAL_REPOSITORY')
+    private readonly repository: IBancoProfesionalRepository,
+  ) {}
 
-    async execute(userId: string): Promise<BancoProfesional> {
-        const profile = await this.repository.findById(userId);
-        if (!profile) {
-            throw new NotFoundException('Perfil profesional no encontrado');
-        }
-        return profile;
+  async execute(userId: string): Promise<BancoProfesional> {
+    const profile = await this.repository.findById(userId);
+    if (!profile) {
+      throw new NotFoundException('Perfil profesional no encontrado');
     }
+    return profile;
+  }
 }

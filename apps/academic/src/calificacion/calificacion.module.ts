@@ -5,20 +5,27 @@ import { CALIFICACION_REPOSITORY } from './domain/repositories/calificacion.repo
 import { PrismaCalificacionRepository } from './infrastructure/database/prisma-calificacion.repository';
 import { CalificacionController } from './infrastructure/controllers/calificacion.controller';
 import {
-  GetCalificacionsUseCase, GetCalificacionByIdUseCase, CreateCalificacionUseCase, UpdateCalificacionUseCase, DeleteCalificacionUseCase
+  GetCalificacionsUseCase,
+  GetCalificacionByIdUseCase,
+  CreateCalificacionUseCase,
+  UpdateCalificacionUseCase,
+  DeleteCalificacionUseCase,
 } from './application/use-cases/calificacion.use-cases';
 
 @Module({
   imports: [DatabaseModule, CaslModule],
   controllers: [CalificacionController],
   providers: [
-    { provide: CALIFICACION_REPOSITORY, useClass: PrismaCalificacionRepository },
+    {
+      provide: CALIFICACION_REPOSITORY,
+      useClass: PrismaCalificacionRepository,
+    },
     GetCalificacionsUseCase,
     GetCalificacionByIdUseCase,
     CreateCalificacionUseCase,
     UpdateCalificacionUseCase,
     DeleteCalificacionUseCase,
   ],
-  exports: [GetCalificacionsUseCase, GetCalificacionByIdUseCase]
+  exports: [GetCalificacionsUseCase, GetCalificacionByIdUseCase],
 })
 export class CalificacionModule {}

@@ -12,7 +12,7 @@ import { LoginDto, ForgotPasswordDto, ResetPasswordDto } from './dto/auth.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @Public()
   @Post('login')
@@ -28,7 +28,7 @@ export class AuthController {
       );
     }
 
-    return this.authService.login(user);
+    return this.authService.login(user, dto.tokenDispositivo);
   }
 
   @Get('profile')

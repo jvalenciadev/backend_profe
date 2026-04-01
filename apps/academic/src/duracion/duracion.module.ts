@@ -5,7 +5,11 @@ import { DURACION_REPOSITORY } from './domain/repositories/duracion.repository.i
 import { PrismaDuracionRepository } from './infrastructure/database/prisma-duracion.repository';
 import { DuracionController } from './infrastructure/controllers/duracion.controller';
 import {
-  GetDuracionsUseCase, GetDuracionByIdUseCase, CreateDuracionUseCase, UpdateDuracionUseCase, DeleteDuracionUseCase
+  GetDuracionsUseCase,
+  GetDuracionByIdUseCase,
+  CreateDuracionUseCase,
+  UpdateDuracionUseCase,
+  DeleteDuracionUseCase,
 } from './application/use-cases/duracion.use-cases';
 
 @Module({
@@ -19,6 +23,6 @@ import {
     UpdateDuracionUseCase,
     DeleteDuracionUseCase,
   ],
-  exports: [GetDuracionsUseCase, GetDuracionByIdUseCase]
+  exports: [GetDuracionsUseCase, GetDuracionByIdUseCase],
 })
 export class DuracionModule {}

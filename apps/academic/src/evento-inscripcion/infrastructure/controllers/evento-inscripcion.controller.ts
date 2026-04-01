@@ -1,7 +1,23 @@
-import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard, PoliciesGuard, CheckPolicies } from '@app/common';
 import {
-  GetEventoInscripcionsUseCase, GetEventoInscripcionByIdUseCase, CreateEventoInscripcionUseCase, UpdateEventoInscripcionUseCase, DeleteEventoInscripcionUseCase
+  GetEventoInscripcionsUseCase,
+  GetEventoInscripcionByIdUseCase,
+  CreateEventoInscripcionUseCase,
+  UpdateEventoInscripcionUseCase,
+  DeleteEventoInscripcionUseCase,
 } from '../../application/use-cases/evento-inscripcion.use-cases';
 
 @Controller('eventos-inscripciones')
@@ -30,24 +46,42 @@ export class EventoInscripcionController {
   @Post()
   @CheckPolicies((ability: any) => ability.can('create', 'EventoInscripcion'))
   create(@Body() data: any, @Req() req: any) {
-    return this.createEventoInscripcionUseCase.execute(data, req.user?.id, req.user?.tenantId);
+    return this.createEventoInscripcionUseCase.execute(
+      data,
+      req.user?.id,
+      req.user?.tenantId,
+    );
   }
 
   @Put(':id')
   @CheckPolicies((ability: any) => ability.can('update', 'EventoInscripcion'))
   updatePut(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updateEventoInscripcionUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updateEventoInscripcionUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Patch(':id')
   @CheckPolicies((ability: any) => ability.can('update', 'EventoInscripcion'))
   updatePatch(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updateEventoInscripcionUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updateEventoInscripcionUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Delete(':id')
   @CheckPolicies((ability: any) => ability.can('delete', 'EventoInscripcion'))
   remove(@Param('id') id: string, @Req() req: any) {
-    return this.deleteEventoInscripcionUseCase.execute(id, req.user?.id, req.ability);
+    return this.deleteEventoInscripcionUseCase.execute(
+      id,
+      req.user?.id,
+      req.ability,
+    );
   }
 }

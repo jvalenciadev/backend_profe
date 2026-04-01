@@ -19,7 +19,7 @@ import { UploadConfigService } from './upload-config.service';
 @Controller('upload')
 @UseGuards(JwtAuthGuard)
 export class UploadController {
-  constructor(private readonly uploadConfig: UploadConfigService) { }
+  constructor(private readonly uploadConfig: UploadConfigService) {}
 
   @Post(':tableName')
   @UseInterceptors(
@@ -32,22 +32,18 @@ export class UploadController {
     @Param('tableName') tableName: string,
     @CurrentUser() user: any,
   ) {
-    if (!file)
-      throw new BadRequestException('No se ha subido ningún archivo');
+    if (!file) throw new BadRequestException('No se ha subido ningún archivo');
 
     // Validar dinámicamente según BD
     await this.uploadConfig.validateImage(tableName, file);
 
     // Obtener ruta dinámica
-    const finalPath = await this.uploadConfig.getDynamicPath(
-      user,
-      tableName,
-    );
+    const finalPath = await this.uploadConfig.getDynamicPath(user, tableName);
 
     // Generar nombre único usando UUID para evitar ejecución y conflictos
     const secureId = crypto.randomUUID();
     const fileExt = path.extname(file.originalname).toLowerCase();
-    
+
     if (fileExt.includes('/') || fileExt.includes('\\')) {
       throw new BadRequestException('Formato de extensión inválido');
     }

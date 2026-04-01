@@ -1,7 +1,23 @@
-import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard, PoliciesGuard, CheckPolicies } from '@app/common';
 import {
-  GetVersionsUseCase, GetVersionByIdUseCase, CreateVersionUseCase, UpdateVersionUseCase, DeleteVersionUseCase
+  GetVersionsUseCase,
+  GetVersionByIdUseCase,
+  CreateVersionUseCase,
+  UpdateVersionUseCase,
+  DeleteVersionUseCase,
 } from '../../application/use-cases/version.use-cases';
 
 @Controller('versiones')
@@ -13,7 +29,7 @@ export class VersionController {
     private readonly createVersionUseCase: CreateVersionUseCase,
     private readonly updateVersionUseCase: UpdateVersionUseCase,
     private readonly deleteVersionUseCase: DeleteVersionUseCase,
-  ) { }
+  ) {}
 
   @Get()
   @CheckPolicies((ability: any) => ability.can('read', 'ProgramaVersion'))
@@ -30,19 +46,33 @@ export class VersionController {
   @Post()
   @CheckPolicies((ability: any) => ability.can('create', 'ProgramaVersion'))
   create(@Body() data: any, @Req() req: any) {
-    return this.createVersionUseCase.execute(data, req.user?.id, req.user?.tenantId);
+    return this.createVersionUseCase.execute(
+      data,
+      req.user?.id,
+      req.user?.tenantId,
+    );
   }
 
   @Put(':id')
   @CheckPolicies((ability: any) => ability.can('update', 'ProgramaVersion'))
   updatePut(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updateVersionUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updateVersionUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Patch(':id')
   @CheckPolicies((ability: any) => ability.can('update', 'ProgramaVersion'))
   updatePatch(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updateVersionUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updateVersionUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Delete(':id')

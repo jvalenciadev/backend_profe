@@ -68,11 +68,7 @@ import { AcademicService } from './academic.service';
     AsignacionFacilitadorModule,
     AulaCategoriaModule,
   ],
-  controllers: [
-    AcademicController,
-  ],
-  providers: [
-    AcademicService,
-  ],
+  controllers: [AcademicController],
+  providers: [AcademicService],
 })
-export class AcademicModule { }
+export class AcademicModule {}

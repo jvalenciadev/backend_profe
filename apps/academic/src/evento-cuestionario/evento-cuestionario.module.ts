@@ -5,14 +5,22 @@ import { EVENTOCUESTIONARIO_REPOSITORY } from './domain/repositories/evento-cues
 import { PrismaEventoCuestionarioRepository } from './infrastructure/database/prisma-evento-cuestionario.repository';
 import { EventoCuestionarioController } from './infrastructure/controllers/evento-cuestionario.controller';
 import {
-  GetEventoCuestionariosUseCase, GetEventoCuestionarioByIdUseCase, CreateEventoCuestionarioUseCase, UpdateEventoCuestionarioUseCase, DeleteEventoCuestionarioUseCase, GetEventoProgressUseCase
+  GetEventoCuestionariosUseCase,
+  GetEventoCuestionarioByIdUseCase,
+  CreateEventoCuestionarioUseCase,
+  UpdateEventoCuestionarioUseCase,
+  DeleteEventoCuestionarioUseCase,
+  GetEventoProgressUseCase,
 } from './application/use-cases/evento-cuestionario.use-cases';
 
 @Module({
   imports: [DatabaseModule, CaslModule],
   controllers: [EventoCuestionarioController],
   providers: [
-    { provide: EVENTOCUESTIONARIO_REPOSITORY, useClass: PrismaEventoCuestionarioRepository },
+    {
+      provide: EVENTOCUESTIONARIO_REPOSITORY,
+      useClass: PrismaEventoCuestionarioRepository,
+    },
     GetEventoCuestionariosUseCase,
     GetEventoCuestionarioByIdUseCase,
     CreateEventoCuestionarioUseCase,
@@ -20,6 +28,10 @@ import {
     DeleteEventoCuestionarioUseCase,
     GetEventoProgressUseCase,
   ],
-  exports: [GetEventoCuestionariosUseCase, GetEventoCuestionarioByIdUseCase, GetEventoProgressUseCase]
+  exports: [
+    GetEventoCuestionariosUseCase,
+    GetEventoCuestionarioByIdUseCase,
+    GetEventoProgressUseCase,
+  ],
 })
-export class EventoCuestionarioModule { }
+export class EventoCuestionarioModule {}

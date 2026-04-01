@@ -1,5 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { DISTRITO_REPOSITORY, DistritoFilters } from '../../domain/repositories/distrito.repository.interface';
+import {
+  DISTRITO_REPOSITORY,
+  DistritoFilters,
+} from '../../domain/repositories/distrito.repository.interface';
 import type { IDistritoRepository } from '../../domain/repositories/distrito.repository.interface';
 import { Distrito } from '../../domain/entities/distrito.entity';
 
@@ -10,7 +13,9 @@ export class GetDistritosUseCase {
     private readonly repository: IDistritoRepository,
   ) {}
 
-  async execute(filters: DistritoFilters = {}): Promise<{ data: Distrito[]; total: number }> {
+  async execute(
+    filters: DistritoFilters = {},
+  ): Promise<{ data: Distrito[]; total: number }> {
     return await this.repository.findAll(filters);
   }
 }

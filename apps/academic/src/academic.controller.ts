@@ -12,7 +12,9 @@ import { JwtAuthGuard, CurrentUser } from '@app/common';
 
 @Controller('academic-ops')
 export class AcademicController {
-  constructor(private readonly createVersionUseCase: CreateAcademicVersionUseCase) { }
+  constructor(
+    private readonly createVersionUseCase: CreateAcademicVersionUseCase,
+  ) {}
 
   /**
    * Crear versión operativa desde un Maestro (Programa)
@@ -23,7 +25,7 @@ export class AcademicController {
   versionalizar(
     @Param('id') id: string,
     @Body() data: any,
-    @CurrentUser() user: any
+    @CurrentUser() user: any,
   ) {
     return this.createVersionUseCase.execute(id, data, user);
   }
@@ -34,4 +36,3 @@ export class AcademicController {
     return { status: 'ok' };
   }
 }
- 

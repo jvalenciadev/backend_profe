@@ -1,5 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { PROGRAMA_REPOSITORY, ProgramaFilters } from '../../domain/repositories/programa.repository.interface';
+import {
+  PROGRAMA_REPOSITORY,
+  ProgramaFilters,
+} from '../../domain/repositories/programa.repository.interface';
 import type { IProgramaRepository } from '../../domain/repositories/programa.repository.interface';
 import { Programa } from '../../domain/entities/programa.entity';
 
@@ -10,7 +13,9 @@ export class GetProgramasUseCase {
     private readonly repository: IProgramaRepository,
   ) {}
 
-  async execute(filters: ProgramaFilters = {}): Promise<{ data: Programa[]; total: number }> {
+  async execute(
+    filters: ProgramaFilters = {},
+  ): Promise<{ data: Programa[]; total: number }> {
     return await this.repository.findAll(filters);
   }
 }

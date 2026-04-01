@@ -1,7 +1,23 @@
-import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard, PoliciesGuard, CheckPolicies } from '@app/common';
 import {
-  GetModuloMaestrosUseCase, GetModuloMaestroByIdUseCase, CreateModuloMaestroUseCase, UpdateModuloMaestroUseCase, DeleteModuloMaestroUseCase
+  GetModuloMaestrosUseCase,
+  GetModuloMaestroByIdUseCase,
+  CreateModuloMaestroUseCase,
+  UpdateModuloMaestroUseCase,
+  DeleteModuloMaestroUseCase,
 } from '../../application/use-cases/modulo-maestro.use-cases';
 
 @Controller('modulos-maestros')
@@ -30,24 +46,42 @@ export class ModuloMaestroController {
   @Post()
   @CheckPolicies((ability: any) => ability.can('create', 'ModuloMaestro'))
   create(@Body() data: any, @Req() req: any) {
-    return this.createModuloMaestroUseCase.execute(data, req.user?.id, req.user?.tenantId);
+    return this.createModuloMaestroUseCase.execute(
+      data,
+      req.user?.id,
+      req.user?.tenantId,
+    );
   }
 
   @Put(':id')
   @CheckPolicies((ability: any) => ability.can('update', 'ModuloMaestro'))
   updatePut(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updateModuloMaestroUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updateModuloMaestroUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Patch(':id')
   @CheckPolicies((ability: any) => ability.can('update', 'ModuloMaestro'))
   updatePatch(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updateModuloMaestroUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updateModuloMaestroUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Delete(':id')
   @CheckPolicies((ability: any) => ability.can('delete', 'ModuloMaestro'))
   remove(@Param('id') id: string, @Req() req: any) {
-    return this.deleteModuloMaestroUseCase.execute(id, req.user?.id, req.ability);
+    return this.deleteModuloMaestroUseCase.execute(
+      id,
+      req.user?.id,
+      req.ability,
+    );
   }
 }

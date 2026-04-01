@@ -12,19 +12,28 @@ export class CreateSedeUseCase {
     private readonly repository: ISedeRepository,
     @Inject(DEPARTAMENTO_REPOSITORY)
     private readonly departamentoRepository: IDepartamentoRepository,
-  ) { }
+  ) {}
 
   async execute(data: any): Promise<Sede> {
     if (data.departamentoId) {
-      const depto = await this.departamentoRepository.findById(data.departamentoId);
+      const depto = await this.departamentoRepository.findById(
+        data.departamentoId,
+      );
       if (!depto) {
-        throw new BadRequestException(`El departamento con ID ${data.departamentoId} no existe.`);
+        throw new BadRequestException(
+          `El departamento con ID ${data.departamentoId} no existe.`,
+        );
       }
     } else {
-      throw new BadRequestException('La sede debe estar vinculada a un departamento.');
+      throw new BadRequestException(
+        'La sede debe estar vinculada a un departamento.',
+      );
     }
 
     // Basic business rule validation hook
-    return await this.repository.create({ ...data, estado: data.estado || 'activo' });
+    return await this.repository.create({
+      ...data,
+      estado: data.estado || 'activo',
+    });
   }
 }

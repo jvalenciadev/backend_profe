@@ -1,8 +1,29 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard, PoliciesGuard, CheckPolicies, Public } from '@app/common';
-import { GetDepartamentosUseCase, GetDepartamentoByIdUseCase } from '../../application/use-cases/get-departamentos.use-case';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  JwtAuthGuard,
+  PoliciesGuard,
+  CheckPolicies,
+  Public,
+} from '@app/common';
+import {
+  GetDepartamentosUseCase,
+  GetDepartamentoByIdUseCase,
+} from '../../application/use-cases/get-departamentos.use-case';
 import { CreateDepartamentoUseCase } from '../../application/use-cases/create-departamento.use-case';
-import { UpdateDepartamentoUseCase, DeleteDepartamentoUseCase } from '../../application/use-cases/update-departamento.use-case';
+import {
+  UpdateDepartamentoUseCase,
+  DeleteDepartamentoUseCase,
+} from '../../application/use-cases/update-departamento.use-case';
 
 @Controller('departamentos')
 @UseGuards(JwtAuthGuard, PoliciesGuard)
@@ -13,7 +34,7 @@ export class DepartamentoController {
     private readonly createDepartamentoUseCase: CreateDepartamentoUseCase,
     private readonly updateDepartamentoUseCase: UpdateDepartamentoUseCase,
     private readonly deleteDepartamentoUseCase: DeleteDepartamentoUseCase,
-  ) { }
+  ) {}
 
   @Get()
   @Public()
@@ -26,7 +47,12 @@ export class DepartamentoController {
       page,
       limit,
     });
-    return { ...result, page, limit, totalPages: Math.ceil(result.total / limit) };
+    return {
+      ...result,
+      page,
+      limit,
+      totalPages: Math.ceil(result.total / limit),
+    };
   }
 
   @Get(':id')

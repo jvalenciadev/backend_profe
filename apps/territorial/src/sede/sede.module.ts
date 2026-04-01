@@ -5,8 +5,14 @@ import { SEDE_REPOSITORY } from './domain/repositories/sede.repository.interface
 import { PrismaSedeRepository } from './infrastructure/database/prisma-sede.repository';
 import { SedeController } from './infrastructure/controllers/sede.controller';
 import { CreateSedeUseCase } from './application/use-cases/create-sede.use-case';
-import { GetSedesUseCase, GetSedeByIdUseCase } from './application/use-cases/get-sedes.use-case';
-import { UpdateSedeUseCase, DeleteSedeUseCase } from './application/use-cases/update-sede.use-case';
+import {
+  GetSedesUseCase,
+  GetSedeByIdUseCase,
+} from './application/use-cases/get-sedes.use-case';
+import {
+  UpdateSedeUseCase,
+  DeleteSedeUseCase,
+} from './application/use-cases/update-sede.use-case';
 import { DepartamentoModule } from '../departamento/departamento.module';
 
 @Module({
@@ -22,4 +28,4 @@ import { DepartamentoModule } from '../departamento/departamento.module';
   ],
   exports: [GetSedesUseCase],
 })
-export class SedeModule { }
+export class SedeModule {}

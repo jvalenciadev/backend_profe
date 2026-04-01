@@ -1,3 +1,6 @@
 export class EventoInscripcion {
-  constructor(public id: string, public data: any) {}
+  constructor(
+    public id: string,
+    public data: any,
+  ) {}
 }

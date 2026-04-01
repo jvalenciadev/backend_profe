@@ -5,12 +5,12 @@ import { Inscripcion } from '../../domain/entities/inscripcion.entity';
 
 @Injectable()
 export class GetInscripcionsUseCase {
-    constructor(
-        @Inject(INSCRIPCION_REPOSITORY)
-        private readonly repository: IInscripcionRepository,
-    ) { }
+  constructor(
+    @Inject(INSCRIPCION_REPOSITORY)
+    private readonly repository: IInscripcionRepository,
+  ) {}
 
-    async execute(filter?: any): Promise<Inscripcion[]> {
-        return this.repository.findAll(filter);
-    }
+  async execute(filter?: any): Promise<Inscripcion[]> {
+    return this.repository.findAll(filter);
+  }
 }

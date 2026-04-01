@@ -5,20 +5,27 @@ import { PROGRAMAVERSION_REPOSITORY } from './domain/repositories/programa-versi
 import { PrismaProgramaVersionRepository } from './infrastructure/database/prisma-programa-version.repository';
 import { ProgramaVersionController } from './infrastructure/controllers/programa-version.controller';
 import {
-  GetProgramaVersionsUseCase, GetProgramaVersionByIdUseCase, CreateProgramaVersionUseCase, UpdateProgramaVersionUseCase, DeleteProgramaVersionUseCase
+  GetProgramaVersionsUseCase,
+  GetProgramaVersionByIdUseCase,
+  CreateProgramaVersionUseCase,
+  UpdateProgramaVersionUseCase,
+  DeleteProgramaVersionUseCase,
 } from './application/use-cases/programa-version.use-cases';
 
 @Module({
   imports: [DatabaseModule, CaslModule],
   controllers: [ProgramaVersionController],
   providers: [
-    { provide: PROGRAMAVERSION_REPOSITORY, useClass: PrismaProgramaVersionRepository },
+    {
+      provide: PROGRAMAVERSION_REPOSITORY,
+      useClass: PrismaProgramaVersionRepository,
+    },
     GetProgramaVersionsUseCase,
     GetProgramaVersionByIdUseCase,
     CreateProgramaVersionUseCase,
     UpdateProgramaVersionUseCase,
     DeleteProgramaVersionUseCase,
   ],
-  exports: [GetProgramaVersionsUseCase, GetProgramaVersionByIdUseCase]
+  exports: [GetProgramaVersionsUseCase, GetProgramaVersionByIdUseCase],
 })
 export class ProgramaVersionModule {}

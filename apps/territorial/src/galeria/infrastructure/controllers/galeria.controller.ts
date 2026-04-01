@@ -1,7 +1,23 @@
-import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard, PoliciesGuard, CheckPolicies } from '@app/common';
 import {
-  GetGaleriasUseCase, GetGaleriaByIdUseCase, CreateGaleriaUseCase, UpdateGaleriaUseCase, DeleteGaleriaUseCase
+  GetGaleriasUseCase,
+  GetGaleriaByIdUseCase,
+  CreateGaleriaUseCase,
+  UpdateGaleriaUseCase,
+  DeleteGaleriaUseCase,
 } from '../../application/use-cases/galeria.use-cases';
 
 @Controller('galerias')
@@ -30,19 +46,33 @@ export class GaleriaController {
   @Post()
   @CheckPolicies((ability: any) => ability.can('create', 'Galeria'))
   create(@Body() data: any, @Req() req: any) {
-    return this.createGaleriaUseCase.execute(data, req.user?.id, req.user?.tenantId);
+    return this.createGaleriaUseCase.execute(
+      data,
+      req.user?.id,
+      req.user?.tenantId,
+    );
   }
 
   @Put(':id')
   @CheckPolicies((ability: any) => ability.can('update', 'Galeria'))
   updatePut(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updateGaleriaUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updateGaleriaUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Patch(':id')
   @CheckPolicies((ability: any) => ability.can('update', 'Galeria'))
   updatePatch(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updateGaleriaUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updateGaleriaUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Delete(':id')

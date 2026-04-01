@@ -1,7 +1,23 @@
-import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard, PoliciesGuard, CheckPolicies } from '@app/common';
 import {
-  GetTiposUseCase, GetTipoByIdUseCase, CreateTipoUseCase, UpdateTipoUseCase, DeleteTipoUseCase
+  GetTiposUseCase,
+  GetTipoByIdUseCase,
+  CreateTipoUseCase,
+  UpdateTipoUseCase,
+  DeleteTipoUseCase,
 } from '../../application/use-cases/tipo.use-cases';
 
 @Controller('tipos')
@@ -13,7 +29,7 @@ export class TipoController {
     private readonly createTipoUseCase: CreateTipoUseCase,
     private readonly updateTipoUseCase: UpdateTipoUseCase,
     private readonly deleteTipoUseCase: DeleteTipoUseCase,
-  ) { }
+  ) {}
 
   @Get()
   @CheckPolicies((ability: any) => ability.can('read', 'ProgramaTipo'))
@@ -30,7 +46,11 @@ export class TipoController {
   @Post()
   @CheckPolicies((ability: any) => ability.can('create', 'ProgramaTipo'))
   create(@Body() data: any, @Req() req: any) {
-    return this.createTipoUseCase.execute(data, req.user?.id, req.user?.tenantId);
+    return this.createTipoUseCase.execute(
+      data,
+      req.user?.id,
+      req.user?.tenantId,
+    );
   }
 
   @Put(':id')

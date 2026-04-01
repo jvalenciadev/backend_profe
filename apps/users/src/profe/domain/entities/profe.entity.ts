@@ -28,5 +28,5 @@ export class Profe {
     public colorSecundario: string | null,
     public mantenimiento: boolean,
     public estado: string,
-  ) { }
+  ) {}
 }

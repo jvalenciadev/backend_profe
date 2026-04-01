@@ -1,22 +1,22 @@
 export class Evento {
-    constructor(
-        public id: string,
-        public nombre: string,
-        public descripcion: string | null,
-        public codigo: string | null,
-        public modalidadIds: string | null,
-        public fecha: Date | null,
-        public lugar: string | null,
-        public banner: string | null,
-        public afiche: string | null,
-        public tipoId: string | null,
-        public tenantId: string | null,
-        public codigoAsistencia: string | null,
-        public estado: string,
-        public tipo?: any,
-        public tenant?: any,
-        public inscritos: number = 0,
-        public asistidos: number = 0,
-        public camposExtras: any[] = []
-    ) { }
+  constructor(
+    public id: string,
+    public nombre: string,
+    public descripcion: string | null,
+    public codigo: string | null,
+    public modalidadIds: string | null,
+    public fecha: Date | null,
+    public lugar: string | null,
+    public banner: string | null,
+    public afiche: string | null,
+    public tipoId: string | null,
+    public tenantId: string | null,
+    public codigoAsistencia: string | null,
+    public estado: string,
+    public tipo?: any,
+    public tenant?: any,
+    public inscritos: number = 0,
+    public asistidos: number = 0,
+    public camposExtras: any[] = [],
+  ) {}
 }

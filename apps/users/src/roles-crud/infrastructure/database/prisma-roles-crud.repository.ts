@@ -8,7 +8,7 @@ export class PrismaRoleRepository implements IRoleRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly caslPrisma: CaslPrismaService,
-  ) { }
+  ) {}
 
   async findAll(filter: any = {}, ability?: any): Promise<any[]> {
     const { tenantId, search, ...rest } = filter;
@@ -23,7 +23,7 @@ export class PrismaRoleRepository implements IRoleRepository {
 
     return await (this.prisma as any).role.findMany({
       where,
-      include: { rolePermissions: { include: { permission: true } } }
+      include: { rolePermissions: { include: { permission: true } } },
     });
   }
 
@@ -35,42 +35,72 @@ export class PrismaRoleRepository implements IRoleRepository {
     }
     return await (this.prisma as any).role.findFirst({
       where,
-      include: { rolePermissions: { include: { permission: true } } }
+      include: { rolePermissions: { include: { permission: true } } },
     });
   }
 
-  async create(data: any, userId?: string, forcedTenantId?: string): Promise<any> {
-    const { permissions, id: _, createdAt: __, updatedAt: ___, rolePermissions: ____, ...roleData } = data;
+  async create(
+    data: any,
+    userId?: string,
+    forcedTenantId?: string,
+  ): Promise<any> {
+    const {
+      permissions,
+      id: _,
+      createdAt: __,
+      updatedAt: ___,
+      rolePermissions: ____,
+      ...roleData
+    } = data;
     return await (this.prisma as any).role.create({
       data: {
         ...roleData,
         createdBy: userId,
-        rolePermissions: permissions ? {
-          create: permissions.map((pId: string) => ({ permissionId: pId }))
-        } : undefined
-      }
+        rolePermissions: permissions
+          ? {
+              create: permissions.map((pId: string) => ({ permissionId: pId })),
+            }
+          : undefined,
+      },
     });
   }
 
-  async update(id: string, data: any, userId?: string, ability?: any): Promise<any> {
+  async update(
+    id: string,
+    data: any,
+    userId?: string,
+    ability?: any,
+  ): Promise<any> {
     let where: any = { id };
     if (ability) {
       const caslWhere = this.caslPrisma.getWhere(ability, 'update', 'Role');
       where = { AND: [where, caslWhere] };
     }
     const exists = await (this.prisma as any).role.findFirst({ where });
-    if (!exists) throw new Error('No tiene permisos para editar este registro o no existe');
+    if (!exists)
+      throw new Error(
+        'No tiene permisos para editar este registro o no existe',
+      );
 
-    const { permissions, id: _, createdAt: __, updatedAt: ___, rolePermissions: ____, ...roleData } = data;
+    const {
+      permissions,
+      id: _,
+      createdAt: __,
+      updatedAt: ___,
+      rolePermissions: ____,
+      ...roleData
+    } = data;
     return await (this.prisma as any).role.update({
       where: { id },
       data: {
         ...roleData,
         updatedBy: userId,
-        rolePermissions: permissions ? {
-          deleteMany: {},
-          create: permissions.map((pId: string) => ({ permissionId: pId }))
-        } : undefined
+        rolePermissions: permissions
+          ? {
+              deleteMany: {},
+              create: permissions.map((pId: string) => ({ permissionId: pId })),
+            }
+          : undefined,
       },
     });
   }
@@ -82,7 +112,10 @@ export class PrismaRoleRepository implements IRoleRepository {
       where = { AND: [where, caslWhere] };
     }
     const exists = await (this.prisma as any).role.findFirst({ where });
-    if (!exists) throw new Error('No tiene permisos para eliminar este registro o no existe');
+    if (!exists)
+      throw new Error(
+        'No tiene permisos para eliminar este registro o no existe',
+      );
 
     const hasStatus = true;
     if (hasStatus) {

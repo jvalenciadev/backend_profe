@@ -1,6 +1,20 @@
-import { Controller, Get, Post, Put, Patch, Delete, Body, UseGuards, Request, Param, Query, BadRequestException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Delete,
+  Body,
+  UseGuards,
+  Request,
+  Param,
+  Query,
+  BadRequestException,
+} from '@nestjs/common';
 import { LmsService } from './lms.service';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { AppConfigService } from './app-config/app-config.service';
 
 /**
  * LmsController — Puerto 3008 (Aula Virtual)
@@ -10,11 +24,18 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
  */
 @Controller()
 export class LmsController {
-  constructor(private readonly lmsService: LmsService) { }
+  constructor(
+    private readonly lmsService: LmsService,
+    private readonly appConfigService: AppConfigService,
+  ) { }
 
   @Post('auth/login')
   async login(@Body() body: any) {
-    return this.lmsService.login(body.username, body.password, body.tokenDispositivo);
+    return this.lmsService.login(
+      body.username,
+      body.password,
+      body.tokenDispositivo,
+    );
   }
 
   @UseGuards(JwtAuthGuard)
@@ -31,8 +52,13 @@ export class LmsController {
 
   @UseGuards(JwtAuthGuard)
   @Get('docencia/:id/estudiantes')
-  async getEstudiantesPorCurso(@Param('id') id: string, @Query('turnoId') turnoId: string) {
-    console.log(`[DEBUG] getEstudiantes → moduloId: "${id}", turnoId: "${turnoId}"`);
+  async getEstudiantesPorCurso(
+    @Param('id') id: string,
+    @Query('turnoId') turnoId: string,
+  ) {
+    console.log(
+      `[DEBUG] getEstudiantes → moduloId: "${id}", turnoId: "${turnoId}"`,
+    );
     const result = await this.lmsService.getEstudiantesPorCurso(id, turnoId);
     console.log(`[DEBUG] getEstudiantes → found: ${result.length} estudiantes`);
     return result;
@@ -40,13 +66,20 @@ export class LmsController {
 
   @UseGuards(JwtAuthGuard)
   @Get('curso/:id')
-  async getCourseContent(@Param('id') id: string, @Query('turnoId') turnoId: string, @Request() req: any) {
+  async getCourseContent(
+    @Param('id') id: string,
+    @Query('turnoId') turnoId: string,
+    @Request() req: any,
+  ) {
     return this.lmsService.getCourseContent(id, req.user.id, turnoId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('curso/:id/actividad/:actId')
-  async getActividadDetalle(@Param('id') id: string, @Param('actId') actId: string) {
+  async getActividadDetalle(
+    @Param('id') id: string,
+    @Param('actId') actId: string,
+  ) {
     return this.lmsService.getActividadDetalle(actId);
   }
 
@@ -60,7 +93,11 @@ export class LmsController {
 
   @UseGuards(JwtAuthGuard)
   @Post('foro/:id/post')
-  async crearPost(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+  async crearPost(
+    @Param('id') id: string,
+    @Body() body: any,
+    @Request() req: any,
+  ) {
     return this.lmsService.crearPost(id, req.user.id, body);
   }
 
@@ -68,14 +105,22 @@ export class LmsController {
 
   @UseGuards(JwtAuthGuard)
   @Post('tarea/:id/entrega')
-  async submitTarea(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+  async submitTarea(
+    @Param('id') id: string,
+    @Body() body: any,
+    @Request() req: any,
+  ) {
     return this.lmsService.submitTarea(id, req.user.id, body);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('verificar-pago/:inscripcionId')
   async verificarPago(@Param('inscripcionId') inscripcionId: string) {
-    if (!inscripcionId || inscripcionId === 'undefined' || inscripcionId === 'null') {
+    if (
+      !inscripcionId ||
+      inscripcionId === 'undefined' ||
+      inscripcionId === 'null'
+    ) {
       throw new BadRequestException('El ID de inscripción no es válido');
     }
     return this.lmsService.verificarPago(inscripcionId);
@@ -91,13 +136,20 @@ export class LmsController {
 
   @UseGuards(JwtAuthGuard)
   @Put('actividades/:id')
-  async updateActividad(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+  async updateActividad(
+    @Param('id') id: string,
+    @Body() body: any,
+    @Request() req: any,
+  ) {
     return this.lmsService.updateActividad(req.user.id, id, body);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('actividades/reordenar')
-  async reordenarActividades(@Body() body: { id: string, orden: number }[], @Request() req: any) {
+  async reordenarActividades(
+    @Body() body: { id: string; orden: number }[],
+    @Request() req: any,
+  ) {
     return this.lmsService.reordenarActividades(req.user.id, body);
   }
 
@@ -114,19 +166,32 @@ export class LmsController {
 
   @UseGuards(JwtAuthGuard)
   @Post('modulo/:id/unidades')
-  async crearUnidad(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+  async crearUnidad(
+    @Param('id') id: string,
+    @Body() body: any,
+    @Request() req: any,
+  ) {
     return this.lmsService.crearModuloUnidad(req.user.id, id, body);
   }
 
   @UseGuards(JwtAuthGuard)
   @Put('modulo/:moduloId/unidades/:id')
-  async actualizarUnidad(@Param('moduloId') moduloId: string, @Param('id') id: string, @Body() body: any, @Request() req: any) {
+  async actualizarUnidad(
+    @Param('moduloId') moduloId: string,
+    @Param('id') id: string,
+    @Body() body: any,
+    @Request() req: any,
+  ) {
     return this.lmsService.updateModuloUnidad(req.user.id, moduloId, id, body);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete('modulo/:moduloId/unidades/:id')
-  async eliminarUnidad(@Param('moduloId') moduloId: string, @Param('id') id: string, @Request() req: any) {
+  async eliminarUnidad(
+    @Param('moduloId') moduloId: string,
+    @Param('id') id: string,
+    @Request() req: any,
+  ) {
     return this.lmsService.eliminarModuloUnidad(req.user.id, moduloId, id);
   }
 
@@ -146,13 +211,20 @@ export class LmsController {
 
   @UseGuards(JwtAuthGuard)
   @Put('recursos/:id')
-  async actualizarRecurso(@Param('id') id: string, @Body() body: any, @Request() req: any) {
+  async actualizarRecurso(
+    @Param('id') id: string,
+    @Body() body: any,
+    @Request() req: any,
+  ) {
     return this.lmsService.updateRecurso(req.user.id, id, body);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('recursos/reordenar')
-  async reordenarRecursos(@Body() body: { id: string, orden: number }[], @Request() req: any) {
+  async reordenarRecursos(
+    @Body() body: { id: string; orden: number }[],
+    @Request() req: any,
+  ) {
     return this.lmsService.reordenarRecursos(req.user.id, body);
   }
 
@@ -172,8 +244,18 @@ export class LmsController {
 
   @UseGuards(JwtAuthGuard)
   @Get('modulo/:id/reporte-calificaciones')
-  async getReporteCalificaciones(@Param('id') id: string, @Query('turnoId') turnoId: string, @Request() req: any) {
+  async getReporteCalificaciones(
+    @Param('id') id: string,
+    @Query('turnoId') turnoId: string,
+    @Request() req: any,
+  ) {
     return this.lmsService.getReporteCalificaciones(req.user.id, id, turnoId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('modulo/:id/mis-calificaciones')
+  async getMisCalificaciones(@Param('id') id: string, @Request() req: any) {
+    return this.lmsService.getMisCalificacionesPorModulo(req.user.id, id);
   }
   // ─── CAMPOS EXTRA DEL PERFIL ──────────────────────────────
 
@@ -185,9 +267,16 @@ export class LmsController {
 
   @UseGuards(JwtAuthGuard)
   @Post('perfil/campos-extra')
-  async guardarRespuestaCampoExtra(@Request() req: any, @Body() body: { respuestas: { campoExtraId: string, valor: string }[] }) {
-    if (!body || !body.respuestas) throw new BadRequestException('Se requieren las respuestas');
-    return this.lmsService.guardarRespuestasCampoExtra(req.user.id, body.respuestas);
+  async guardarRespuestaCampoExtra(
+    @Request() req: any,
+    @Body() body: { respuestas: { campoExtraId: string; valor: string }[] },
+  ) {
+    if (!body || !body.respuestas)
+      throw new BadRequestException('Se requieren las respuestas');
+    return this.lmsService.guardarRespuestasCampoExtra(
+      req.user.id,
+      body.respuestas,
+    );
   }
 
   @UseGuards(JwtAuthGuard)
@@ -200,5 +289,23 @@ export class LmsController {
   @Patch('perfil')
   async updatePerfil(@Request() req: any, @Body() body: any) {
     return this.lmsService.updatePerfil(req.user.id, body);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('request-email-verification')
+  async requestEmailVerification(@Request() req: any, @Body('email') email: string) {
+    return this.lmsService.requestEmailVerification(req.user.id, email);
+  }
+
+  @Get('test-push/:userId')
+  async testPush(@Param('userId') userId: string, @Query('tipo') tipo?: string) {
+    return this.lmsService.testPush(userId, tipo);
+  }
+
+  // ─── VERSION MOBILE (Flutter lo llama directamente) ─────────
+  // Flutter: client.lmsDio.get('version-mobile') → /api/aula/version-mobile
+  @Get('version-mobile')
+  async getVersionMobile() {
+    return this.appConfigService.getVersionMobile();
   }
 }

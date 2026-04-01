@@ -1,4 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '@app/database';
 
 @Injectable()
@@ -23,13 +27,15 @@ export class CamposExtraService {
         esObligatorio: Boolean(data.esObligatorio),
         orden: Number(data.orden) || 0,
         opciones: data.opciones || null,
-        estado: 'activo'
-      }
+        estado: 'activo',
+      },
     });
   }
 
   async update(id: string, data: any) {
-    const exists = await this.prisma.mod_campo_extra.findUnique({ where: { id } });
+    const exists = await this.prisma.mod_campo_extra.findUnique({
+      where: { id },
+    });
     if (!exists) throw new NotFoundException('Campo extra no encontrado');
 
     return this.prisma.mod_campo_extra.update({
@@ -37,20 +43,25 @@ export class CamposExtraService {
       data: {
         label: data.label !== undefined ? data.label : undefined,
         tipo: data.tipo !== undefined ? data.tipo : undefined,
-        esObligatorio: data.esObligatorio !== undefined ? Boolean(data.esObligatorio) : undefined,
+        esObligatorio:
+          data.esObligatorio !== undefined
+            ? Boolean(data.esObligatorio)
+            : undefined,
         orden: data.orden !== undefined ? Number(data.orden) : undefined,
         opciones: data.opciones !== undefined ? data.opciones : undefined,
-      }
+      },
     });
   }
 
   async delete(id: string) {
-    const exists = await this.prisma.mod_campo_extra.findUnique({ where: { id } });
+    const exists = await this.prisma.mod_campo_extra.findUnique({
+      where: { id },
+    });
     if (!exists) throw new NotFoundException('Campo extra no encontrado');
 
     return this.prisma.mod_campo_extra.update({
       where: { id },
-      data: { estado: 'inactivo', deletedAt: new Date() }
+      data: { estado: 'inactivo', deletedAt: new Date() },
     });
   }
 }

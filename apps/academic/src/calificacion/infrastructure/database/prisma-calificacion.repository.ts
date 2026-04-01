@@ -18,7 +18,11 @@ export class PrismaCalificacionRepository implements ICalificacionRepository {
     if (hasStatus) where.estado = { not: 'eliminado' };
 
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'Calificacion');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'read',
+        'Calificacion',
+      );
       where = { AND: [where, caslWhere] };
     }
 
@@ -31,26 +35,50 @@ export class PrismaCalificacionRepository implements ICalificacionRepository {
   async findById(id: string, ability?: any): Promise<any | null> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'Calificacion');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'read',
+        'Calificacion',
+      );
       where = { AND: [where, caslWhere] };
     }
-    return await (this.prisma as any).calificacionParticipante.findFirst({ where });
-  }
-
-  async create(data: any, userId?: string, forcedTenantId?: string): Promise<any> {
-    return await (this.prisma as any).calificacionParticipante.create({
-      data: { ...data, createdBy: userId }
+    return await (this.prisma as any).calificacionParticipante.findFirst({
+      where,
     });
   }
 
-  async update(id: string, data: any, userId?: string, ability?: any): Promise<any> {
+  async create(
+    data: any,
+    userId?: string,
+    forcedTenantId?: string,
+  ): Promise<any> {
+    return await (this.prisma as any).calificacionParticipante.create({
+      data: { ...data, createdBy: userId },
+    });
+  }
+
+  async update(
+    id: string,
+    data: any,
+    userId?: string,
+    ability?: any,
+  ): Promise<any> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'update', 'Calificacion');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'update',
+        'Calificacion',
+      );
       where = { AND: [where, caslWhere] };
     }
-    const exists = await (this.prisma as any).calificacionParticipante.findFirst({ where });
-    if (!exists) throw new Error('No tiene permisos para editar este registro o no existe');
+    const exists = await (
+      this.prisma as any
+    ).calificacionParticipante.findFirst({ where });
+    if (!exists)
+      throw new Error(
+        'No tiene permisos para editar este registro o no existe',
+      );
 
     return await (this.prisma as any).calificacionParticipante.update({
       where: { id },
@@ -61,11 +89,20 @@ export class PrismaCalificacionRepository implements ICalificacionRepository {
   async delete(id: string, userId?: string, ability?: any): Promise<void> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'delete', 'Calificacion');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'delete',
+        'Calificacion',
+      );
       where = { AND: [where, caslWhere] };
     }
-    const exists = await (this.prisma as any).calificacionParticipante.findFirst({ where });
-    if (!exists) throw new Error('No tiene permisos para eliminar este registro o no existe');
+    const exists = await (
+      this.prisma as any
+    ).calificacionParticipante.findFirst({ where });
+    if (!exists)
+      throw new Error(
+        'No tiene permisos para eliminar este registro o no existe',
+      );
 
     const hasStatus = true;
     if (hasStatus) {
@@ -74,7 +111,9 @@ export class PrismaCalificacionRepository implements ICalificacionRepository {
         data: { estado: 'eliminado', deletedAt: new Date(), deletedBy: userId },
       });
     } else {
-      await (this.prisma as any).calificacionParticipante.delete({ where: { id } });
+      await (this.prisma as any).calificacionParticipante.delete({
+        where: { id },
+      });
     }
   }
 }

@@ -1,7 +1,23 @@
-import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard, PoliciesGuard, CheckPolicies } from '@app/common';
 import {
-  GetEventoPersonasUseCase, GetEventoPersonaByIdUseCase, CreateEventoPersonaUseCase, UpdateEventoPersonaUseCase, DeleteEventoPersonaUseCase
+  GetEventoPersonasUseCase,
+  GetEventoPersonaByIdUseCase,
+  CreateEventoPersonaUseCase,
+  UpdateEventoPersonaUseCase,
+  DeleteEventoPersonaUseCase,
 } from '../../application/use-cases/evento-persona.use-cases';
 
 @Controller('evento-persona')
@@ -30,24 +46,42 @@ export class EventoPersonaController {
   @Post()
   @CheckPolicies((ability: any) => ability.can('create', 'EventoPersona'))
   create(@Body() data: any, @Req() req: any) {
-    return this.createEventoPersonaUseCase.execute(data, req.user?.id, req.user?.tenantId);
+    return this.createEventoPersonaUseCase.execute(
+      data,
+      req.user?.id,
+      req.user?.tenantId,
+    );
   }
 
   @Put(':id')
   @CheckPolicies((ability: any) => ability.can('update', 'EventoPersona'))
   updatePut(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updateEventoPersonaUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updateEventoPersonaUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Patch(':id')
   @CheckPolicies((ability: any) => ability.can('update', 'EventoPersona'))
   updatePatch(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updateEventoPersonaUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updateEventoPersonaUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Delete(':id')
   @CheckPolicies((ability: any) => ability.can('delete', 'EventoPersona'))
   remove(@Param('id') id: string, @Req() req: any) {
-    return this.deleteEventoPersonaUseCase.execute(id, req.user?.id, req.ability);
+    return this.deleteEventoPersonaUseCase.execute(
+      id,
+      req.user?.id,
+      req.ability,
+    );
   }
 }

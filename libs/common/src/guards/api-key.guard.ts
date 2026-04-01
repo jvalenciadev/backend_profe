@@ -13,7 +13,7 @@ export class ApiKeyGuard implements CanActivate {
   constructor(
     private configService: ConfigService,
     private reflector: Reflector,
-  ) { }
+  ) {}
 
   canActivate(context: ExecutionContext): boolean {
     const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [

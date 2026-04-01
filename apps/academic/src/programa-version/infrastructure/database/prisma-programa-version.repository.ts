@@ -8,7 +8,7 @@ export class PrismaProgramaVersionRepository implements IProgramaVersionReposito
   constructor(
     private readonly prisma: PrismaService,
     private readonly caslPrisma: CaslPrismaService,
-  ) { }
+  ) {}
 
   private mapRecord(record: any) {
     if (!record) return null;
@@ -20,8 +20,8 @@ export class PrismaProgramaVersionRepository implements IProgramaVersionReposito
       fechaIniClase: record.fechaInicioClases,
       turnos: record.turnos?.map((t: any) => ({
         ...t,
-        turnoIds: t.turnoId
-      }))
+        turnoIds: t.turnoId,
+      })),
     };
   }
 
@@ -32,7 +32,11 @@ export class PrismaProgramaVersionRepository implements IProgramaVersionReposito
     if (hasStatus) where.estado = { not: 'eliminado' };
 
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'ProgramaVersion');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'read',
+        'ProgramaVersion',
+      );
       where = { AND: [where, caslWhere] };
     }
 
@@ -40,12 +44,12 @@ export class PrismaProgramaVersionRepository implements IProgramaVersionReposito
       where,
       include: {
         modulos: {
-          orderBy: { orden: 'asc' }
+          orderBy: { orden: 'asc' },
         },
         turnos: {
           include: {
-            turnoConfig: true
-          }
+            turnoConfig: true,
+          },
         },
         programa: true,
         version: true,
@@ -54,46 +58,72 @@ export class PrismaProgramaVersionRepository implements IProgramaVersionReposito
       orderBy: { createdAt: 'desc' },
     });
 
-    return records.map(r => this.mapRecord(r));
+    return records.map((r) => this.mapRecord(r));
   }
 
   async findById(id: string, ability?: any): Promise<any | null> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'ProgramaVersion');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'read',
+        'ProgramaVersion',
+      );
       where = { AND: [where, caslWhere] };
     }
     const record = await this.prisma.programaDos.findFirst({
       where,
       include: {
         modulos: {
-          orderBy: { orden: 'asc' }
+          orderBy: { orden: 'asc' },
         },
         turnos: {
           include: {
-            turnoConfig: true
-          }
+            turnoConfig: true,
+          },
         },
         programa: true,
         version: true,
         sede: true,
-      }
+      },
     });
 
     return this.mapRecord(record);
   }
 
-  async create(data: any, userId?: string, forcedTenantId?: string): Promise<any> {
+  async create(
+    data: any,
+    userId?: string,
+    forcedTenantId?: string,
+  ): Promise<any> {
     const {
-      modulos, turnos,
-      nombreAbre, nombreAbreviado,
-      fechaIniIns, fechaInicioInscripcion,
-      fechaFinIns, fechaFinInscripcion,
-      fechaIniClase, fechaInicioClases,
+      modulos,
+      turnos,
+      nombreAbre,
+      nombreAbreviado,
+      fechaIniIns,
+      fechaInicioInscripcion,
+      fechaFinIns,
+      fechaFinInscripcion,
+      fechaIniClase,
+      fechaInicioClases,
       estado,
-      programa, version, sede,
-      createdAt, updatedAt, deletedAt, createdBy, updatedBy, deletedBy,
-      programaId, versionId, sedeId, duracionId, tipoId, modalidadId, departamentoId,
+      programa,
+      version,
+      sede,
+      createdAt,
+      updatedAt,
+      deletedAt,
+      createdBy,
+      updatedBy,
+      deletedBy,
+      programaId,
+      versionId,
+      sedeId,
+      duracionId,
+      tipoId,
+      modalidadId,
+      departamentoId,
       ...rest
     } = data;
 
@@ -101,10 +131,22 @@ export class PrismaProgramaVersionRepository implements IProgramaVersionReposito
       data: {
         ...rest,
         nombreAbreviado: nombreAbre || nombreAbreviado || rest.nombreAbreviado,
-        fechaInicioInscripcion: fechaIniIns ? new Date(fechaIniIns) : (fechaInicioInscripcion ? new Date(fechaInicioInscripcion) : new Date()),
-        fechaFinInscripcion: fechaFinIns ? new Date(fechaFinIns) : (fechaFinInscripcion ? new Date(fechaFinInscripcion) : new Date()),
-        fechaInicioClases: fechaIniClase ? new Date(fechaIniClase) : (fechaInicioClases ? new Date(fechaInicioClases) : new Date()),
-        estado: (estado || 'activo').toLowerCase() as any,
+        fechaInicioInscripcion: fechaIniIns
+          ? new Date(fechaIniIns)
+          : fechaInicioInscripcion
+            ? new Date(fechaInicioInscripcion)
+            : new Date(),
+        fechaFinInscripcion: fechaFinIns
+          ? new Date(fechaFinIns)
+          : fechaFinInscripcion
+            ? new Date(fechaFinInscripcion)
+            : new Date(),
+        fechaInicioClases: fechaIniClase
+          ? new Date(fechaIniClase)
+          : fechaInicioClases
+            ? new Date(fechaInicioClases)
+            : new Date(),
+        estado: (estado || 'activo').toLowerCase(),
         // IDs
         programaId: data.programaId,
         versionId: data.versionId,
@@ -114,63 +156,113 @@ export class PrismaProgramaVersionRepository implements IProgramaVersionReposito
         modalidadId: data.modalidadId,
         departamentoId: data.departamentoId,
         createdBy: userId,
-        modulos: modulos && Array.isArray(modulos) ? {
-          create: modulos.map((m: any) => ({
-            nombre: m.nombre,
-            codigo: m.codigo,
-            descripcion: m.descripcion || '',
-            orden: m.orden || 0,
-            moduloMaestroId: m.moduloMaestroId || null,
-            fechaInicio: m.fechaInicio ? new Date(m.fechaInicio) : new Date(),
-            fechaFin: m.fechaFin ? new Date(m.fechaFin) : new Date(),
-            estado: (m.estado || 'activo').toLowerCase(),
-            createdBy: userId,
-          }))
-        } : undefined,
-        turnos: turnos && Array.isArray(turnos) ? {
-          create: turnos.map((t: any) => ({
-            turnoId: t.turnoIds || t.turnoId || t.id,
-            cupo: Number(t.cupo) || 0,
-            cupoPre: Number(t.cupoPre) || 0,
-            estado: (t.estado || 'activo').toLowerCase(),
-            createdBy: userId,
-          }))
-        } : undefined
+        modulos:
+          modulos && Array.isArray(modulos)
+            ? {
+                create: modulos.map((m: any) => ({
+                  nombre: m.nombre,
+                  codigo: m.codigo,
+                  descripcion: m.descripcion || '',
+                  orden: m.orden ?? m.pm_orden ?? 0,
+                  moduloMaestroId: m.moduloMaestroId || null,
+                  fechaInicio: m.fechaInicio
+                    ? new Date(m.fechaInicio)
+                    : new Date(),
+                  fechaFin: m.fechaFin ? new Date(m.fechaFin) : new Date(),
+                  estado: (m.estado || 'activo').toLowerCase(),
+                  createdBy: userId,
+                })),
+              }
+            : undefined,
+        turnos:
+          turnos && Array.isArray(turnos)
+            ? {
+                create: turnos.map((t: any) => ({
+                  turnoId: t.turnoIds || t.turnoId || t.id,
+                  cupo: Number(t.cupo) || 0,
+                  cupoPre: Number(t.cupoPre) || 0,
+                  estado: (t.estado || 'activo').toLowerCase(),
+                  createdBy: userId,
+                })),
+              }
+            : undefined,
       },
-      include: { modulos: true, turnos: true }
+      include: { modulos: true, turnos: true },
     });
 
     return this.mapRecord(record);
   }
 
-  async update(id: string, data: any, userId?: string, ability?: any): Promise<any> {
+  async update(
+    id: string,
+    data: any,
+    userId?: string,
+    ability?: any,
+  ): Promise<any> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'update', 'ProgramaVersion');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'update',
+        'ProgramaVersion',
+      );
       where = { AND: [where, caslWhere] };
     }
     const exists = await this.prisma.programaDos.findFirst({ where });
-    if (!exists) throw new Error('No tiene permisos para editar este registro o no existe');
+    if (!exists)
+      throw new Error(
+        'No tiene permisos para editar este registro o no existe',
+      );
 
     const {
-      modulos, turnos,
-      programa, version, sede,
-      nombreAbre, nombreAbreviado,
-      fechaIniIns, fechaInicioInscripcion,
-      fechaFinIns, fechaFinInscripcion,
-      fechaIniClase, fechaInicioClases,
+      modulos,
+      turnos,
+      programa,
+      version,
+      sede,
+      nombreAbre,
+      nombreAbreviado,
+      fechaIniIns,
+      fechaInicioInscripcion,
+      fechaFinIns,
+      fechaFinInscripcion,
+      fechaIniClase,
+      fechaInicioClases,
       estado,
-      createdAt, updatedAt, deletedAt, createdBy, updatedBy, deletedBy,
-      programaId, versionId, sedeId, duracionId, tipoId, modalidadId, departamentoId,
+      createdAt,
+      updatedAt,
+      deletedAt,
+      createdBy,
+      updatedBy,
+      deletedBy,
+      programaId,
+      versionId,
+      sedeId,
+      duracionId,
+      tipoId,
+      modalidadId,
+      departamentoId,
       ...rest
     } = data;
 
     const updateData: any = {
       ...rest,
       nombreAbreviado: nombreAbre || nombreAbreviado || data.nombreAbreviado,
-      fechaInicioInscripcion: fechaIniIns ? new Date(fechaIniIns) : (fechaInicioInscripcion ? new Date(fechaInicioInscripcion) : data.fechaInicioInscripcion),
-      fechaFinInscripcion: fechaFinIns ? new Date(fechaFinIns) : (fechaFinInscripcion ? new Date(fechaFinInscripcion) : data.fechaFinInscripcion),
-      fechaInicioClases: fechaIniClase ? new Date(fechaIniClase) : (fechaInicioClases ? new Date(fechaInicioClases) : data.fechaInicioClases),
+      fechaInicioInscripcion: fechaIniIns
+        ? new Date(fechaIniIns)
+        : fechaInicioInscripcion
+          ? new Date(fechaInicioInscripcion)
+          : data.fechaInicioInscripcion,
+      fechaFinInscripcion: fechaFinIns
+        ? new Date(fechaFinIns)
+        : fechaFinInscripcion
+          ? new Date(fechaFinInscripcion)
+          : data.fechaFinInscripcion,
+      fechaInicioClases: fechaIniClase
+        ? new Date(fechaIniClase)
+        : fechaInicioClases
+          ? new Date(fechaInicioClases)
+          : data.fechaInicioClases,
       estado: (estado || 'activo').toLowerCase(),
       // Add back the IDs extracted for data cleaning
       programaId: programaId || data.programaId,
@@ -180,38 +272,44 @@ export class PrismaProgramaVersionRepository implements IProgramaVersionReposito
       modalidadId: modalidadId || data.modalidadId,
       duracionId: duracionId || data.duracionId,
       departamentoId: departamentoId || data.departamentoId,
-      updatedBy: userId
+      updatedBy: userId,
     };
 
     if (modulos && Array.isArray(modulos)) {
-      const existingIds = modulos.filter((m: any) => m.id).map((m: any) => m.id);
+      const existingIds = modulos
+        .filter((m: any) => m.id)
+        .map((m: any) => m.id);
       updateData.modulos = {
         deleteMany: { id: { notIn: existingIds } },
-        update: modulos.filter((m: any) => m.id).map((m: any) => ({
-          where: { id: m.id },
-          data: {
+        update: modulos
+          .filter((m: any) => m.id)
+          .map((m: any) => ({
+            where: { id: m.id },
+            data: {
+              nombre: m.nombre,
+              codigo: m.codigo,
+              descripcion: m.descripcion || '',
+              orden: m.orden ?? m.pm_orden ?? 0,
+              moduloMaestroId: m.moduloMaestroId || undefined,
+              fechaInicio: m.fechaInicio ? new Date(m.fechaInicio) : undefined,
+              fechaFin: m.fechaFin ? new Date(m.fechaFin) : undefined,
+              estado: (m.estado || 'activo').toLowerCase(),
+              updatedBy: userId,
+            },
+          })),
+        create: modulos
+          .filter((m: any) => !m.id)
+          .map((m: any) => ({
             nombre: m.nombre,
             codigo: m.codigo,
             descripcion: m.descripcion || '',
-            orden: m.orden || 0,
-            moduloMaestroId: m.moduloMaestroId || undefined,
-            fechaInicio: m.fechaInicio ? new Date(m.fechaInicio) : undefined,
-            fechaFin: m.fechaFin ? new Date(m.fechaFin) : undefined,
+            orden: m.orden ?? m.pm_orden ?? 0,
+            moduloMaestroId: m.moduloMaestroId || null,
+            fechaInicio: m.fechaInicio ? new Date(m.fechaInicio) : new Date(),
+            fechaFin: m.fechaFin ? new Date(m.fechaFin) : new Date(),
             estado: (m.estado || 'activo').toLowerCase(),
             updatedBy: userId,
-          }
-        })),
-        create: modulos.filter((m: any) => !m.id).map((m: any) => ({
-          nombre: m.nombre,
-          codigo: m.codigo,
-          descripcion: m.descripcion || '',
-          orden: m.orden || 0,
-          moduloMaestroId: m.moduloMaestroId || null,
-          fechaInicio: m.fechaInicio ? new Date(m.fechaInicio) : new Date(),
-          fechaFin: m.fechaFin ? new Date(m.fechaFin) : new Date(),
-          estado: (m.estado || 'activo').toLowerCase(),
-          updatedBy: userId,
-        }))
+          })),
       };
     }
 
@@ -219,30 +317,34 @@ export class PrismaProgramaVersionRepository implements IProgramaVersionReposito
       const existingIds = turnos.filter((t: any) => t.id).map((t: any) => t.id);
       updateData.turnos = {
         deleteMany: { id: { notIn: existingIds } },
-        update: turnos.filter((t: any) => t.id).map((t: any) => ({
-          where: { id: t.id },
-          data: {
+        update: turnos
+          .filter((t: any) => t.id)
+          .map((t: any) => ({
+            where: { id: t.id },
+            data: {
+              turnoId: t.turnoIds || t.turnoId || t.id,
+              cupo: Number(t.cupo) || 0,
+              cupoPre: Number(t.cupoPre) || 0,
+              estado: (t.estado || 'activo').toLowerCase(),
+              updatedBy: userId,
+            },
+          })),
+        create: turnos
+          .filter((t: any) => !t.id)
+          .map((t: any) => ({
             turnoId: t.turnoIds || t.turnoId || t.id,
             cupo: Number(t.cupo) || 0,
             cupoPre: Number(t.cupoPre) || 0,
             estado: (t.estado || 'activo').toLowerCase(),
             updatedBy: userId,
-          }
-        })),
-        create: turnos.filter((t: any) => !t.id).map((t: any) => ({
-          turnoId: t.turnoIds || t.turnoId || t.id,
-          cupo: Number(t.cupo) || 0,
-          cupoPre: Number(t.cupoPre) || 0,
-          estado: (t.estado || 'activo').toLowerCase(),
-          updatedBy: userId,
-        }))
+          })),
       };
     }
 
     const record = await this.prisma.programaDos.update({
       where: { id },
       data: updateData,
-      include: { modulos: true, turnos: true }
+      include: { modulos: true, turnos: true },
     });
 
     return this.mapRecord(record);
@@ -251,11 +353,18 @@ export class PrismaProgramaVersionRepository implements IProgramaVersionReposito
   async delete(id: string, userId?: string, ability?: any): Promise<void> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'delete', 'ProgramaVersion');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'delete',
+        'ProgramaVersion',
+      );
       where = { AND: [where, caslWhere] };
     }
     const exists = await this.prisma.programaDos.findFirst({ where });
-    if (!exists) throw new Error('No tiene permisos para eliminar este registro o no existe');
+    if (!exists)
+      throw new Error(
+        'No tiene permisos para eliminar este registro o no existe',
+      );
 
     const hasStatus = true;
     if (hasStatus) {

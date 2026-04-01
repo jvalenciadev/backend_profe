@@ -21,11 +21,7 @@ import { UnidadEducativaModule } from './unidad-educativa/unidad-educativa.modul
     ProvinciaModule,
     UnidadEducativaModule,
   ],
-  controllers: [
-    TerritorialController,
-  ],
-  providers: [
-    TerritorialService,
-  ],
+  controllers: [TerritorialController],
+  providers: [TerritorialService],
 })
-export class TerritorialModule { }
+export class TerritorialModule {}

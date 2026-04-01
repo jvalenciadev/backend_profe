@@ -5,7 +5,11 @@ import { VERSION_REPOSITORY } from './domain/repositories/version.repository.int
 import { PrismaVersionRepository } from './infrastructure/database/prisma-version.repository';
 import { VersionController } from './infrastructure/controllers/version.controller';
 import {
-  GetVersionsUseCase, GetVersionByIdUseCase, CreateVersionUseCase, UpdateVersionUseCase, DeleteVersionUseCase
+  GetVersionsUseCase,
+  GetVersionByIdUseCase,
+  CreateVersionUseCase,
+  UpdateVersionUseCase,
+  DeleteVersionUseCase,
 } from './application/use-cases/version.use-cases';
 
 @Module({
@@ -19,6 +23,6 @@ import {
     UpdateVersionUseCase,
     DeleteVersionUseCase,
   ],
-  exports: [GetVersionsUseCase, GetVersionByIdUseCase]
+  exports: [GetVersionsUseCase, GetVersionByIdUseCase],
 })
 export class VersionModule {}

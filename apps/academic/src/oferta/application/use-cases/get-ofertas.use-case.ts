@@ -5,24 +5,24 @@ import { Oferta } from '../../domain/entities/oferta.entity';
 
 @Injectable()
 export class GetOfertasUseCase {
-    constructor(
-        @Inject(OFERTA_REPOSITORY)
-        private readonly repository: IOfertaRepository,
-    ) { }
+  constructor(
+    @Inject(OFERTA_REPOSITORY)
+    private readonly repository: IOfertaRepository,
+  ) {}
 
-    async execute(filters?: any, ability?: any): Promise<Oferta[]> {
-        return this.repository.findAll(filters, ability);
-    }
+  async execute(filters?: any, ability?: any): Promise<Oferta[]> {
+    return this.repository.findAll(filters, ability);
+  }
 }
 
 @Injectable()
 export class GetOfertaByIdUseCase {
-    constructor(
-        @Inject(OFERTA_REPOSITORY)
-        private readonly repository: IOfertaRepository,
-    ) { }
+  constructor(
+    @Inject(OFERTA_REPOSITORY)
+    private readonly repository: IOfertaRepository,
+  ) {}
 
-    async execute(id: string, ability?: any): Promise<Oferta | null> {
-        return this.repository.findById(id, ability);
-    }
+  async execute(id: string, ability?: any): Promise<Oferta | null> {
+    return this.repository.findById(id, ability);
+  }
 }

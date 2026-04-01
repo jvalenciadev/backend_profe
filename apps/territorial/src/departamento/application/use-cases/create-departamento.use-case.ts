@@ -11,6 +11,9 @@ export class CreateDepartamentoUseCase {
   ) {}
 
   async execute(data: any): Promise<Departamento> {
-    return await this.repository.create({ ...data, estado: data.estado || 'activo' });
+    return await this.repository.create({
+      ...data,
+      estado: data.estado || 'activo',
+    });
   }
 }

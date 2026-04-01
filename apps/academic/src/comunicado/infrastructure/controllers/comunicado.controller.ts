@@ -1,8 +1,30 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, Req } from '@nestjs/common';
-import { JwtAuthGuard, PoliciesGuard, CheckPolicies, CurrentUser } from '@app/common';
-import { GetComunicadosUseCase, GetComunicadoByIdUseCase } from '../../application/use-cases/get-comunicados.use-case';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Req,
+} from '@nestjs/common';
+import {
+  JwtAuthGuard,
+  PoliciesGuard,
+  CheckPolicies,
+  CurrentUser,
+} from '@app/common';
+import {
+  GetComunicadosUseCase,
+  GetComunicadoByIdUseCase,
+} from '../../application/use-cases/get-comunicados.use-case';
 import { CreateComunicadoUseCase } from '../../application/use-cases/create-comunicado.use-case';
-import { UpdateComunicadoUseCase, DeleteComunicadoUseCase } from '../../application/use-cases/update-comunicado.use-case';
+import {
+  UpdateComunicadoUseCase,
+  DeleteComunicadoUseCase,
+} from '../../application/use-cases/update-comunicado.use-case';
 import { CreateComunicadoDto } from '../../application/dto/create-comunicado.dto';
 import { UpdateComunicadoDto } from '../../application/dto/update-comunicado.dto';
 
@@ -15,7 +37,7 @@ export class ComunicadoController {
     private readonly createComunicadoUseCase: CreateComunicadoUseCase,
     private readonly updateComunicadoUseCase: UpdateComunicadoUseCase,
     private readonly deleteComunicadoUseCase: DeleteComunicadoUseCase,
-  ) { }
+  ) {}
 
   @Get()
   @CheckPolicies((ability: any) => ability.can('read', 'Comunicado'))
@@ -30,9 +52,14 @@ export class ComunicadoController {
         page,
         limit,
       },
-      req.ability
+      req.ability,
     );
-    return { ...result, page, limit, totalPages: Math.ceil(result.total / limit) };
+    return {
+      ...result,
+      page,
+      limit,
+      totalPages: Math.ceil(result.total / limit),
+    };
   }
 
   @Get(':id')
@@ -44,7 +71,9 @@ export class ComunicadoController {
   @Post()
   @CheckPolicies((ability: any) => ability.can('create', 'Comunicado'))
   async create(@Body() dto: CreateComunicadoDto, @CurrentUser() user: any) {
-    const isAdmin = user.roles?.some((r: any) => r.role?.name === 'ADMINISTRADOR');
+    const isAdmin = user.roles?.some(
+      (r: any) => r.role?.name === 'ADMINISTRADOR',
+    );
     // Para administradores permitiremos el tenantId que envíen, sino forzamos el suyo
     const tenantId = isAdmin ? dto.tenantId : user.tenantId;
     return await this.createComunicadoUseCase.execute(dto, user.id, tenantId);
@@ -52,7 +81,11 @@ export class ComunicadoController {
 
   @Put(':id')
   @CheckPolicies((ability: any) => ability.can('update', 'Comunicado'))
-  async update(@Param('id') id: string, @Body() dto: UpdateComunicadoDto, @CurrentUser() user: any) {
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateComunicadoDto,
+    @CurrentUser() user: any,
+  ) {
     return await this.updateComunicadoUseCase.execute(id, dto, user.id);
   }
 

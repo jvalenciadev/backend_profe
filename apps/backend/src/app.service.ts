@@ -18,16 +18,23 @@ export class AppService {
           some: {
             role: {
               name: {
-                in: ['ADMIN', 'SUPER_ADMIN', 'FACILITADOR', 'Técnico', 'Gestor', 'RESPONSABLE']
-              }
-            }
-          }
-        }
-      }
+                in: [
+                  'ADMIN',
+                  'SUPER_ADMIN',
+                  'FACILITADOR',
+                  'Técnico',
+                  'Gestor',
+                  'RESPONSABLE',
+                ],
+              },
+            },
+          },
+        },
+      },
     });
 
     const inscritosTotales = await this.prisma.programaInscripcion.count({
-      where: { estado: 'activo' }
+      where: { estado: 'activo' },
     });
 
     const preinscritos = await this.prisma.programaInscripcion.count({
@@ -36,29 +43,32 @@ export class AppService {
         estadoInscripcion: {
           nombre: {
             contains: 'PREINSCRITO',
-            mode: 'insensitive'
-          }
-        }
-      }
+            mode: 'insensitive',
+          },
+        },
+      },
     });
 
     const sedesOperativas = await this.prisma.sede.count({
-      where: { estado: 'activo' }
+      where: { estado: 'activo' },
     });
 
     // 2. Gráfico de "Estado de Inscripciones"
     // Agrupamos todos los estadosInscripcion para el pie chart
-    const estadosInscripcionGrp = await this.prisma.programaInscripcion.groupBy({
-      by: ['estadoInscripcionId'],
-      _count: true,
-      where: { estado: 'activo' }
-    });
-    
-    // Obtenemos los nombres de esos estados
-    const estadosCatalogo = await this.prisma.programa_inscripcion_estado.findMany();
-    const mapEstados = new Map(estadosCatalogo.map(e => [e.id, e.nombre]));
+    const estadosInscripcionGrp = await this.prisma.programaInscripcion.groupBy(
+      {
+        by: ['estadoInscripcionId'],
+        _count: true,
+        where: { estado: 'activo' },
+      },
+    );
 
-    const estadosData = estadosInscripcionGrp.map(g => ({
+    // Obtenemos los nombres de esos estados
+    const estadosCatalogo =
+      await this.prisma.programa_inscripcion_estado.findMany();
+    const mapEstados = new Map(estadosCatalogo.map((e) => [e.id, e.nombre]));
+
+    const estadosData = estadosInscripcionGrp.map((g) => ({
       name: mapEstados.get(g.estadoInscripcionId) || 'Desconocido',
       valor: g._count,
     }));
@@ -71,14 +81,14 @@ export class AppService {
       take: 5,
       include: {
         _count: {
-          select: { inscripciones: { where: { estado: 'activo' } } }
-        }
-      }
+          select: { inscripciones: { where: { estado: 'activo' } } },
+        },
+      },
     });
 
-    const programasInscritosData = topProgramas.map(p => ({
+    const programasInscritosData = topProgramas.map((p) => ({
       label: p.nombre,
-      count: p._count.inscripciones
+      count: p._count.inscripciones,
     }));
 
     // 4. Actividad (Logs de actividad o notificaciones, eventos)
@@ -87,11 +97,11 @@ export class AppService {
     hoy.setHours(0, 0, 0, 0);
 
     const comunicadosHoy = await this.prisma.comunicado.count({
-      where: { createdAt: { gte: hoy } }
+      where: { createdAt: { gte: hoy } },
     });
 
     const inscripcionesHoy = await this.prisma.programaInscripcion.count({
-      where: { createdAt: { gte: hoy } }
+      where: { createdAt: { gte: hoy } },
     });
 
     const logsHoy = comunicadosHoy + inscripcionesHoy; // Placeholder para "Logs Hoy"
@@ -101,15 +111,14 @@ export class AppService {
         personalActivo,
         inscritosTotales,
         preinscritos,
-        sedesOperativas
+        sedesOperativas,
       },
       estadosInscripcion: estadosData,
       topProgramas: programasInscritosData,
       metrics: {
         logsHoy,
         alertas: 0,
-      }
+      },
     };
   }
 }
-

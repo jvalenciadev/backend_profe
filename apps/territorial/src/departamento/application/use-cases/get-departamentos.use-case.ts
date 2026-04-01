@@ -1,5 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { DEPARTAMENTO_REPOSITORY, DepartamentoFilters } from '../../domain/repositories/departamento.repository.interface';
+import {
+  DEPARTAMENTO_REPOSITORY,
+  DepartamentoFilters,
+} from '../../domain/repositories/departamento.repository.interface';
 import type { IDepartamentoRepository } from '../../domain/repositories/departamento.repository.interface';
 import { Departamento } from '../../domain/entities/departamento.entity';
 
@@ -10,7 +13,9 @@ export class GetDepartamentosUseCase {
     private readonly repository: IDepartamentoRepository,
   ) {}
 
-  async execute(filters: DepartamentoFilters = {}): Promise<{ data: Departamento[]; total: number }> {
+  async execute(
+    filters: DepartamentoFilters = {},
+  ): Promise<{ data: Departamento[]; total: number }> {
     return await this.repository.findAll(filters);
   }
 }

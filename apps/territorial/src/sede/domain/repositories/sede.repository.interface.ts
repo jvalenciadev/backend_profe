@@ -12,7 +12,10 @@ export interface SedeFilters {
 export interface ISedeRepository {
   create(data: Omit<Sede, 'id'>): Promise<Sede>;
   findById(id: string, ability?: any): Promise<Sede | null>;
-  findAll(filters?: SedeFilters, ability?: any): Promise<{ data: Sede[]; total: number }>;
+  findAll(
+    filters?: SedeFilters,
+    ability?: any,
+  ): Promise<{ data: Sede[]; total: number }>;
   update(id: string, data: Partial<Sede>): Promise<Sede>;
   delete(id: string): Promise<boolean>;
 }

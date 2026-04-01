@@ -5,23 +5,23 @@ import { EVENTO_REPOSITORY } from './domain/repositories/evento.repository.inter
 import { PrismaEventoRepository } from './infrastructure/database/prisma-evento.repository';
 import { EventosController } from './infrastructure/controllers/eventos.controller';
 import {
+  GetEventosUseCase,
+  GetEventoByIdUseCase,
+  CreateEventoUseCase,
+  UpdateEventoUseCase,
+  DeleteEventoUseCase,
+} from './application/use-cases/evento.use-cases';
+
+@Module({
+  imports: [DatabaseModule, CaslModule],
+  controllers: [EventosController],
+  providers: [
+    { provide: EVENTO_REPOSITORY, useClass: PrismaEventoRepository },
     GetEventosUseCase,
     GetEventoByIdUseCase,
     CreateEventoUseCase,
     UpdateEventoUseCase,
     DeleteEventoUseCase,
-} from './application/use-cases/evento.use-cases';
-
-@Module({
-    imports: [DatabaseModule, CaslModule],
-    controllers: [EventosController],
-    providers: [
-        { provide: EVENTO_REPOSITORY, useClass: PrismaEventoRepository },
-        GetEventosUseCase,
-        GetEventoByIdUseCase,
-        CreateEventoUseCase,
-        UpdateEventoUseCase,
-        DeleteEventoUseCase,
-    ],
+  ],
 })
-export class EventoModule { }
+export class EventoModule {}

@@ -10,7 +10,10 @@ export class UpdateEvaluacionPeriodoUseCase {
     private readonly repository: IEvaluacionPeriodoRepository,
   ) {}
 
-  async execute(id: string, data: Partial<EvaluacionPeriodo>): Promise<EvaluacionPeriodo> {
+  async execute(
+    id: string,
+    data: Partial<EvaluacionPeriodo>,
+  ): Promise<EvaluacionPeriodo> {
     return await this.repository.update(id, data);
   }
 }

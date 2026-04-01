@@ -11,7 +11,7 @@ import { AsistenciaModule } from './asistencia/asistencia.module';
 import { CuestionarioModule } from './cuestionario/cuestionario.module';
 import { NotificacionesModule } from './notificaciones/notificaciones.module';
 import { InsigniasModule } from './insignias/insignias.module';
-import { UploadModule } from '@app/common';
+import { UploadModule, MailModule } from '@app/common';
 import { UploadController } from '@app/common/upload/upload.controller';
 import { UploadConfigController } from '@app/common/upload/upload-config.controller';
 
@@ -19,6 +19,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ApiKeyGuard } from '@app/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { RecordatoriosModule } from './recordatorios/recordatorios.module';
+import { AppConfigModule } from './app-config/app-config.module';
 
 @Module({
   imports: [
@@ -30,7 +31,8 @@ import { RecordatoriosModule } from './recordatorios/recordatorios.module';
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
         signOptions: {
-          expiresIn: (configService.get<string>('JWT_EXPIRATION') || '4h') as any
+          expiresIn: (configService.get<string>('JWT_EXPIRATION') ||
+            '4h') as any,
         },
       }),
       inject: [ConfigService],
@@ -41,9 +43,12 @@ import { RecordatoriosModule } from './recordatorios/recordatorios.module';
     NotificacionesModule,
     InsigniasModule,
     UploadModule,
+    MailModule,
     ScheduleModule.forRoot(),
     RecordatoriosModule,
+    AppConfigModule,
   ],
+
   controllers: [LmsController, UploadController, UploadConfigController],
   providers: [
     LmsService,
@@ -54,4 +59,4 @@ import { RecordatoriosModule } from './recordatorios/recordatorios.module';
     },
   ],
 })
-export class LmsModule { }
+export class LmsModule {}

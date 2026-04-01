@@ -5,7 +5,11 @@ import { AREA_REPOSITORY } from './domain/repositories/areas-crud.repository.int
 import { PrismaAreaRepository } from './infrastructure/database/prisma-areas-crud.repository';
 import { AreaController } from './infrastructure/controllers/areas-crud.controller';
 import {
-  GetAreasUseCase, GetAreaByIdUseCase, CreateAreaUseCase, UpdateAreaUseCase, DeleteAreaUseCase
+  GetAreasUseCase,
+  GetAreaByIdUseCase,
+  CreateAreaUseCase,
+  UpdateAreaUseCase,
+  DeleteAreaUseCase,
 } from './application/use-cases/areas-crud.use-cases';
 
 @Module({
@@ -19,6 +23,6 @@ import {
     UpdateAreaUseCase,
     DeleteAreaUseCase,
   ],
-  exports: [GetAreasUseCase, GetAreaByIdUseCase]
+  exports: [GetAreasUseCase, GetAreaByIdUseCase],
 })
 export class AreaModule {}

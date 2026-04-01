@@ -5,7 +5,11 @@ import { ROLE_REPOSITORY } from './domain/repositories/roles-crud.repository.int
 import { PrismaRoleRepository } from './infrastructure/database/prisma-roles-crud.repository';
 import { RolesCrudController } from './infrastructure/controllers/roles-crud.controller';
 import {
-  GetRolesUseCase, GetRoleByIdUseCase, CreateRoleUseCase, UpdateRoleUseCase, DeleteRoleUseCase
+  GetRolesUseCase,
+  GetRoleByIdUseCase,
+  CreateRoleUseCase,
+  UpdateRoleUseCase,
+  DeleteRoleUseCase,
 } from './application/use-cases/roles-crud.use-cases';
 
 @Module({
@@ -19,6 +23,6 @@ import {
     UpdateRoleUseCase,
     DeleteRoleUseCase,
   ],
-  exports: [GetRolesUseCase, GetRoleByIdUseCase]
+  exports: [GetRolesUseCase, GetRoleByIdUseCase],
 })
-export class RoleModule { }
+export class RoleModule {}

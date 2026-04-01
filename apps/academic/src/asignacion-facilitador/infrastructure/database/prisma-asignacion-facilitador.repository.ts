@@ -8,7 +8,7 @@ export class PrismaAsignacionFacilitadorRepository implements IAsignacionFacilit
   constructor(
     private readonly prisma: PrismaService,
     private readonly caslPrisma: CaslPrismaService,
-  ) { }
+  ) {}
 
   async findAll(filter: any = {}, ability?: any): Promise<any[]> {
     const { tenantId, search, ...rest } = filter;
@@ -24,7 +24,11 @@ export class PrismaAsignacionFacilitadorRepository implements IAsignacionFacilit
     if (hasStatus) where.estado = { not: 'eliminado' };
 
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'AsignacionFacilitador');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'read',
+        'AsignacionFacilitador',
+      );
       where = { AND: [where, caslWhere] };
     }
 
@@ -35,10 +39,10 @@ export class PrismaAsignacionFacilitadorRepository implements IAsignacionFacilit
         modulo: true,
         turno: {
           include: {
-            turnoConfig: true
-          }
+            turnoConfig: true,
+          },
         },
-        programaDos: true
+        programaDos: true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -47,13 +51,21 @@ export class PrismaAsignacionFacilitadorRepository implements IAsignacionFacilit
   async findById(id: string, ability?: any): Promise<any | null> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'AsignacionFacilitador');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'read',
+        'AsignacionFacilitador',
+      );
       where = { AND: [where, caslWhere] };
     }
     return await this.prisma.programaDosFacilitador.findFirst({ where });
   }
 
-  async create(data: any, userId?: string, forcedTenantId?: string): Promise<any> {
+  async create(
+    data: any,
+    userId?: string,
+    forcedTenantId?: string,
+  ): Promise<any> {
     const payload = { ...data };
 
     // Mapping fields
@@ -63,18 +75,32 @@ export class PrismaAsignacionFacilitadorRepository implements IAsignacionFacilit
     }
 
     return await this.prisma.programaDosFacilitador.create({
-      data: { ...payload, createdBy: userId }
+      data: { ...payload, createdBy: userId },
     });
   }
 
-  async update(id: string, data: any, userId?: string, ability?: any): Promise<any> {
+  async update(
+    id: string,
+    data: any,
+    userId?: string,
+    ability?: any,
+  ): Promise<any> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'update', 'AsignacionFacilitador');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'update',
+        'AsignacionFacilitador',
+      );
       where = { AND: [where, caslWhere] };
     }
-    const exists = await this.prisma.programaDosFacilitador.findFirst({ where });
-    if (!exists) throw new Error('No tiene permisos para editar este registro o no existe');
+    const exists = await this.prisma.programaDosFacilitador.findFirst({
+      where,
+    });
+    if (!exists)
+      throw new Error(
+        'No tiene permisos para editar este registro o no existe',
+      );
 
     const payload = { ...data };
     if (payload.programaId) {
@@ -91,11 +117,20 @@ export class PrismaAsignacionFacilitadorRepository implements IAsignacionFacilit
   async delete(id: string, userId?: string, ability?: any): Promise<void> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'delete', 'AsignacionFacilitador');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'delete',
+        'AsignacionFacilitador',
+      );
       where = { AND: [where, caslWhere] };
     }
-    const exists = await this.prisma.programaDosFacilitador.findFirst({ where });
-    if (!exists) throw new Error('No tiene permisos para eliminar este registro o no existe');
+    const exists = await this.prisma.programaDosFacilitador.findFirst({
+      where,
+    });
+    if (!exists)
+      throw new Error(
+        'No tiene permisos para eliminar este registro o no existe',
+      );
 
     const hasStatus = true;
     if (hasStatus) {

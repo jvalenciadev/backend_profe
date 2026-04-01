@@ -1,7 +1,23 @@
-import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard, PoliciesGuard, CheckPolicies } from '@app/common';
 import {
-  GetProgramaVersionsUseCase, GetProgramaVersionByIdUseCase, CreateProgramaVersionUseCase, UpdateProgramaVersionUseCase, DeleteProgramaVersionUseCase
+  GetProgramaVersionsUseCase,
+  GetProgramaVersionByIdUseCase,
+  CreateProgramaVersionUseCase,
+  UpdateProgramaVersionUseCase,
+  DeleteProgramaVersionUseCase,
 } from '../../application/use-cases/programa-version.use-cases';
 
 @Controller('programa-versiones')
@@ -30,24 +46,42 @@ export class ProgramaVersionController {
   @Post()
   @CheckPolicies((ability: any) => ability.can('create', 'ProgramaVersion'))
   create(@Body() data: any, @Req() req: any) {
-    return this.createProgramaVersionUseCase.execute(data, req.user?.id, req.user?.tenantId);
+    return this.createProgramaVersionUseCase.execute(
+      data,
+      req.user?.id,
+      req.user?.tenantId,
+    );
   }
 
   @Put(':id')
   @CheckPolicies((ability: any) => ability.can('update', 'ProgramaVersion'))
   updatePut(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updateProgramaVersionUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updateProgramaVersionUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Patch(':id')
   @CheckPolicies((ability: any) => ability.can('update', 'ProgramaVersion'))
   updatePatch(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updateProgramaVersionUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updateProgramaVersionUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Delete(':id')
   @CheckPolicies((ability: any) => ability.can('delete', 'ProgramaVersion'))
   remove(@Param('id') id: string, @Req() req: any) {
-    return this.deleteProgramaVersionUseCase.execute(id, req.user?.id, req.ability);
+    return this.deleteProgramaVersionUseCase.execute(
+      id,
+      req.user?.id,
+      req.ability,
+    );
   }
 }

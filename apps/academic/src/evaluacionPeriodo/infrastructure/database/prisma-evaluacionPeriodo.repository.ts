@@ -1,11 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@app/database';
-import type { IEvaluacionPeriodoRepository, EvaluacionPeriodoFilters } from '../../domain/repositories/evaluacionPeriodo.repository.interface';
+import type {
+  IEvaluacionPeriodoRepository,
+  EvaluacionPeriodoFilters,
+} from '../../domain/repositories/evaluacionPeriodo.repository.interface';
 import { EvaluacionPeriodo } from '../../domain/entities/evaluacionPeriodo.entity';
 
 @Injectable()
 export class PrismaEvaluacionPeriodoRepository implements IEvaluacionPeriodoRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   private mapToDomain(record: any): EvaluacionPeriodo {
     return new EvaluacionPeriodo(
@@ -24,35 +27,44 @@ export class PrismaEvaluacionPeriodoRepository implements IEvaluacionPeriodoRepo
       data: {
         ...rest,
         estado: 'activo',
-        criterios: criterios ? {
-          create: criterios.map((c: any) => ({
-            nombre: c.nombre,
-            puntajeMaximo: c.puntajeMaximo,
-            orden: c.orden
-          }))
-        } : undefined
-      }
+        criterios: criterios
+          ? {
+              create: criterios.map((c: any) => ({
+                nombre: c.nombre,
+                puntajeMaximo: c.puntajeMaximo,
+                orden: c.orden,
+              })),
+            }
+          : undefined,
+      },
     });
     return this.mapToDomain(record);
   }
 
   async findById(id: string): Promise<EvaluacionPeriodo | null> {
-    const record = await (this.prisma.evaluacionPeriodo as any).findUnique({ where: { id } });
-    return record ? this.mapToDomain(record) : null;
-  }
-
-  async findActiveOverlap(gestion: string, semestre: string): Promise<EvaluacionPeriodo | null> {
-    const record = await (this.prisma.evaluacionPeriodo as any).findFirst({
-      where: {
-        gestion,
-        semestre,
-        estado: { not: 'eliminado' }
-      }
+    const record = await (this.prisma.evaluacionPeriodo as any).findUnique({
+      where: { id },
     });
     return record ? this.mapToDomain(record) : null;
   }
 
-  async findAll(filters: EvaluacionPeriodoFilters = {}): Promise<{ data: EvaluacionPeriodo[]; total: number }> {
+  async findActiveOverlap(
+    gestion: string,
+    semestre: string,
+  ): Promise<EvaluacionPeriodo | null> {
+    const record = await (this.prisma.evaluacionPeriodo as any).findFirst({
+      where: {
+        gestion,
+        semestre,
+        estado: { not: 'eliminado' },
+      },
+    });
+    return record ? this.mapToDomain(record) : null;
+  }
+
+  async findAll(
+    filters: EvaluacionPeriodoFilters = {},
+  ): Promise<{ data: EvaluacionPeriodo[]; total: number }> {
     const { search, estado, page = 1, limit = 20 } = filters;
     const where: any = { estado: { not: 'eliminado' } };
     if (estado && estado !== 'todos') where.estado = estado;
@@ -64,7 +76,7 @@ export class PrismaEvaluacionPeriodoRepository implements IEvaluacionPeriodoRepo
         where,
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
       }),
     ]);
 
@@ -74,7 +86,10 @@ export class PrismaEvaluacionPeriodoRepository implements IEvaluacionPeriodoRepo
     };
   }
 
-  async update(id: string, data: Partial<EvaluacionPeriodo>): Promise<EvaluacionPeriodo> {
+  async update(
+    id: string,
+    data: Partial<EvaluacionPeriodo>,
+  ): Promise<EvaluacionPeriodo> {
     const record = await (this.prisma.evaluacionPeriodo as any).update({
       where: { id },
       data,

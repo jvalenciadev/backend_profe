@@ -1,4 +1,9 @@
-import { Injectable, Inject, BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  BadRequestException,
+  ConflictException,
+} from '@nestjs/common';
 import { PROFE_REPOSITORY } from '../../domain/repositories/profe.repository.interface';
 import type { IProfeRepository } from '../../domain/repositories/profe.repository.interface';
 import { Profe } from '../../domain/entities/profe.entity';
@@ -9,7 +14,7 @@ export class CreateProfeUseCase {
   constructor(
     @Inject(PROFE_REPOSITORY)
     private readonly repository: IProfeRepository,
-  ) { }
+  ) {}
 
   async execute(dto: CreateProfeDto, userId?: string): Promise<Profe> {
     try {
@@ -33,7 +38,10 @@ export class CreateProfeUseCase {
 
       return await this.repository.create(payload);
     } catch (error) {
-      throw new BadRequestException('Error al crear los datos institucionales', { cause: error });
+      throw new BadRequestException(
+        'Error al crear los datos institucionales',
+        { cause: error },
+      );
     }
   }
 }

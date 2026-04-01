@@ -36,20 +36,32 @@ export class PrismaGaleriaRepository implements IGaleriaRepository {
     return await (this.prisma as any).galeria.findFirst({ where });
   }
 
-  async create(data: any, userId?: string, forcedTenantId?: string): Promise<any> {
+  async create(
+    data: any,
+    userId?: string,
+    forcedTenantId?: string,
+  ): Promise<any> {
     return await (this.prisma as any).galeria.create({
-      data: { ...data, createdBy: userId }
+      data: { ...data, createdBy: userId },
     });
   }
 
-  async update(id: string, data: any, userId?: string, ability?: any): Promise<any> {
+  async update(
+    id: string,
+    data: any,
+    userId?: string,
+    ability?: any,
+  ): Promise<any> {
     let where: any = { id };
     if (ability) {
       const caslWhere = this.caslPrisma.getWhere(ability, 'update', 'Galeria');
       where = { AND: [where, caslWhere] };
     }
     const exists = await (this.prisma as any).galeria.findFirst({ where });
-    if (!exists) throw new Error('No tiene permisos para editar este registro o no existe');
+    if (!exists)
+      throw new Error(
+        'No tiene permisos para editar este registro o no existe',
+      );
 
     return await (this.prisma as any).galeria.update({
       where: { id },
@@ -64,7 +76,10 @@ export class PrismaGaleriaRepository implements IGaleriaRepository {
       where = { AND: [where, caslWhere] };
     }
     const exists = await (this.prisma as any).galeria.findFirst({ where });
-    if (!exists) throw new Error('No tiene permisos para eliminar este registro o no existe');
+    if (!exists)
+      throw new Error(
+        'No tiene permisos para eliminar este registro o no existe',
+      );
 
     const hasStatus = true;
     if (hasStatus) {

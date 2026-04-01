@@ -5,7 +5,11 @@ import { BAUCHER_REPOSITORY } from './domain/repositories/baucher.repository.int
 import { PrismaBaucherRepository } from './infrastructure/database/prisma-baucher.repository';
 import { BaucherController } from './infrastructure/controllers/baucher.controller';
 import {
-  GetBauchersUseCase, GetBaucherByIdUseCase, CreateBaucherUseCase, UpdateBaucherUseCase, DeleteBaucherUseCase
+  GetBauchersUseCase,
+  GetBaucherByIdUseCase,
+  CreateBaucherUseCase,
+  UpdateBaucherUseCase,
+  DeleteBaucherUseCase,
 } from './application/use-cases/baucher.use-cases';
 
 @Module({
@@ -19,6 +23,6 @@ import {
     UpdateBaucherUseCase,
     DeleteBaucherUseCase,
   ],
-  exports: [GetBauchersUseCase, GetBaucherByIdUseCase]
+  exports: [GetBauchersUseCase, GetBaucherByIdUseCase],
 })
 export class BaucherModule {}

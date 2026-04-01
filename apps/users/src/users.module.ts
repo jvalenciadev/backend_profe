@@ -16,13 +16,17 @@ import { AreaModule } from './areas-crud/areas-crud.module';
 import { GeneroModule } from './generos-crud/generos-crud.module';
 import { MapPersonasModule } from './map-personas/map-personas.module';
 
-
 // Controllers y Casos de Uso del Usuario
 import { UsersController } from './users.controller';
 import {
-  CreateUserUseCase, FindAllUsersUseCase, FindUserByIdUseCase,
-  UpdateUserUseCase, DeleteUserUseCase, ResetUserPasswordUseCase,
+  CreateUserUseCase,
+  FindAllUsersUseCase,
+  FindUserByIdUseCase,
+  UpdateUserUseCase,
+  DeleteUserUseCase,
+  ResetUserPasswordUseCase,
   RequestEmailVerificationUseCase,
+  ChangePasswordUseCase,
 } from './user/application/use-cases/user.use-cases';
 
 import { CamposExtraController } from './campos-extra/campos-extra.controller';
@@ -49,10 +53,7 @@ import { CamposExtraService } from './campos-extra/campos-extra.service';
     GeneroModule,
     MapPersonasModule,
   ],
-  controllers: [
-    CamposExtraController,
-    UsersController,
-  ],
+  controllers: [CamposExtraController, UsersController],
   providers: [
     // Re-exportar use cases del UserModule para el UsersController
     CreateUserUseCase,
@@ -62,7 +63,8 @@ import { CamposExtraService } from './campos-extra/campos-extra.service';
     DeleteUserUseCase,
     ResetUserPasswordUseCase,
     RequestEmailVerificationUseCase,
+    ChangePasswordUseCase,
     CamposExtraService,
   ],
 })
-export class UsersModule { }
+export class UsersModule {}

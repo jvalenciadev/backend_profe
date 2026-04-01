@@ -82,7 +82,8 @@ async function main() {
     {
       tableName: 'mod_recurso', // Course materials
       maxSizeMB: 100.0,
-      allowedExtensions: 'pdf,doc,docx,xls,xlsx,ppt,pptx,zip,rar,mp4,mp3,jpg,jpeg,png',
+      allowedExtensions:
+        'pdf,doc,docx,xls,xlsx,ppt,pptx,zip,rar,mp4,mp3,jpg,jpeg,png',
     },
     {
       tableName: 'mod_foro_post',
@@ -98,7 +99,7 @@ async function main() {
       tableName: 'banco_profesional', // Generic registration docs
       maxSizeMB: 10.0,
       allowedExtensions: 'pdf,jpg,jpeg,png',
-    }
+    },
   ];
 
   console.log('Seed started: UploadConfig');
@@ -109,7 +110,7 @@ async function main() {
       update: {},
       create: {
         ...config,
-        estado: 'activo'
+        estado: 'activo',
       },
     });
   }

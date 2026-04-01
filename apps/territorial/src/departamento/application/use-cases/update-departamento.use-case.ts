@@ -10,7 +10,10 @@ export class UpdateDepartamentoUseCase {
     private readonly repository: IDepartamentoRepository,
   ) {}
 
-  async execute(id: string, data: Partial<Departamento>): Promise<Departamento> {
+  async execute(
+    id: string,
+    data: Partial<Departamento>,
+  ): Promise<Departamento> {
     return await this.repository.update(id, data);
   }
 }

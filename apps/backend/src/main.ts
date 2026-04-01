@@ -8,9 +8,11 @@ import helmet from 'helmet';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.use(helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" } // Permite cargar recursos desde otros dominios
-  }));
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' }, // Permite cargar recursos desde otros dominios
+    }),
+  );
   app.useGlobalFilters(new AllExceptionsFilter());
 
   // Aumentar límites de tamaño del body (necesario para importaciones masivas)

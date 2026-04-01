@@ -1,7 +1,23 @@
-import { Controller, Get, Post, Put, Patch, Delete, Body, Param, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Patch,
+  Delete,
+  Body,
+  Param,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard, PoliciesGuard, CheckPolicies } from '@app/common';
 import {
-  GetRolesUseCase, GetRoleByIdUseCase, CreateRoleUseCase, UpdateRoleUseCase, DeleteRoleUseCase
+  GetRolesUseCase,
+  GetRoleByIdUseCase,
+  CreateRoleUseCase,
+  UpdateRoleUseCase,
+  DeleteRoleUseCase,
 } from '../../application/use-cases/roles-crud.use-cases';
 
 @Controller('roles')
@@ -13,7 +29,7 @@ export class RolesCrudController {
     private readonly createRoleUseCase: CreateRoleUseCase,
     private readonly updateRoleUseCase: UpdateRoleUseCase,
     private readonly deleteRoleUseCase: DeleteRoleUseCase,
-  ) { }
+  ) {}
 
   @Get()
   @CheckPolicies((ability: any) => ability.can('read', 'Role'))
@@ -30,7 +46,11 @@ export class RolesCrudController {
   @Post()
   @CheckPolicies((ability: any) => ability.can('create', 'Role'))
   create(@Body() data: any, @Req() req: any) {
-    return this.createRoleUseCase.execute(data, req.user?.id, req.user?.tenantId);
+    return this.createRoleUseCase.execute(
+      data,
+      req.user?.id,
+      req.user?.tenantId,
+    );
   }
 
   @Put(':id')

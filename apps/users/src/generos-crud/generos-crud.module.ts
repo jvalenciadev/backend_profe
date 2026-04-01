@@ -5,7 +5,11 @@ import { GENERO_REPOSITORY } from './domain/repositories/generos-crud.repository
 import { PrismaGeneroRepository } from './infrastructure/database/prisma-generos-crud.repository';
 import { GeneroController } from './infrastructure/controllers/generos-crud.controller';
 import {
-  GetGenerosUseCase, GetGeneroByIdUseCase, CreateGeneroUseCase, UpdateGeneroUseCase, DeleteGeneroUseCase
+  GetGenerosUseCase,
+  GetGeneroByIdUseCase,
+  CreateGeneroUseCase,
+  UpdateGeneroUseCase,
+  DeleteGeneroUseCase,
 } from './application/use-cases/generos-crud.use-cases';
 
 @Module({
@@ -19,6 +23,6 @@ import {
     UpdateGeneroUseCase,
     DeleteGeneroUseCase,
   ],
-  exports: [GetGenerosUseCase, GetGeneroByIdUseCase]
+  exports: [GetGenerosUseCase, GetGeneroByIdUseCase],
 })
 export class GeneroModule {}

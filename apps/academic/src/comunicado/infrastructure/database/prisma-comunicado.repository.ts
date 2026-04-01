@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '@app/database';
-import { IComunicadoRepository, ComunicadoFilters } from '../../domain/repositories/comunicado.repository.interface';
+import {
+  IComunicadoRepository,
+  ComunicadoFilters,
+} from '../../domain/repositories/comunicado.repository.interface';
 import { Comunicado } from '../../domain/entities/comunicado.entity';
 
 import { CaslPrismaService } from '@app/common';
@@ -9,8 +12,8 @@ import { CaslPrismaService } from '@app/common';
 export class PrismaComunicadoRepository implements IComunicadoRepository {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly caslPrisma: CaslPrismaService
-  ) { }
+    private readonly caslPrisma: CaslPrismaService,
+  ) {}
 
   private mapToDomain(record: any): Comunicado {
     const entity = new Comunicado(
@@ -31,10 +34,16 @@ export class PrismaComunicadoRepository implements IComunicadoRepository {
   }
 
   async create(data: any): Promise<Comunicado> {
-    const { id: _, tenant: __, createdAt: ___, updatedAt: ____, ...rest } = data;
+    const {
+      id: _,
+      tenant: __,
+      createdAt: ___,
+      updatedAt: ____,
+      ...rest
+    } = data;
     if (rest.estado) rest.estado = rest.estado.toLowerCase();
     const record = await (this.prisma.comunicado as any).create({
-      data: rest
+      data: rest,
     });
     return this.mapToDomain(record);
   }
@@ -47,12 +56,15 @@ export class PrismaComunicadoRepository implements IComunicadoRepository {
     }
     const record = await (this.prisma.comunicado as any).findFirst({
       where,
-      include: { tenant: true }
+      include: { tenant: true },
     });
     return record ? this.mapToDomain(record) : null;
   }
 
-  async findAll(filters: ComunicadoFilters = {}, ability?: any): Promise<{ data: Comunicado[]; total: number }> {
+  async findAll(
+    filters: ComunicadoFilters = {},
+    ability?: any,
+  ): Promise<{ data: Comunicado[]; total: number }> {
     const { search, estado, page = 1, limit = 20, tenantId } = filters;
     let where: any = { estado: { not: 'eliminado' } };
 
@@ -72,7 +84,7 @@ export class PrismaComunicadoRepository implements IComunicadoRepository {
         skip: (page - 1) * limit,
         take: limit,
         include: { tenant: true },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: 'desc' },
       }),
     ]);
 
@@ -83,7 +95,13 @@ export class PrismaComunicadoRepository implements IComunicadoRepository {
   }
 
   async update(id: string, data: any): Promise<Comunicado> {
-    const { id: _, tenant: __, createdAt: ___, updatedAt: ____, ...rest } = data;
+    const {
+      id: _,
+      tenant: __,
+      createdAt: ___,
+      updatedAt: ____,
+      ...rest
+    } = data;
     if (rest.estado) rest.estado = rest.estado.toLowerCase();
     const record = await (this.prisma.comunicado as any).update({
       where: { id },

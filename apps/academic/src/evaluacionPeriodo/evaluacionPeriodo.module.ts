@@ -4,14 +4,23 @@ import { EVALUACIONPERIODO_REPOSITORY } from './domain/repositories/evaluacionPe
 import { PrismaEvaluacionPeriodoRepository } from './infrastructure/database/prisma-evaluacionPeriodo.repository';
 import { EvaluacionPeriodoController } from './infrastructure/controllers/evaluacionPeriodo.controller';
 import { CreateEvaluacionPeriodoUseCase } from './application/use-cases/create-evaluacionPeriodo.use-case';
-import { GetEvaluacionPeriodosUseCase, GetEvaluacionPeriodoByIdUseCase } from './application/use-cases/get-evaluacionPeriodos.use-case';
-import { UpdateEvaluacionPeriodoUseCase, DeleteEvaluacionPeriodoUseCase } from './application/use-cases/update-evaluacionPeriodo.use-case';
+import {
+  GetEvaluacionPeriodosUseCase,
+  GetEvaluacionPeriodoByIdUseCase,
+} from './application/use-cases/get-evaluacionPeriodos.use-case';
+import {
+  UpdateEvaluacionPeriodoUseCase,
+  DeleteEvaluacionPeriodoUseCase,
+} from './application/use-cases/update-evaluacionPeriodo.use-case';
 
 @Module({
   imports: [DatabaseModule],
   controllers: [EvaluacionPeriodoController],
   providers: [
-    { provide: EVALUACIONPERIODO_REPOSITORY, useClass: PrismaEvaluacionPeriodoRepository },
+    {
+      provide: EVALUACIONPERIODO_REPOSITORY,
+      useClass: PrismaEvaluacionPeriodoRepository,
+    },
     CreateEvaluacionPeriodoUseCase,
     GetEvaluacionPeriodosUseCase,
     GetEvaluacionPeriodoByIdUseCase,

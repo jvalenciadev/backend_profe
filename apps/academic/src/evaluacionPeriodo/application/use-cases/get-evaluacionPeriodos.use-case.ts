@@ -1,5 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { EVALUACIONPERIODO_REPOSITORY, EvaluacionPeriodoFilters } from '../../domain/repositories/evaluacionPeriodo.repository.interface';
+import {
+  EVALUACIONPERIODO_REPOSITORY,
+  EvaluacionPeriodoFilters,
+} from '../../domain/repositories/evaluacionPeriodo.repository.interface';
 import type { IEvaluacionPeriodoRepository } from '../../domain/repositories/evaluacionPeriodo.repository.interface';
 import { EvaluacionPeriodo } from '../../domain/entities/evaluacionPeriodo.entity';
 
@@ -10,7 +13,9 @@ export class GetEvaluacionPeriodosUseCase {
     private readonly repository: IEvaluacionPeriodoRepository,
   ) {}
 
-  async execute(filters: EvaluacionPeriodoFilters = {}): Promise<{ data: EvaluacionPeriodo[]; total: number }> {
+  async execute(
+    filters: EvaluacionPeriodoFilters = {},
+  ): Promise<{ data: EvaluacionPeriodo[]; total: number }> {
     return await this.repository.findAll(filters);
   }
 }

@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -32,6 +33,7 @@ model User {
   tenantId                        String?                     @map("tenant_id") @db.Uuid
   personaId                       String?                     @unique @map("per_id") @db.Uuid
   tokenDispositivo                String?                     @map("token_dispositivo")
+  deviceTokens                    token_dispositivo[]
   createdAt                       DateTime                    @default(now()) @map("created_at")
   updatedAt                       DateTime                    @updatedAt @map("updated_at")
   deletedAt                       DateTime?                   @map("deleted_at")
@@ -656,8 +658,8 @@ model Profe {
   banner          String    @map("profe_banner")
   afiche          String    @map("profe_afiche")
   convocatoria    String    @map("profe_convocatoria")
-  color           String?   @default("#1474a6") @map("profe_color")
-  colorSecundario String?   @default("#4f46e5") @map("profe_color_secundario")
+  color           String?   @default("#c9a751") @map("profe_color")
+  colorSecundario String?   @default("#c9a751") @map("profe_color_secundario")
   estado          Estado    @default(activo) @map("profe_estado")
   mantenimiento   Boolean   @default(false) @map("profe_mantenimiento")
   createdAt       DateTime  @default(now()) @map("created_at")
@@ -1142,10 +1144,12 @@ model TipoEvento {
 
 model token_dispositivo {
   id_token     Int      @id @default(autoincrement())
-  token        String?
+  token        String?  @unique
+  userId       String?  @db.Uuid @map("user_id")
+  user         User?    @relation(fields: [userId], references: [id])
   tipo_usuario String?
   created_at   DateTime @default(now())
-  updated_at   DateTime
+  updated_at   DateTime @updatedAt
 }
 
 model unidad_educativa {
@@ -1629,6 +1633,7 @@ model mod_intento {
   iniciadoEn     DateTime  @default(now()) @map("mod_int_inicio")
   finalizadoEn   DateTime? @map("mod_int_fin")
   estado         String    @default("en_progreso") @map("mod_int_estado") // en_progreso, finalizado
+  motivoBloqueo  String?   @map("mod_int_motivo_bloqueo")
 
   cuestionario mod_cuestionario @relation(fields: [cuestionarioId], references: [id])
   user         User             @relation(fields: [userId], references: [id])

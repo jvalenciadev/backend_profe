@@ -4,12 +4,12 @@ import { User } from '../../domain/entities/user.entity';
 
 @Injectable()
 export class GetAllUsersUseCase {
-    constructor(
-        @Inject('USER_REPOSITORY')
-        private readonly repository: IUserRepository
-    ) { }
+  constructor(
+    @Inject('USER_REPOSITORY')
+    private readonly repository: IUserRepository,
+  ) {}
 
-    async execute(filter: any = {}): Promise<User[]> {
-        return this.repository.findAll(filter);
-    }
+  async execute(filter: any = {}): Promise<User[]> {
+    return this.repository.findAll(filter);
+  }
 }

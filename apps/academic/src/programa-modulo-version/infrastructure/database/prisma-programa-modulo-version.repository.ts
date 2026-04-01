@@ -18,7 +18,11 @@ export class PrismaProgramaModuloVersionRepository implements IProgramaModuloVer
     if (hasStatus) where.estado = { not: 'eliminado' };
 
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'ProgramaModuloVersion');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'read',
+        'ProgramaModuloVersion',
+      );
       where = { AND: [where, caslWhere] };
     }
 
@@ -31,41 +35,78 @@ export class PrismaProgramaModuloVersionRepository implements IProgramaModuloVer
   async findById(id: string, ability?: any): Promise<any | null> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'ProgramaModuloVersion');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'read',
+        'ProgramaModuloVersion',
+      );
       where = { AND: [where, caslWhere] };
     }
     return await (this.prisma as any).programaModuloDos.findFirst({ where });
   }
 
-  async create(data: any, userId?: string, forcedTenantId?: string): Promise<any> {
+  async create(
+    data: any,
+    userId?: string,
+    forcedTenantId?: string,
+  ): Promise<any> {
     return await (this.prisma as any).programaModuloDos.create({
-      data: { ...data, createdBy: userId }
+      data: { ...data, createdBy: userId },
     });
   }
 
-  async update(id: string, data: any, userId?: string, ability?: any): Promise<any> {
+  async update(
+    id: string,
+    data: any,
+    userId?: string,
+    ability?: any,
+  ): Promise<any> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'update', 'ProgramaModuloVersion');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'update',
+        'ProgramaModuloVersion',
+      );
       where = { AND: [where, caslWhere] };
     }
-    const exists = await (this.prisma as any).programaModuloDos.findFirst({ where });
-    if (!exists) throw new Error('No tiene permisos para editar este registro o no existe');
+    const exists = await (this.prisma as any).programaModuloDos.findFirst({
+      where,
+    });
+    if (!exists)
+      throw new Error(
+        'No tiene permisos para editar este registro o no existe',
+      );
+
+    const { pm_orden, ...rest } = data;
+    const updateData = { ...rest, updatedBy: userId };
+    if (pm_orden !== undefined && updateData.orden === undefined) {
+      updateData.orden = pm_orden;
+    }
 
     return await (this.prisma as any).programaModuloDos.update({
       where: { id },
-      data: { ...data, updatedBy: userId },
+      data: updateData,
     });
   }
 
   async delete(id: string, userId?: string, ability?: any): Promise<void> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'delete', 'ProgramaModuloVersion');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'delete',
+        'ProgramaModuloVersion',
+      );
       where = { AND: [where, caslWhere] };
     }
-    const exists = await (this.prisma as any).programaModuloDos.findFirst({ where });
-    if (!exists) throw new Error('No tiene permisos para eliminar este registro o no existe');
+    const exists = await (this.prisma as any).programaModuloDos.findFirst({
+      where,
+    });
+    if (!exists)
+      throw new Error(
+        'No tiene permisos para eliminar este registro o no existe',
+      );
 
     const hasStatus = true;
     if (hasStatus) {

@@ -35,20 +35,32 @@ export class PrismaAreaRepository implements IAreaRepository {
     return await (this.prisma as any).areaTrabajo.findFirst({ where });
   }
 
-  async create(data: any, userId?: string, forcedTenantId?: string): Promise<any> {
+  async create(
+    data: any,
+    userId?: string,
+    forcedTenantId?: string,
+  ): Promise<any> {
     return await (this.prisma as any).areaTrabajo.create({
-      data: { ...data, createdBy: userId }
+      data: { ...data, createdBy: userId },
     });
   }
 
-  async update(id: string, data: any, userId?: string, ability?: any): Promise<any> {
+  async update(
+    id: string,
+    data: any,
+    userId?: string,
+    ability?: any,
+  ): Promise<any> {
     let where: any = { id };
     if (ability) {
       const caslWhere = this.caslPrisma.getWhere(ability, 'update', 'Area');
       where = { AND: [where, caslWhere] };
     }
     const exists = await (this.prisma as any).areaTrabajo.findFirst({ where });
-    if (!exists) throw new Error('No tiene permisos para editar este registro o no existe');
+    if (!exists)
+      throw new Error(
+        'No tiene permisos para editar este registro o no existe',
+      );
 
     return await (this.prisma as any).areaTrabajo.update({
       where: { id },
@@ -63,7 +75,10 @@ export class PrismaAreaRepository implements IAreaRepository {
       where = { AND: [where, caslWhere] };
     }
     const exists = await (this.prisma as any).areaTrabajo.findFirst({ where });
-    if (!exists) throw new Error('No tiene permisos para eliminar este registro o no existe');
+    if (!exists)
+      throw new Error(
+        'No tiene permisos para eliminar este registro o no existe',
+      );
 
     const hasStatus = true;
     if (hasStatus) {

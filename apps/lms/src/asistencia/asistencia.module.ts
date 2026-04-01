@@ -4,9 +4,9 @@ import { AsistenciaService } from './asistencia.service';
 import { DatabaseModule } from '@app/database';
 
 @Module({
-    imports: [DatabaseModule],
-    controllers: [AsistenciaController],
-    providers: [AsistenciaService],
-    exports: [AsistenciaService]
+  imports: [DatabaseModule],
+  controllers: [AsistenciaController],
+  providers: [AsistenciaService],
+  exports: [AsistenciaService],
 })
-export class AsistenciaModule { }
+export class AsistenciaModule {}

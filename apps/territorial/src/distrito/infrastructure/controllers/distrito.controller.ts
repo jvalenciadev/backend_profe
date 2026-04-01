@@ -1,8 +1,29 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards } from '@nestjs/common';
-import { JwtAuthGuard, PoliciesGuard, CheckPolicies, Public } from '@app/common';
-import { GetDistritosUseCase, GetDistritoByIdUseCase } from '../../application/use-cases/get-distritos.use-case';
+import {
+  Controller,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  JwtAuthGuard,
+  PoliciesGuard,
+  CheckPolicies,
+  Public,
+} from '@app/common';
+import {
+  GetDistritosUseCase,
+  GetDistritoByIdUseCase,
+} from '../../application/use-cases/get-distritos.use-case';
 import { CreateDistritoUseCase } from '../../application/use-cases/create-distrito.use-case';
-import { UpdateDistritoUseCase, DeleteDistritoUseCase } from '../../application/use-cases/update-distrito.use-case';
+import {
+  UpdateDistritoUseCase,
+  DeleteDistritoUseCase,
+} from '../../application/use-cases/update-distrito.use-case';
 
 @Controller('distritos')
 @UseGuards(JwtAuthGuard, PoliciesGuard)
@@ -13,7 +34,7 @@ export class DistritoController {
     private readonly createDistritoUseCase: CreateDistritoUseCase,
     private readonly updateDistritoUseCase: UpdateDistritoUseCase,
     private readonly deleteDistritoUseCase: DeleteDistritoUseCase,
-  ) { }
+  ) {}
 
   @Get()
   @Public()
@@ -26,7 +47,12 @@ export class DistritoController {
       page,
       limit,
     });
-    return { ...result, page, limit, totalPages: Math.ceil(result.total / limit) };
+    return {
+      ...result,
+      page,
+      limit,
+      totalPages: Math.ceil(result.total / limit),
+    };
   }
 
   @Get(':id')

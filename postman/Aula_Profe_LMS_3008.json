@@ -1,0 +1,359 @@
+{
+	"info": {
+		"_postman_id": "c1f2e3d4-b5a6-4c7d-8e9f-0a1b2c3d4e5f",
+		"name": "Aula Profe - LMS (Puerto 3008)",
+		"description": "API del Aula Virtual (LMS) para estudiantes y facilitadores.\n\nEste servicio maneja la lógica de cursos, tareas, foros, calificaciones y asistencia.\n\n**Puerto default:** 3008\n**Prefijo:** /api/aula",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Autenticación",
+			"item": [
+				{
+					"name": "Login LMS",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"username\": \"12345678\",\n    \"password\": \"AulaProfe*2026\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/auth/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"auth",
+								"login"
+							]
+						},
+						"description": "Inicia sesión en el LMS y devuelve el token JWT."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Cursos y Contenido",
+			"item": [
+				{
+					"name": "Mis Cursos (Estudiante)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/mis-cursos",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"mis-cursos"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Mis Cursos (Facilitador)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/docencia",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"docencia"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Contenido del Curso",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/curso/:id?turnoId=ID_DEL_TURNO",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"curso",
+								":id"
+							],
+							"query": [
+								{
+									"key": "turnoId",
+									"value": "ID_DEL_TURNO"
+								}
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "ID_DEL_MODULO"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Grading / Calificaciones",
+			"item": [
+				{
+					"name": "Listar Categorías del Módulo",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/modulo/:moduloId/categorias",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"modulo",
+								":moduloId",
+								"categorias"
+							],
+							"variable": [
+								{
+									"key": "moduloId",
+									"value": "ID_DEL_MODULO"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Crear Categoría",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"nombre\": \"Evaluación Continua\",\n    \"peso\": 30,\n    \"turnoId\": \"ID_TURNO\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/modulo/:moduloId/categorias",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"modulo",
+								":moduloId",
+								"categorias"
+							],
+							"variable": [
+								{
+									"key": "moduloId",
+									"value": "ID_DEL_MODULO"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Aplicar Plantilla de Calificación",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/modulo/:moduloId/categorias/aplicar?turnoId=ID_TURNO",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"modulo",
+								":moduloId",
+								"categorias",
+								"aplicar"
+							],
+							"query": [
+								{
+									"key": "turnoId",
+									"value": "ID_TURNO"
+								}
+							],
+							"variable": [
+								{
+									"key": "moduloId",
+									"value": "ID_DEL_MODULO"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Asistencia",
+			"item": [
+				{
+					"name": "Listar Registros de Asistencia",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/asistencia?moduloId=ID_MODULO&turnoId=ID_TURNO",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"asistencia"
+							],
+							"query": [
+								{
+									"key": "moduloId",
+									"value": "ID_MODULO"
+								},
+								{
+									"key": "turnoId",
+									"value": "ID_TURNO"
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Configuración y Perfil",
+			"item": [
+				{
+					"name": "Mi Perfil LMS",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/perfil",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"perfil"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Versión Mobile",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/version-mobile",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"version-mobile"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3008/api/aula",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "TU_TOKEN_AQUI",
+			"type": "string"
+		}
+	]
+}

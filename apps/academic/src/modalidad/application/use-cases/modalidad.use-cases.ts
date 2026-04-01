@@ -4,7 +4,9 @@ import type { IModalidadRepository } from '../../domain/repositories/modalidad.r
 
 @Injectable()
 export class GetModalidadsUseCase {
-  constructor(@Inject(MODALIDAD_REPOSITORY) private readonly repo: IModalidadRepository) {}
+  constructor(
+    @Inject(MODALIDAD_REPOSITORY) private readonly repo: IModalidadRepository,
+  ) {}
   async execute(filter?: any, ability?: any): Promise<any[]> {
     return this.repo.findAll(filter, ability);
   }
@@ -12,7 +14,9 @@ export class GetModalidadsUseCase {
 
 @Injectable()
 export class GetModalidadByIdUseCase {
-  constructor(@Inject(MODALIDAD_REPOSITORY) private readonly repo: IModalidadRepository) {}
+  constructor(
+    @Inject(MODALIDAD_REPOSITORY) private readonly repo: IModalidadRepository,
+  ) {}
   async execute(id: string, ability?: any): Promise<any> {
     const res = await this.repo.findById(id, ability);
     if (!res) throw new NotFoundException('Registro no encontrado');
@@ -22,7 +26,9 @@ export class GetModalidadByIdUseCase {
 
 @Injectable()
 export class CreateModalidadUseCase {
-  constructor(@Inject(MODALIDAD_REPOSITORY) private readonly repo: IModalidadRepository) {}
+  constructor(
+    @Inject(MODALIDAD_REPOSITORY) private readonly repo: IModalidadRepository,
+  ) {}
   async execute(data: any, userId?: string, tenantId?: string): Promise<any> {
     return this.repo.create(data, userId, tenantId);
   }
@@ -30,16 +36,29 @@ export class CreateModalidadUseCase {
 
 @Injectable()
 export class UpdateModalidadUseCase {
-  constructor(@Inject(MODALIDAD_REPOSITORY) private readonly repo: IModalidadRepository) {}
-  async execute(id: string, data: any, userId?: string, ability?: any): Promise<any> {
+  constructor(
+    @Inject(MODALIDAD_REPOSITORY) private readonly repo: IModalidadRepository,
+  ) {}
+  async execute(
+    id: string,
+    data: any,
+    userId?: string,
+    ability?: any,
+  ): Promise<any> {
     return this.repo.update(id, data, userId, ability);
   }
 }
 
 @Injectable()
 export class DeleteModalidadUseCase {
-  constructor(@Inject(MODALIDAD_REPOSITORY) private readonly repo: IModalidadRepository) {}
-  async execute(id: string, userId?: string, ability?: any): Promise<{ message: string }> {
+  constructor(
+    @Inject(MODALIDAD_REPOSITORY) private readonly repo: IModalidadRepository,
+  ) {}
+  async execute(
+    id: string,
+    userId?: string,
+    ability?: any,
+  ): Promise<{ message: string }> {
     await this.repo.delete(id, userId, ability);
     return { message: 'Eliminado correctamente' };
   }

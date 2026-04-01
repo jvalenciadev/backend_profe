@@ -4,8 +4,14 @@ import { PROGRAMA_REPOSITORY } from './domain/repositories/programa.repository.i
 import { PrismaProgramaRepository } from './infrastructure/database/prisma-programa.repository';
 import { ProgramaController } from './infrastructure/controllers/programa.controller';
 import { CreateProgramaUseCase } from './application/use-cases/create-programa.use-case';
-import { GetProgramasUseCase, GetProgramaByIdUseCase } from './application/use-cases/get-programas.use-case';
-import { UpdateProgramaUseCase, DeleteProgramaUseCase } from './application/use-cases/update-programa.use-case';
+import {
+  GetProgramasUseCase,
+  GetProgramaByIdUseCase,
+} from './application/use-cases/get-programas.use-case';
+import {
+  UpdateProgramaUseCase,
+  DeleteProgramaUseCase,
+} from './application/use-cases/update-programa.use-case';
 
 @Module({
   imports: [DatabaseModule],
@@ -20,4 +26,4 @@ import { UpdateProgramaUseCase, DeleteProgramaUseCase } from './application/use-
   ],
   exports: [GetProgramasUseCase, PROGRAMA_REPOSITORY],
 })
-export class ProgramaModule { }
+export class ProgramaModule {}

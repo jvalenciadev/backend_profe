@@ -1,0 +1,211 @@
+{
+	"info": {
+		"_postman_id": "a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+		"name": "Aula Profe - Vistas Públicas (Puerto 3005)",
+		"description": "Servicio de vistas públicas para la Landing Page y el Proceso de Inscripción.\n\nEste servicio no requiere sesión de usuario (JWT) para la mayoría de los casos, pero sí requiere `X-SECRET` en los headers para mayor seguridad en producción.\n\n**Puerto default:** 3005\n**Base URL:** http://localhost:3005/public",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Landing Page",
+			"item": [
+				{
+					"name": "Obtener Datos Landing",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/public/landing-page?tenant=LP",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"public",
+								"landing-page"
+							],
+							"query": [
+								{
+									"key": "tenant",
+									"value": "LP"
+								}
+							]
+						},
+						"description": "Obtiene la información general para la página de inicio: banners, programas destacados, noticias, galerías, etc."
+					},
+					"response": []
+				},
+				{
+					"name": "Detalle de Programa",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/public/programa/:id",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"public",
+								"programa",
+								":id"
+							],
+							"variable": [
+								{
+									"key": "id",
+									"value": "ID_DEL_PROGRAMA"
+								}
+							]
+						},
+						"description": "Obtiene la información técnica de un programa: objetivos, módulos, sedes disponibles y turnos."
+					},
+					"response": []
+				},
+				{
+					"name": "Departamentos (Tenants)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/public/departamentos",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"public",
+								"departamentos"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Proceso de Inscripción",
+			"item": [
+				{
+					"name": "Verificar Persona (Padrón)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/public/check-persona?ci=1234567&complemento=",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"public",
+								"check-persona"
+							],
+							"query": [
+								{
+									"key": "ci",
+									"value": "1234567"
+								},
+								{
+									"key": "complemento",
+									"value": ""
+								}
+							]
+						},
+						"description": "Busca si una persona ya existe en el padrón por su CI."
+					},
+					"response": []
+				},
+				{
+					"name": "Verificar Persona (Con Fecha Nac.)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/public/check-persona-by-date?ci=1234567&fechaNacimiento=1990-01-01&complemento=",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"public",
+								"check-persona-by-date"
+							],
+							"query": [
+								{
+									"key": "ci",
+									"value": "1234567"
+								},
+								{
+									"key": "fechaNacimiento",
+									"value": "1990-01-01"
+								},
+								{
+									"key": "complemento",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Enviar Código Verificación (Email)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"correo\": \"ejemplo@profe.edu.bo\",\n    \"nombre\": \"Juan Perez\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/public/send-verification-code",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"public",
+								"send-verification-code"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Registrar Inscripción",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"userId\": \"UUID_OPTIONAL\",\n    \"programaId\": \"ID_PROG\",\n    \"turnoId\": \"ID_TURNO\",\n    \"sedeId\": \"ID_SEDE\",\n    \"baucher\": {\n        \"imagen\": \"/uploads/bauchers/ejemplo.jpg\",\n        \"nroDeposito\": \"987654321\",\n        \"monto\": \"100\",\n        \"fecha\": \"2024-04-01\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/public/inscripcion",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"public",
+								"inscripcion"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:3005",
+			"type": "string"
+		}
+	]
+}

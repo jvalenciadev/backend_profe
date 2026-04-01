@@ -5,7 +5,11 @@ import { GALERIA_REPOSITORY } from './domain/repositories/galeria.repository.int
 import { PrismaGaleriaRepository } from './infrastructure/database/prisma-galeria.repository';
 import { GaleriaController } from './infrastructure/controllers/galeria.controller';
 import {
-  GetGaleriasUseCase, GetGaleriaByIdUseCase, CreateGaleriaUseCase, UpdateGaleriaUseCase, DeleteGaleriaUseCase
+  GetGaleriasUseCase,
+  GetGaleriaByIdUseCase,
+  CreateGaleriaUseCase,
+  UpdateGaleriaUseCase,
+  DeleteGaleriaUseCase,
 } from './application/use-cases/galeria.use-cases';
 
 @Module({
@@ -19,6 +23,6 @@ import {
     UpdateGaleriaUseCase,
     DeleteGaleriaUseCase,
   ],
-  exports: [GetGaleriasUseCase]
+  exports: [GetGaleriasUseCase],
 })
 export class GaleriaModule {}

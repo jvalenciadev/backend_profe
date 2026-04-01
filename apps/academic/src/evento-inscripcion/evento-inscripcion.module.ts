@@ -5,20 +5,27 @@ import { EVENTOINSCRIPCION_REPOSITORY } from './domain/repositories/evento-inscr
 import { PrismaEventoInscripcionRepository } from './infrastructure/database/prisma-evento-inscripcion.repository';
 import { EventoInscripcionController } from './infrastructure/controllers/evento-inscripcion.controller';
 import {
-  GetEventoInscripcionsUseCase, GetEventoInscripcionByIdUseCase, CreateEventoInscripcionUseCase, UpdateEventoInscripcionUseCase, DeleteEventoInscripcionUseCase
+  GetEventoInscripcionsUseCase,
+  GetEventoInscripcionByIdUseCase,
+  CreateEventoInscripcionUseCase,
+  UpdateEventoInscripcionUseCase,
+  DeleteEventoInscripcionUseCase,
 } from './application/use-cases/evento-inscripcion.use-cases';
 
 @Module({
   imports: [DatabaseModule, CaslModule],
   controllers: [EventoInscripcionController],
   providers: [
-    { provide: EVENTOINSCRIPCION_REPOSITORY, useClass: PrismaEventoInscripcionRepository },
+    {
+      provide: EVENTOINSCRIPCION_REPOSITORY,
+      useClass: PrismaEventoInscripcionRepository,
+    },
     GetEventoInscripcionsUseCase,
     GetEventoInscripcionByIdUseCase,
     CreateEventoInscripcionUseCase,
     UpdateEventoInscripcionUseCase,
     DeleteEventoInscripcionUseCase,
   ],
-  exports: [GetEventoInscripcionsUseCase, GetEventoInscripcionByIdUseCase]
+  exports: [GetEventoInscripcionsUseCase, GetEventoInscripcionByIdUseCase],
 })
 export class EventoInscripcionModule {}

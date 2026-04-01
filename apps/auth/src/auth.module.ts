@@ -21,7 +21,7 @@ import { CommonModule, UploadModule } from '@app/common';
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET') || 'secret',
         signOptions: {
-          expiresIn: configService.get<string>('JWT_EXPIRATION') || '24h'
+          expiresIn: configService.get<string>('JWT_EXPIRATION') || '24h',
         } as any,
       }),
       inject: [ConfigService],
@@ -30,4 +30,4 @@ import { CommonModule, UploadModule } from '@app/common';
   controllers: [AuthController, UploadController],
   providers: [AuthService, JwtStrategy],
 })
-export class AuthModule { }
+export class AuthModule {}
