@@ -1,22 +1,57 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LmsController } from './lms.controller';
 import { LmsService } from './lms.service';
+import { AppConfigService } from './app-config/app-config.service';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
-describe('LmsController', () => {
-  let lmsController: LmsController;
+describe('LmsController (Pruebas Unitarias)', () => {
+  let controller: LmsController;
+  let service: LmsService;
+
+  const mockLmsService = {
+    login: jest.fn(),
+  };
+
+  const mockAppConfigService = {};
 
   beforeEach(async () => {
-    const app: TestingModule = await Test.createTestingModule({
+    const module: TestingModule = await Test.createTestingModule({
       controllers: [LmsController],
-      providers: [LmsService],
-    }).compile();
+      providers: [
+        { provide: LmsService, useValue: mockLmsService },
+        { provide: AppConfigService, useValue: mockAppConfigService },
+      ],
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
-    lmsController = app.get<LmsController>(LmsController);
+    controller = module.get<LmsController>(LmsController);
+    service = module.get<LmsService>(LmsService);
   });
 
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(lmsController.getHello()).toBe('Hello World!');
+  it('debería estar definido', () => {
+    expect(controller).toBeDefined();
+  });
+
+  describe('login', () => {
+    it('debería llamar a LmsService.login con los parámetros correctos', async () => {
+      const loginDto = {
+        username: 'juan.perez',
+        password: 'password123',
+        tokenDispositivo: 'token-mock',
+      };
+      const mockResult = { access_token: 'jwt-valido' };
+      mockLmsService.login.mockResolvedValue(mockResult);
+
+      const result = await controller.login(loginDto);
+
+      expect(service.login).toHaveBeenCalledWith(
+        'juan.perez',
+        'password123',
+        'token-mock',
+      );
+      expect(result).toBe(mockResult);
     });
   });
 });
