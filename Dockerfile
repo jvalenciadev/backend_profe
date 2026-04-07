@@ -9,6 +9,7 @@ RUN apk add --no-cache openssl libc6-compat
 # Copy root configurations
 COPY package*.json ./
 COPY tsconfig*.json ./
+COPY nest-cli.json ./
 
 # Install all dependencies (including dev for building)
 RUN npm install
