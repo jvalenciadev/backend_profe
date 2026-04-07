@@ -3,6 +3,7 @@
     "compilerOptions": {
         "declaration": false,
         "outDir": "../../dist/apps/views",
+        "rootDir": "src",
         "baseUrl": "../../",
         "paths": {
             "@app/common": ["libs/common/src"],
