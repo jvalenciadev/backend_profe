@@ -1,5 +1,5 @@
 # Multi-stage production Dockerfile for NestJS
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -18,14 +18,19 @@ RUN npm install
 COPY apps/ ./apps/
 COPY libs/ ./libs/
 
-# Build the main monolithic backend
+# Copy Firebase admin SDK if present
+COPY *.json ./
+
+# Generate Prisma client
 RUN npx prisma generate --schema=./libs/database/prisma/schema.prisma
-RUN npm run build backend
-RUN npm run build views
-RUN npm run build lms
+
+# Build each app explicitly using nest CLI
+RUN npx nest build backend
+RUN npx nest build views
+RUN npx nest build lms
 
 # Production image
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 
 WORKDIR /app
 
@@ -38,10 +43,14 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/libs/database/prisma ./libs/database/prisma
-# Expose production ports (Main, LMS, Views)
+
+# Copy Firebase admin SDK JSON if it was generated
+COPY --from=builder /app/*.json ./
+
+# Expose production ports (Main backend:3000, LMS:3008, Views:3005)
 EXPOSE 3000
 EXPOSE 3008
 EXPOSE 3005
 
 # Run migrations and start the apps concurrently
-CMD ["sh", "-c", "npx prisma migrate deploy --schema=./libs/database/prisma/schema.prisma && npx concurrently \"node dist/apps/backend/main.js\" \"node dist/apps/lms/main.js\" \"node dist/apps/views/main.js\""]
+CMD ["sh", "-c", "npx prisma migrate deploy --schema=./libs/database/prisma/schema.prisma && node_modules/.bin/concurrently \"node dist/apps/backend/main.js\" \"node dist/apps/lms/main.js\" \"node dist/apps/views/main.js\""]
