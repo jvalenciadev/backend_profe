@@ -1,22 +1,31 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuditController } from './audit.controller';
 import { AuditService } from './audit.service';
+import { PrismaService } from '@app/database';
 
-describe('AuditController', () => {
-  let auditController: AuditController;
+describe('AuditController (Pruebas Unitarias)', () => {
+  let controller: AuditController;
+
+  const mockAuditService = {
+    getLogs: jest.fn().mockResolvedValue([]),
+    getVersions: jest.fn().mockResolvedValue([]),
+  };
+
+  const mockPrismaService = {};
 
   beforeEach(async () => {
-    const app: TestingModule = await Test.createTestingModule({
+    const module: TestingModule = await Test.createTestingModule({
       controllers: [AuditController],
-      providers: [AuditService],
+      providers: [
+        { provide: AuditService, useValue: mockAuditService },
+        { provide: PrismaService, useValue: mockPrismaService },
+      ],
     }).compile();
 
-    auditController = app.get<AuditController>(AuditController);
+    controller = module.get<AuditController>(AuditController);
   });
 
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(auditController.getHello()).toBe('Hello World!');
-    });
+  it('debería estar definido (AuditController)', () => {
+    expect(controller).toBeDefined();
   });
 });

@@ -17,6 +17,7 @@ import { memoryStorage } from 'multer';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { UploadConfigService } from '@app/common';
+import { Estado } from '@prisma/client';
 
 /**
  * CONTROLADOR DE VISTAS PÚBLICAS (LANDING PAGE)
@@ -41,7 +42,7 @@ export class LandingViewsController {
     let tenantId: string | undefined;
     if (tenant) {
       const dep = await this.prisma.departamento.findFirst({
-        where: { abreviacion: tenant.toUpperCase(), estado: 'activo' },
+        where: { abreviacion: tenant.toUpperCase(), estado: Estado.activo },
       });
       if (dep) tenantId = dep.id;
     }
@@ -56,16 +57,16 @@ export class LandingViewsController {
       sedes,
       cargos,
     ] = await Promise.all([
-      this.prisma.profe.findFirst({ where: { estado: 'activo' } }),
+      this.prisma.profe.findFirst({ where: { estado: Estado.activo } }),
       this.prisma.evento.findMany({
-        where: { estado: 'activo', ...(tenantId ? { tenantId } : {}) },
+        where: { estado: Estado.activo, ...(tenantId ? { tenantId } : {}) },
         take: 12,
         orderBy: { fecha: 'desc' },
-        include: { tipo: true, cuestionarios: { where: { estado: 'activo' } } },
+        include: { tipo: true, cuestionarios: { where: { estado: Estado.activo } } },
       }),
       this.prisma.programaDos.findMany({
         where: {
-          estado: 'activo',
+          estado: Estado.activo,
           ...(tenantId ? { departamentoId: tenantId } : {}),
         },
         orderBy: { createdAt: 'desc' },
@@ -73,23 +74,40 @@ export class LandingViewsController {
           tipo: true,
           modalidad: true,
           duracion: true,
-          sede: true,
+          sede: { include: { departamento: true } },
           version: true,
+          turnos: { 
+            where: { estado: Estado.activo }, 
+            include: { 
+              turnoConfig: true,
+              _count: { 
+                select: { 
+                  inscripciones: { 
+                    where: { 
+                      estadoInscripcion: { 
+                        nombre: { in: ['PREINSCRITO', 'INSCRITO', 'INSCRITOS'] } 
+                      } 
+                    } 
+                  } 
+                } 
+              }
+            } 
+          },
         },
       }),
       this.prisma.comunicado.findMany({
-        where: { estado: 'activo', ...(tenantId ? { tenantId } : {}) },
+        where: { estado: Estado.activo, ...(tenantId ? { tenantId } : {}) },
         take: 8,
         orderBy: { createdAt: 'desc' },
       }),
       this.prisma.blog.findMany({
-        where: { estado: 'activo', ...(tenantId ? { tenantId } : {}) },
+        where: { estado: Estado.activo, ...(tenantId ? { tenantId } : {}) },
         take: 6,
         orderBy: { fecha: 'desc' },
       }),
       this.prisma.galeria.findMany({
         where: {
-          estado: 'activo',
+          estado: Estado.activo,
           ...(tenantId ? { sede: { is: { departamentoId: tenantId } } } : {}),
         },
         take: 12,
@@ -97,17 +115,13 @@ export class LandingViewsController {
       }),
       this.prisma.sede.findMany({
         where: {
-          estado: 'activo',
+          estado: Estado.activo,
           ...(tenantId ? { departamentoId: tenantId } : {}),
         },
+        include: { departamento: true },
         take: 9,
       }),
-      this.prisma.cargo.findMany({
-        where: { estado: 'activo' },
-        take: 6,
-        orderBy: { createdAt: 'desc' },
-        include: { admins: { where: { estado: 'activo' }, take: 1 } },
-      }),
+      this.prisma.cargo.findMany({ where: { estado: Estado.activo } }),
     ]);
 
     // Grouping: unique per programaId + versionId to avoid duplicates in landing
@@ -138,42 +152,56 @@ export class LandingViewsController {
   // ─── PROGRAMA DETAIL ─────────────────────────────────────────────────────────
   @Get('programa/:id')
   async getProgramaById(@Param('id') id: string) {
-    const programa = await this.prisma.programaDos.findUnique({
-      where: { id },
-      include: {
-        tipo: true,
-        modalidad: true,
-        duracion: true,
-        sede: true,
-        version: true,
-        turnos: {
-          where: { estado: 'activo' },
-          include: { turnoConfig: true },
-        },
-        modulos: {
-          where: { estado: 'activo' },
-          orderBy: { orden: 'asc' },
+    const includeBlock: any = {
+      tipo: true,
+      modalidad: true,
+      duracion: true,
+      sede: { include: { departamento: true } },
+      version: true,
+      turnos: {
+        where: { estado: Estado.activo },
+        include: { 
+          turnoConfig: true,
+          _count: { 
+            select: { 
+              inscripciones: { 
+                where: { 
+                  estadoInscripcion: { 
+                    nombre: { in: ['PREINSCRITO', 'INSCRITO', 'INSCRITOS'] } 
+                  } 
+                } 
+              } 
+            } 
+          }
         },
       },
+      modulos: {
+        where: { estado: Estado.activo },
+        orderBy: { orden: 'asc' },
+      },
+    };
+
+    const programa: any = await this.prisma.programaDos.findUnique({
+      where: { id },
+      include: includeBlock,
     });
+
     if (!programa) throw new BadRequestException('Programa no encontrado');
 
-    // Obtener todas las sedes disponibles para este mismo programa maestro y versión
-    const sedesDisponibles = await this.prisma.programaDos.findMany({
-      where: {
-        programaId: programa.programaId,
-        versionId: programa.versionId,
-        estado: 'activo',
-      },
-      include: {
-        sede: true,
-        turnos: { include: { turnoConfig: true } },
-        modulos: { where: { estado: 'activo' }, orderBy: { orden: 'asc' } },
-      },
-      orderBy: { sede: { nombre: 'asc' } },
-    });
+    // Buscar todas las sedes del mismo programa (misma versión y nombre), incluyendo la actual
+    if (programa.versionId) {
+      programa.sedesDisponibles = await this.prisma.programaDos.findMany({
+        where: {
+          nombre: programa.nombre,
+          versionId: programa.versionId,
+          estado: Estado.activo,
+        },
+        include: includeBlock,
+        orderBy: { sede: { nombre: 'asc' } },
+      });
+    }
 
-    return { ...programa, sedesDisponibles };
+    return programa;
   }
 
   // ─── PERSONA LOOKUP (por CI + complemento) ────────────────────────────────────
@@ -297,9 +325,7 @@ export class LandingViewsController {
         fechaNacimiento: persona.fechaNacimiento,
         celular: persona.celular?.toString(),
         correo: persona.correo || user.correo,
-        alreadyEnrolled: programaId
-          ? await this.checkEnrollment(user.id, programaId)
-          : false,
+        alreadyEnrolled: await this.checkEnrollment(user.id, programaId),
       };
     }
 
@@ -349,9 +375,7 @@ export class LandingViewsController {
           celular: adminUser.celular,
           correo: adminUser.correo,
           complemento: adminUser.complemento,
-          alreadyEnrolled: programaId
-            ? await this.checkEnrollment(adminUser.id, programaId)
-            : false,
+          alreadyEnrolled: await this.checkEnrollment(adminUser.id, programaId),
         };
       }
     }
@@ -375,38 +399,54 @@ export class LandingViewsController {
   private async checkEnrollment(
     userId: string,
     programaId: string,
-  ): Promise<boolean> {
+  ): Promise<any> {
+    if (!programaId) return null;
     const prog = await this.prisma.programaDos.findUnique({
       where: { id: programaId },
       select: { programaId: true, versionId: true },
     });
-    if (!prog) return false;
+    if (!prog) return null;
+
+    const where: any = {
+      personaId: userId,
+      estado: 'activo',
+    };
 
     if (prog.programaId && prog.versionId) {
-      // Buscar todos los ProgramaDos del mismo maestro + misma versión
       const hermanos = await this.prisma.programaDos.findMany({
         where: {
           programaId: prog.programaId,
           versionId: prog.versionId,
-          estado: { not: 'eliminado' },
+          estado: { not: Estado.eliminado },
         },
         select: { id: true },
       });
-      const hermanoIds = hermanos.map((h) => h.id);
-      const ins = await this.prisma.programaInscripcion.findFirst({
-        where: {
-          personaId: userId,
-          programaId: { in: hermanoIds },
-          estado: 'activo',
-        },
-      });
-      return !!ins;
+      where.programaId = { in: hermanos.map((h) => h.id) };
     } else {
-      const ins = await this.prisma.programaInscripcion.findFirst({
-        where: { personaId: userId, programaId, estado: 'activo' },
-      });
-      return !!ins;
+      where.programaId = programaId;
     }
+
+    const ins = await this.prisma.programaInscripcion.findFirst({
+      where,
+      include: {
+        programa: {
+          include: {
+            sede: { include: { departamento: true } },
+          },
+        },
+        turno: { include: { turnoConfig: true } },
+      },
+    });
+
+    if (!ins) return null;
+
+    return {
+      sede: ins.programa?.sede?.nombre,
+      departamento:
+        ins.programa?.sede?.departamento?.nombre ||
+        (ins.programa?.sede as any)?.dep?.nombre,
+      turno: ins.turno?.turnoConfig?.nombre,
+    };
   }
 
   // ─── INSCRIPCION ──────────────────────────────────────────────────────────────
@@ -588,7 +628,7 @@ export class LandingViewsController {
 
     const progFull = await this.prisma.programaDos.findUnique({
       where: { id: programaId },
-      include: { sede: true },
+      include: { sede: { include: { departamento: true } } },
     });
 
     // Enviar correo de confirmación (Asíncrono para no bloquear la respuesta)

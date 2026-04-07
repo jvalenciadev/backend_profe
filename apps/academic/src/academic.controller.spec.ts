@@ -1,22 +1,28 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AcademicController } from './academic.controller';
-import { AcademicService } from './academic.service';
+import { CreateAcademicVersionUseCase } from './oferta/application/use-cases/create-academic-version.use-case';
+import { JwtAuthGuard } from '@app/common';
 
-describe('AcademicController', () => {
-  let academicController: AcademicController;
+describe('AcademicController (Pruebas Unitarias)', () => {
+  let controller: AcademicController;
+
+  const mockCreateUseCase = { execute: jest.fn() };
 
   beforeEach(async () => {
-    const app: TestingModule = await Test.createTestingModule({
+    const module: TestingModule = await Test.createTestingModule({
       controllers: [AcademicController],
-      providers: [AcademicService],
-    }).compile();
+      providers: [
+        { provide: CreateAcademicVersionUseCase, useValue: mockCreateUseCase },
+      ],
+    })
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
-    academicController = app.get<AcademicController>(AcademicController);
+    controller = module.get<AcademicController>(AcademicController);
   });
 
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(academicController.getHello()).toBe('Hello World!');
-    });
+  it('debería estar definido (AcademicController)', () => {
+    expect(controller).toBeDefined();
   });
 });

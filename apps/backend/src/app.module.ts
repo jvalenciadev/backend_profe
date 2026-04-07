@@ -9,7 +9,6 @@ import { TerritorialModule } from '../../territorial/src/territorial.module';
 import { UsersModule } from '../../users/src/users.module';
 import { AcademicModule } from '../../academic/src/academic.module';
 import { AuditModule } from '../../audit/src/audit.module';
-import { JobsModule } from '../../jobs/src/jobs.module';
 import { DatabaseModule } from '@app/database';
 import { APP_GUARD, Reflector } from '@nestjs/core';
 import { CaslModule, ApiKeyGuard, MailModule, UploadModule } from '@app/common';
@@ -29,7 +28,6 @@ import { UploadConfigController } from '@app/common/upload/upload-config.control
     UsersModule,
     AcademicModule,
     AuditModule,
-    JobsModule,
     UploadModule,
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'uploads'),
@@ -54,4 +52,4 @@ import { UploadConfigController } from '@app/common/upload/upload-config.control
     },
   ],
 })
-export class AppModule {}
+export class AppModule { }

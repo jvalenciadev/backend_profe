@@ -1,21 +1,31 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { PrismaService } from '@app/database';
 
-describe('AppController', () => {
+describe('AppController (Pruebas Unitarias Monolito)', () => {
   let appController: AppController;
 
+  const mockAppService = {
+    getHello: jest.fn().mockReturnValue('Hello World!'),
+  };
+
+  const mockPrismaService = {};
+
   beforeEach(async () => {
-    const app: TestingModule = await Test.createTestingModule({
+    const module: TestingModule = await Test.createTestingModule({
       controllers: [AppController],
-      providers: [AppService],
+      providers: [
+        { provide: AppService, useValue: mockAppService },
+        { provide: PrismaService, useValue: mockPrismaService },
+      ],
     }).compile();
 
-    appController = app.get<AppController>(AppController);
+    appController = module.get<AppController>(AppController);
   });
 
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
+  describe('Salud del sistema', () => {
+    it('debería retornar "Hello World!"', () => {
       expect(appController.getHello()).toBe('Hello World!');
     });
   });

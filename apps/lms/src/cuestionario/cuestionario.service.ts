@@ -162,10 +162,7 @@ export class CuestionarioService {
     return {
       cuestionario: cue,
       intentosConsumidos: intentos.length,
-      intentosRestantes: Math.max(
-        0,
-        cue.maxIntentos - (enProgreso ? intentos.length - 1 : intentos.length),
-      ),
+      intentosRestantes: Math.max(0, cue.maxIntentos - intentos.length),
       intentoEnProgreso: enProgreso,
       mejorPuntaje:
         intentos.length > 0
