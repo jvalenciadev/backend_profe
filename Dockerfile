@@ -20,6 +20,8 @@ COPY libs/ ./libs/
 # Build the main monolithic backend
 RUN npx prisma generate --schema=./libs/database/prisma/schema.prisma
 RUN npm run build backend
+RUN npm run build views
+RUN npm run build lms
 
 # Production image
 FROM node:20-alpine AS runner
