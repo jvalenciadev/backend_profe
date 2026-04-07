@@ -34,7 +34,7 @@ export class LandingViewsController {
     private prisma: PrismaService,
     private mailService: MailService,
     private readonly uploadConfig: UploadConfigService,
-  ) {}
+  ) { }
 
   // ─── LANDING DATA ────────────────────────────────────────────────────────────
   @Get('landing-page')
@@ -76,22 +76,22 @@ export class LandingViewsController {
           duracion: true,
           sede: { include: { departamento: true } },
           version: true,
-          turnos: { 
-            where: { estado: Estado.activo }, 
-            include: { 
+          turnos: {
+            where: { estado: Estado.activo },
+            include: {
               turnoConfig: true,
-              _count: { 
-                select: { 
-                  inscripciones: { 
-                    where: { 
-                      estadoInscripcion: { 
-                        nombre: { in: ['PREINSCRITO', 'INSCRITO', 'INSCRITOS'] } 
-                      } 
-                    } 
-                  } 
-                } 
+              _count: {
+                select: {
+                  inscripciones: {
+                    where: {
+                      estadoInscripcion: {
+                        nombre: { in: ['PREINSCRITO', 'INSCRITO', 'INSCRITOS'] }
+                      }
+                    }
+                  }
+                }
               }
-            } 
+            }
           },
         },
       }),
@@ -160,18 +160,18 @@ export class LandingViewsController {
       version: true,
       turnos: {
         where: { estado: Estado.activo },
-        include: { 
+        include: {
           turnoConfig: true,
-          _count: { 
-            select: { 
-              inscripciones: { 
-                where: { 
-                  estadoInscripcion: { 
-                    nombre: { in: ['PREINSCRITO', 'INSCRITO', 'INSCRITOS'] } 
-                  } 
-                } 
-              } 
-            } 
+          _count: {
+            select: {
+              inscripciones: {
+                where: {
+                  estadoInscripcion: {
+                    nombre: { in: ['PREINSCRITO', 'INSCRITO', 'INSCRITOS'] }
+                  }
+                }
+              }
+            }
           }
         },
       },
@@ -325,7 +325,9 @@ export class LandingViewsController {
         fechaNacimiento: persona.fechaNacimiento,
         celular: persona.celular?.toString(),
         correo: persona.correo || user.correo,
-        alreadyEnrolled: await this.checkEnrollment(user.id, programaId),
+        alreadyEnrolled: programaId
+          ? await this.checkEnrollment(user.id, programaId)
+          : null,
       };
     }
 
@@ -375,7 +377,9 @@ export class LandingViewsController {
           celular: adminUser.celular,
           correo: adminUser.correo,
           complemento: adminUser.complemento,
-          alreadyEnrolled: await this.checkEnrollment(adminUser.id, programaId),
+          alreadyEnrolled: programaId
+            ? await this.checkEnrollment(adminUser.id, programaId)
+            : null,
         };
       }
     }
@@ -597,8 +601,8 @@ export class LandingViewsController {
     });
     const alreadyHasRole = rolePart
       ? await this.prisma.userRole.findFirst({
-          where: { userId: user.id, roleId: rolePart.id },
-        })
+        where: { userId: user.id, roleId: rolePart.id },
+      })
       : null;
     if (rolePart && !alreadyHasRole) {
       await this.prisma.userRole.create({
