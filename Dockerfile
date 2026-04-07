@@ -37,9 +37,10 @@ COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/libs/database/prisma ./libs/database/prisma
-
-# Expose production port
+# Expose production ports (Main, LMS, Views)
 EXPOSE 3000
+EXPOSE 3008
+EXPOSE 3005
 
-# Run migrations and start the app
-CMD ["sh", "-c", "npx prisma migrate deploy --schema=./libs/database/prisma/schema.prisma && find dist -name main.js | xargs node"]
+# Run migrations and start the apps concurrently
+CMD ["sh", "-c", "npx prisma migrate deploy --schema=./libs/database/prisma/schema.prisma && npx concurrently \"node dist/apps/backend/main.js\" \"node dist/apps/lms/main.js\" \"node dist/apps/views/main.js\""]
