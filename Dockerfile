@@ -53,4 +53,4 @@ EXPOSE 3008
 EXPOSE 3005
 
 # Run migrations and start the apps concurrently
-CMD ["sh", "-c", "npx prisma migrate deploy --schema=./libs/database/prisma/schema.prisma && node_modules/.bin/concurrently \"node dist/apps/backend/main.js\" \"node dist/apps/lms/main.js\" \"node dist/apps/views/main.js\""]
+CMD ["sh", "-c", "npx prisma migrate deploy --schema=./libs/database/prisma/schema.prisma && ./node_modules/.bin/concurrently \"node dist/apps/backend/main.js\" \"node dist/apps/lms/apps/lms/src/main.js\" \"node dist/apps/views/apps/views/src/main.js\""]
