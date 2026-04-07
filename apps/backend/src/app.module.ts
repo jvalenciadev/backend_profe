@@ -36,7 +36,6 @@ import { UploadConfigController } from '@app/common/upload/upload-config.control
         setHeaders: (res, path) => {
           // Medidas para asegurar que archivos maliciosos no ejecuten código en el navegador (XSS)
           res.set('X-Content-Type-Options', 'nosniff');
-          res.set('Content-Security-Policy', "default-src 'none'");
           res.set('Cache-Control', 'public, max-age=31536000');
         },
       },
