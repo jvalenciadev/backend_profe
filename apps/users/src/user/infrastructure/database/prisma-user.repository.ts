@@ -15,6 +15,7 @@ const USER_INCLUDE = {
   cargoPostulacion: true,
   bp_posgrado: { include: { bp_tipo_posgrado: true } },
   bp_produccion_intelectual: true,
+  mod_campos_extra_regs: { include: { campoExtra: true } },
 } as const;
 
 @Injectable()
@@ -83,6 +84,16 @@ export class PrismaUserRepository implements IUserRepository {
         sedes: sedes
           ? { create: sedes.map((sedeId: string) => ({ sedeId })) }
           : undefined,
+        mod_campos_extra_regs: data.mod_campos_extra_regs
+          ? {
+              create: Object.entries(data.mod_campos_extra_regs).map(
+                ([campoExtraId, valor]: [string, any]) => ({
+                  campoExtraId,
+                  valor: String(valor),
+                }),
+              ),
+            }
+          : undefined,
       },
       include: USER_INCLUDE,
     });
@@ -115,6 +126,17 @@ export class PrismaUserRepository implements IUserRepository {
       updateData.sedes = {
         deleteMany: {},
         create: sedes.map((sedeId: string) => ({ sedeId })),
+      };
+    }
+    if (data.mod_campos_extra_regs !== undefined) {
+      updateData.mod_campos_extra_regs = {
+        deleteMany: {},
+        create: Object.entries(data.mod_campos_extra_regs).map(
+          ([campoExtraId, valor]: [string, any]) => ({
+            campoExtraId,
+            valor: String(valor),
+          }),
+        ),
       };
     }
 

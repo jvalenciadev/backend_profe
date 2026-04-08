@@ -282,6 +282,30 @@ export class AuthService {
     };
   }
 
+  async impersonate(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        tenant: true,
+        roles: {
+          include: {
+            role: true,
+          },
+        },
+        sedes: {
+          include: { sede: true },
+        },
+      },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException('Usuario objetivo no encontrado');
+    }
+
+    // Retorna un login normal para el usuario objetivo
+    return this.login(user);
+  }
+
   async validate(payload: any) {
     return {
       id: payload.sub,

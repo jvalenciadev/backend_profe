@@ -1145,7 +1145,7 @@ model TipoEvento {
 model token_dispositivo {
   id_token     Int      @id @default(autoincrement())
   token        String?  @unique
-  userId       String?  @db.Uuid @map("user_id")
+  userId       String?  @map("user_id") @db.Uuid
   user         User?    @relation(fields: [userId], references: [id])
   tipo_usuario String?
   created_at   DateTime @default(now())

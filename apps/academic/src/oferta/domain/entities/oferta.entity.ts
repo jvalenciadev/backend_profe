@@ -18,6 +18,7 @@ export class Oferta {
   programa?: any;
   sede?: any;
   turnos?: any[];
+  version?: any;
 
   constructor(partial: Partial<Oferta>) {
     Object.assign(this, partial);

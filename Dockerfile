@@ -38,6 +38,9 @@ RUN apk add --no-cache openssl libc6-compat
 
 ENV NODE_ENV=production
 
+# Crear directorio de uploads con permisos correctos
+RUN mkdir -p /app/uploads && chmod -R 755 /app/uploads
+
 # Copy built assets and necessary files
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules

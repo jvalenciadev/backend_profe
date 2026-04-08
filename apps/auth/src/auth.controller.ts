@@ -1,10 +1,12 @@
 import {
   Controller,
+  Param,
   Post,
   Body,
   Get,
   UseGuards,
   UnauthorizedException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard, Public, CurrentUser } from '@app/common';
@@ -50,5 +52,26 @@ export class AuthController {
   @Post('reset-password')
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPassword(dto.token, dto.password);
+  }
+
+  @Post('impersonate/:userId')
+  @UseGuards(JwtAuthGuard)
+  async impersonate(
+    @Param('userId') userId: string,
+    @CurrentUser() admin: any,
+  ) {
+    // Verificar que el usuario que llama es ADMIN
+    const roles = admin.roles || [];
+    const isAdmin = roles.some((r: string) =>
+      r.toUpperCase().includes('ADMIN'),
+    );
+
+    if (!isAdmin) {
+      throw new ForbiddenException(
+        'No tiene permisos para suplantar identidades',
+      );
+    }
+
+    return this.authService.impersonate(userId);
   }
 }

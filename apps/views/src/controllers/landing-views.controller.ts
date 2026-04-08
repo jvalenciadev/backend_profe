@@ -325,6 +325,10 @@ export class LandingViewsController {
         fechaNacimiento: persona.fechaNacimiento,
         celular: persona.celular?.toString(),
         correo: persona.correo || user.correo,
+        mod_campos_extra_regs: await this.prisma.mod_campo_extra_respuesta.findMany({
+          where: { userId: user.id },
+          include: { campoExtra: true }
+        }),
         alreadyEnrolled: programaId
           ? await this.checkEnrollment(user.id, programaId)
           : null,
@@ -377,6 +381,10 @@ export class LandingViewsController {
           celular: adminUser.celular,
           correo: adminUser.correo,
           complemento: adminUser.complemento,
+          mod_campos_extra_regs: await this.prisma.mod_campo_extra_respuesta.findMany({
+            where: { userId: adminUser.id },
+            include: { campoExtra: true }
+          }),
           alreadyEnrolled: programaId
             ? await this.checkEnrollment(adminUser.id, programaId)
             : null,
@@ -464,6 +472,7 @@ export class LandingViewsController {
       baucher,
       datosAdicionales,
       datosPersona,
+      mod_campos_extra_regs,
     } = body;
 
     let user: any;
@@ -522,6 +531,26 @@ export class LandingViewsController {
           modelType: 'App\\Models\\User',
         },
       });
+    }
+
+    // Persistir campos extra si se enviaron
+    if (mod_campos_extra_regs && Object.keys(mod_campos_extra_regs).length > 0) {
+      for (const [campoExtraId, valor] of Object.entries(mod_campos_extra_regs)) {
+        await this.prisma.mod_campo_extra_respuesta.upsert({
+          where: {
+            campoExtraId_userId: {
+              userId: user.id,
+              campoExtraId: campoExtraId,
+            },
+          },
+          update: { valor: String(valor) },
+          create: {
+            userId: user.id,
+            campoExtraId: campoExtraId,
+            valor: String(valor),
+          },
+        });
+      }
     }
 
     // Obtener datos del programa al que se intenta inscribir
@@ -654,6 +683,14 @@ export class LandingViewsController {
     };
   }
 
+  @Get('campos-extra')
+  async getCamposExtra() {
+    return this.prisma.mod_campo_extra.findMany({
+      where: { estado: 'activo' },
+      orderBy: { orden: 'asc' },
+    });
+  }
+
   // ─── CATALOGOS ────────────────────────────────────────────────────────────────
   @Get('departamentos')
   async getDepartamentos() {
@@ -696,6 +733,7 @@ export class LandingViewsController {
     const filename = `${timestamp}${fileExt}`;
     const fullPath = path.join(finalPath, filename);
 
+    await fs.mkdir(finalPath, { recursive: true });
     await fs.writeFile(fullPath, file.buffer);
 
     const uploadsRoot = path.join(process.cwd(), 'uploads');

@@ -18,7 +18,15 @@ export class PrismaInscripcionRepository implements IInscripcionRepository {
         },
         sede: true,
         estadoInscripcion: true,
-        persona: true,
+        persona: {
+          include: {
+            mod_campos_extra_regs: {
+              include: {
+                campoExtra: true
+              }
+            }
+          }
+        },
         turno: {
           include: {
             turnoConfig: true,
@@ -41,7 +49,15 @@ export class PrismaInscripcionRepository implements IInscripcionRepository {
         },
         sede: true,
         estadoInscripcion: true,
-        persona: true,
+        persona: {
+          include: {
+            mod_campos_extra_regs: {
+              include: {
+                campoExtra: true
+              }
+            }
+          }
+        },
         turno: {
           include: {
             turnoConfig: true,
@@ -139,6 +155,7 @@ export class PrismaInscripcionRepository implements IInscripcionRepository {
     const updated = await this.prisma.programaInscripcion.update({
       where: { id },
       data: {
+        programaId: data.programaId,
         turnoId: data.turnoId,
         sedeId: data.sedeId,
         estadoInscripcionId: data.estadoInscripcionId,

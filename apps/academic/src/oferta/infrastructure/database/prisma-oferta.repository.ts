@@ -34,6 +34,7 @@ export class PrismaOfertaRepository implements IOfertaRepository {
           },
         },
         modulos: true,
+        version: true,
       },
     });
     return data ? new Oferta(data) : null;
@@ -62,6 +63,7 @@ export class PrismaOfertaRepository implements IOfertaRepository {
           },
         },
         modulos: true,
+        version: true,
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -83,6 +85,7 @@ export class PrismaOfertaRepository implements IOfertaRepository {
           },
         },
         modulos: true,
+        version: true,
       },
     });
     return new Oferta(updated);

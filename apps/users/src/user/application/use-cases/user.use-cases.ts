@@ -33,6 +33,7 @@ const ALLOWED_CREATE_FIELDS = [
   'username',
   'cargoPostulacionId',
   'ci',
+  'mod_campos_extra_regs',
 ] as const;
 
 const ALLOWED_UPDATE_FIELDS = [
@@ -67,7 +68,8 @@ function buildUserPayload(
       payload['ci'] = value ? BigInt(value) : null;
       continue;
     }
-    if (field !== 'verificationCode') payload[field] = value;
+    if (field !== 'verificationCode' && field !== 'mod_campos_extra_regs') payload[field] = value;
+    if (field === 'mod_campos_extra_regs') payload[field] = value;
   }
   return payload;
 }
@@ -105,7 +107,10 @@ export class CreateUserUseCase {
       sedes,
     };
 
-    const user = await this.repository.create(createData);
+    const user = await this.repository.create({
+      ...createData,
+      mod_campos_extra_regs: data.mod_campos_extra_regs
+    });
     await this.mailService
       .sendWelcomeEmail(correo, data.nombre, data.username)
       .catch(() => null);
@@ -180,6 +185,8 @@ export class UpdateUserUseCase {
     payload['updatedBy'] = currentUser?.id || null;
     if (roles !== undefined) payload['roles'] = roles;
     if (sedes !== undefined) payload['sedes'] = sedes;
+
+    if (data.mod_campos_extra_regs !== undefined) payload['mod_campos_extra_regs'] = data.mod_campos_extra_regs;
 
     return this.repository.update(id, payload, ability);
   }

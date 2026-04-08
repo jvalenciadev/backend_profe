@@ -271,6 +271,7 @@ export class LmsService {
                   inscripciones: {
                     where: {
                       estado: { in: ['activo', 'aprobado'] },
+                      estadoInscripcion: { nombre: { in: ['INSCRITO', 'CONFIRMADO'] } },
                       ...(d.turnoId ? { turnoId: d.turnoId } : {}),
                     },
                     select: { id: true },
@@ -298,6 +299,7 @@ export class LmsService {
                   where: {
                     programa: { programaId: master.programaId },
                     estado: { in: ['activo', 'aprobado'] },
+                    estadoInscripcion: { nombre: { in: ['INSCRITO', 'CONFIRMADO'] } },
                   },
                 });
               studentCount = totalInscritos;
@@ -426,6 +428,7 @@ export class LmsService {
             where: {
               programaId: { in: allProgDosIds },
               estado: { in: ['activo', 'aprobado'] },
+              estadoInscripcion: { nombre: { in: ['INSCRITO', 'CONFIRMADO'] } },
             },
             include: {
               persona: {
@@ -473,6 +476,7 @@ export class LmsService {
     const where: any = {
       programaId: programaDosId,
       estado: { in: ['activo', 'aprobado'] },
+      estadoInscripcion: { nombre: { in: ['INSCRITO', 'CONFIRMADO'] } },
     };
 
     // Solo filtrar por turno si viene un valor válido
@@ -588,6 +592,7 @@ export class LmsService {
         where: {
           personaId: userId,
           estado: 'activo',
+          estadoInscripcion: { nombre: { in: ['INSCRITO', 'CONFIRMADO'] } },
         },
         include: {
           programa: {
