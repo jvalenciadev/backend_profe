@@ -60,15 +60,16 @@ export class AuthController {
     @Param('userId') userId: string,
     @CurrentUser() admin: any,
   ) {
-    // Verificar que el usuario que llama es ADMIN
+    // Verificar que el usuario que llama es ADMIN o RESPONSABLE
     const roles = admin.roles || [];
-    const isAdmin = roles.some((r: string) =>
-      r.toUpperCase().includes('ADMIN'),
-    );
+    const hasPermission = roles.some((r: string) => {
+      const role = r.toUpperCase();
+      return role.includes('ADMIN') || role.includes('RESPONSABLE');
+    });
 
-    if (!isAdmin) {
+    if (!hasPermission) {
       throw new ForbiddenException(
-        'No tiene permisos para suplantar identidades',
+        'No tiene permisos de nivel administrativo para suplantar identidades',
       );
     }
 
