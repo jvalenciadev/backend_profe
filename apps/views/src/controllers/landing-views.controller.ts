@@ -8,6 +8,7 @@ import {
   UseInterceptors,
   UploadedFile,
   Param,
+  Patch,
 } from '@nestjs/common';
 import { PrismaService } from '@app/database';
 import { MailService } from '@app/common';
@@ -441,24 +442,60 @@ export class LandingViewsController {
     const ins = await this.prisma.programaInscripcion.findFirst({
       where,
       include: {
+        estadoInscripcion: true,
+        persona: {
+          include: {
+            mod_campos_extra_regs: {
+              include: { campoExtra: true },
+            },
+          },
+        },
         programa: {
           include: {
+            version: true,
             sede: { include: { departamento: true } },
           },
         },
         turno: { include: { turnoConfig: true } },
+        baucher: true,
       },
+      orderBy: { createdAt: 'desc' },
     });
 
     if (!ins) return null;
 
     return {
+      ...ins,
+      respuestasExtra: ins.persona?.mod_campos_extra_regs || [],
       sede: ins.programa?.sede?.nombre,
       departamento:
         ins.programa?.sede?.departamento?.nombre ||
         (ins.programa?.sede as any)?.dep?.nombre,
       turno: ins.turno?.turnoConfig?.nombre,
+      estadoNombre: ins.estadoInscripcion?.nombre,
     };
+  }
+
+  @Patch('confirmar-inscripcion/:inscripcionId')
+  async confirmarInscripcionPublic(
+    @Param('inscripcionId') inscripcionId: string,
+  ) {
+    const ins = await this.prisma.programaInscripcion.findUnique({
+      where: { id: inscripcionId },
+    });
+
+    if (!ins) throw new BadRequestException('Inscripción no encontrada');
+
+    // Cambiar a CONFIRMADO (UUID provided by user)
+    return this.prisma.programaInscripcion.update({
+      where: { id: inscripcionId },
+      data: {
+        estadoInscripcionId: 'adfbbf09-a486-4b79-8fe0-04cf85d83cae', // CONFIRMADO
+      },
+      include: {
+        estadoInscripcion: true,
+      },
+    });
   }
 
   // ─── INSCRIPCION ──────────────────────────────────────────────────────────────

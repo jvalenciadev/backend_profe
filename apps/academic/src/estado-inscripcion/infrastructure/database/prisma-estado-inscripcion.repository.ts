@@ -21,7 +21,7 @@ export class PrismaEstadoInscripcionRepository implements IEstadoInscripcionRepo
       const caslWhere = this.caslPrisma.getWhere(
         ability,
         'read',
-        'EstadoInscripcion',
+        'ProgramaInscripcionEstado',
       );
       where = { AND: [where, caslWhere] };
     }
@@ -38,7 +38,7 @@ export class PrismaEstadoInscripcionRepository implements IEstadoInscripcionRepo
       const caslWhere = this.caslPrisma.getWhere(
         ability,
         'read',
-        'EstadoInscripcion',
+        'ProgramaInscripcionEstado',
       );
       where = { AND: [where, caslWhere] };
     }
@@ -68,7 +68,7 @@ export class PrismaEstadoInscripcionRepository implements IEstadoInscripcionRepo
       const caslWhere = this.caslPrisma.getWhere(
         ability,
         'update',
-        'EstadoInscripcion',
+        'ProgramaInscripcionEstado',
       );
       where = { AND: [where, caslWhere] };
     }
@@ -92,7 +92,7 @@ export class PrismaEstadoInscripcionRepository implements IEstadoInscripcionRepo
       const caslWhere = this.caslPrisma.getWhere(
         ability,
         'delete',
-        'EstadoInscripcion',
+        'ProgramaInscripcionEstado',
       );
       where = { AND: [where, caslWhere] };
     }

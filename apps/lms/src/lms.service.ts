@@ -592,7 +592,7 @@ export class LmsService {
         where: {
           personaId: userId,
           estado: 'activo',
-          estadoInscripcion: { nombre: { in: ['INSCRITO', 'CONFIRMADO'] } },
+          estadoInscripcion: { nombre: { in: ['INSCRITO', 'CONFIRMADO', 'PREINSCRITO'] } },
         },
         include: {
           programa: {
@@ -930,12 +930,16 @@ export class LmsService {
           id: progDos.id,
           nombre: progDos.nombre,
           tipo: progDos.tipo?.nombre || 'Programa',
-          version: progDos.version?.nombre || '1',
+          version: progDos.version?.numero ? `VERSIÓN ${progDos.version.numero} (${progDos.version.gestion})` : '1',
           sede: progDos.sede?.nombre,
+          departamento: progDos.sede?.departamento?.nombre || (progDos.sede as any)?.dep?.nombre,
           programaInscripcionId: i.id,
+          inscripcionId: i.id,
+          estadoInscripcion: i.estadoInscripcion?.nombre,
+          statusName: i.estadoInscripcion?.nombre,
           estado: i.estado,
           costo: progDos.costo,
-          turno: i.turno?.turnoConfig?.nombre || 'Mañana',
+          turno: i.turno?.turnoConfig?.nombre || 'ÚNICO',
           codigo: progDos.codigo,
           modulos: modulosList,
           notaMaxima: progDos.tipo?.notaMaxima || 100,
@@ -948,6 +952,10 @@ export class LmsService {
           },
           banner: progDos.banner,
           pro_banner: progDos.banner,
+          // Full data for PDF
+          persona: i.persona,
+          programa: progDos,
+          respuestasExtra: i.persona?.mod_campos_extra_regs || [],
         });
       }
 
@@ -3234,6 +3242,24 @@ export class LmsService {
       mensaje: `Esta es una notificación de prueba de tipo ${defaultTipo}.`,
       tipo: defaultTipo,
       linkRef: '/aula',
+    });
+  }
+  async confirmarInscripcion(userId: string, inscripcionId: string) {
+    const ins = await this.prisma.programaInscripcion.findFirst({
+      where: { id: inscripcionId, personaId: userId },
+    });
+
+    if (!ins) throw new BadRequestException('Inscripción no encontrada');
+
+    // Cambiar a CONFIRMADO
+    return this.prisma.programaInscripcion.update({
+      where: { id: inscripcionId },
+      data: {
+        estadoInscripcionId: 'adfbbf09-a486-4b79-8fe0-04cf85d83cae', // CONFIRMADO
+      },
+      include: {
+        estadoInscripcion: true,
+      },
     });
   }
 }

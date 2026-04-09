@@ -126,6 +126,15 @@ export class LmsController {
     return this.lmsService.verificarPago(inscripcionId);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Patch('confirmar-inscripcion/:inscripcionId')
+  async confirmarInscripcion(
+    @Param('inscripcionId') inscripcionId: string,
+    @Request() req: any,
+  ) {
+    return this.lmsService.confirmarInscripcion(req.user.id, inscripcionId);
+  }
+
   // ─── ACTIVIDADES (FACILITADOR) ────────────────────────────────
 
   @UseGuards(JwtAuthGuard)
