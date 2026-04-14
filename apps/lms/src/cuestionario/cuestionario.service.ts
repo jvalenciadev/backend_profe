@@ -81,12 +81,26 @@ export class CuestionarioService {
   }
 
   async syncPreguntas(cuestionarioId: string, preguntas: any[]) {
-    // Para simplificar: eliminar anteriores y crear nuevas (soft delete mejor)
-    // Pero aquí usaremos una lógica de sincronización
+    // 1. Obtener preguntas actuales ACTIVAS en la DB
+    const currentDBPreguntas = await this.prisma.mod_pregunta.findMany({
+      where: { cuestionarioId, estado: 'activo' },
+      select: { id: true },
+    });
+    const currentDBIds = currentDBPreguntas.map((p) => p.id);
+    const incomingIds = preguntas.map((p) => p.id).filter((id) => id && typeof id === 'string');
+
+    // 2. Desactivar preguntas que NO vienen en el array (Soft Delete)
+    const idsToDelete = currentDBIds.filter((id) => !incomingIds.includes(id));
+    if (idsToDelete.length > 0) {
+      await this.prisma.mod_pregunta.updateMany({
+        where: { id: { in: idsToDelete } },
+        data: { estado: 'eliminado' },
+      });
+    }
 
     for (const p of preguntas) {
       if (p.id && !p.isNew) {
-        // Update
+        // Update pregunta
         await this.prisma.mod_pregunta.update({
           where: { id: p.id },
           data: {
@@ -99,6 +113,23 @@ export class CuestionarioService {
         });
 
         // Sincronizar opciones
+        const currentDBOptions = await this.prisma.mod_opcion.findMany({
+          where: { preguntaId: p.id },
+          select: { id: true },
+        });
+        const dbOptIds = currentDBOptions.map((o) => o.id);
+        const incomingOptIds = p.opciones
+          .map((o: any) => o.id)
+          .filter((id: any) => id && typeof id === 'string');
+
+        // Eliminar opciones que ya no vienen
+        const optsToDelete = dbOptIds.filter((id) => !incomingOptIds.includes(id));
+        if (optsToDelete.length > 0) {
+          await this.prisma.mod_opcion.deleteMany({
+            where: { id: { in: optsToDelete } },
+          });
+        }
+
         for (const opt of p.opciones) {
           if (opt.id && !opt.isNew) {
             await this.prisma.mod_opcion.update({
@@ -122,7 +153,7 @@ export class CuestionarioService {
         }
       } else {
         // Create
-        const newP = await this.prisma.mod_pregunta.create({
+        await this.prisma.mod_pregunta.create({
           data: {
             cuestionarioId,
             texto: p.texto,
