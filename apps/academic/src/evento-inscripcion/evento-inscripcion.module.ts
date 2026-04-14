@@ -10,6 +10,8 @@ import {
   CreateEventoInscripcionUseCase,
   UpdateEventoInscripcionUseCase,
   DeleteEventoInscripcionUseCase,
+  GetEventoInscripcionStatsUseCase,
+  ExportEventoInscripcionesUseCase,
 } from './application/use-cases/evento-inscripcion.use-cases';
 
 @Module({
@@ -25,6 +27,8 @@ import {
     CreateEventoInscripcionUseCase,
     UpdateEventoInscripcionUseCase,
     DeleteEventoInscripcionUseCase,
+    GetEventoInscripcionStatsUseCase,
+    ExportEventoInscripcionesUseCase,
   ],
   exports: [GetEventoInscripcionsUseCase, GetEventoInscripcionByIdUseCase],
 })

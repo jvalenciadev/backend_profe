@@ -7,9 +7,35 @@ export class GetEventoInscripcionsUseCase {
   constructor(
     @Inject(EVENTOINSCRIPCION_REPOSITORY)
     private readonly repo: IEventoInscripcionRepository,
-  ) {}
-  async execute(filter?: any, ability?: any): Promise<any[]> {
+  ) { }
+
+  async execute(filter?: any, ability?: any): Promise<any> {
     return this.repo.findAll(filter, ability);
+  }
+}
+
+@Injectable()
+export class GetEventoInscripcionStatsUseCase {
+  constructor(
+    @Inject(EVENTOINSCRIPCION_REPOSITORY)
+    private readonly repo: IEventoInscripcionRepository,
+  ) { }
+
+  async execute(eventoId: string): Promise<any> {
+    return (this.repo as any).getStats(eventoId);
+  }
+}
+
+@Injectable()
+export class ExportEventoInscripcionesUseCase {
+  constructor(
+    @Inject(EVENTOINSCRIPCION_REPOSITORY)
+    private readonly repo: IEventoInscripcionRepository,
+  ) { }
+
+  async execute(eventoId: string, ability?: any): Promise<any> {
+    const result: any = await this.repo.findAll({ eventoId, exportAll: 'true' }, ability);
+    return result?.data ?? result;
   }
 }
 
@@ -18,7 +44,8 @@ export class GetEventoInscripcionByIdUseCase {
   constructor(
     @Inject(EVENTOINSCRIPCION_REPOSITORY)
     private readonly repo: IEventoInscripcionRepository,
-  ) {}
+  ) { }
+
   async execute(id: string, ability?: any): Promise<any> {
     const res = await this.repo.findById(id, ability);
     if (!res) throw new NotFoundException('Registro no encontrado');
@@ -31,7 +58,8 @@ export class CreateEventoInscripcionUseCase {
   constructor(
     @Inject(EVENTOINSCRIPCION_REPOSITORY)
     private readonly repo: IEventoInscripcionRepository,
-  ) {}
+  ) { }
+
   async execute(data: any, userId?: string, tenantId?: string): Promise<any> {
     return this.repo.create(data, userId, tenantId);
   }
@@ -42,13 +70,9 @@ export class UpdateEventoInscripcionUseCase {
   constructor(
     @Inject(EVENTOINSCRIPCION_REPOSITORY)
     private readonly repo: IEventoInscripcionRepository,
-  ) {}
-  async execute(
-    id: string,
-    data: any,
-    userId?: string,
-    ability?: any,
-  ): Promise<any> {
+  ) { }
+
+  async execute(id: string, data: any, userId?: string, ability?: any): Promise<any> {
     return this.repo.update(id, data, userId, ability);
   }
 }
@@ -58,12 +82,9 @@ export class DeleteEventoInscripcionUseCase {
   constructor(
     @Inject(EVENTOINSCRIPCION_REPOSITORY)
     private readonly repo: IEventoInscripcionRepository,
-  ) {}
-  async execute(
-    id: string,
-    userId?: string,
-    ability?: any,
-  ): Promise<{ message: string }> {
+  ) { }
+
+  async execute(id: string, userId?: string, ability?: any): Promise<{ message: string }> {
     await this.repo.delete(id, userId, ability);
     return { message: 'Eliminado correctamente' };
   }
