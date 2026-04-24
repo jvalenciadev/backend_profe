@@ -8,7 +8,7 @@ import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class CuestionarioService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async getCuestionario(id: string) {
     return this.prisma.mod_cuestionario.findUnique({
@@ -218,10 +218,10 @@ export class CuestionarioService {
       mejorPuntaje:
         intentos.filter((i) => i.estado !== 'eliminado').length > 0
           ? Math.max(
-              ...intentos
-                .filter((i) => i.estado !== 'eliminado')
-                .map((i) => i.puntajeTotal || 0),
-            )
+            ...intentos
+              .filter((i) => i.estado !== 'eliminado')
+              .map((i) => i.puntajeTotal || 0),
+          )
           : 0,
     };
   }
@@ -231,7 +231,7 @@ export class CuestionarioService {
   async iniciarIntento(userId: string, cuestionarioId: string, config: any = {}) {
     const cue = await this.prisma.mod_cuestionario.findUnique({
       where: { id: cuestionarioId },
-      include: { preguntas: { where: { estado: 'activo' } } },
+      include: { preguntas: { where: { estado: 'activo' }, include: { opciones: true } } },
     });
     if (!cue) throw new NotFoundException('Cuestionario no encontrado');
 
@@ -275,12 +275,23 @@ export class CuestionarioService {
     let preguntasSeleccionadas = cue.preguntas;
 
     if (cue.aleatorizar) {
-      // Fisher-Yates shuffle
+      // Fisher-Yates shuffle para preguntas
       const shuffled = [...preguntasSeleccionadas];
       for (let i = shuffled.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
       }
+
+      // Mezclar también las opciones de cada pregunta para mayor seguridad
+      shuffled.forEach((p: any) => {
+        if (p.opciones && p.opciones.length > 0) {
+          for (let i = p.opciones.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [p.opciones[i], p.opciones[j]] = [p.opciones[j], p.opciones[i]];
+          }
+        }
+      });
+
       if (
         cue.randomCount &&
         cue.randomCount > 0 &&
@@ -480,7 +491,7 @@ export class CuestionarioService {
     if (/^\\d+$/.test(ci)) {
       try {
         searchConditions.push({ ci: BigInt(ci) });
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const user = await this.prisma.user.findFirst({
@@ -513,8 +524,8 @@ export class CuestionarioService {
 
   async resetearIntento(intentoId: string, facilitadorId: string) {
     const intento = await this.prisma.mod_intento.findUnique({
-        where: { id: intentoId },
-        include: { user: true }
+      where: { id: intentoId },
+      include: { user: true }
     });
 
     if (!intento) throw new NotFoundException('Intento no encontrado');
