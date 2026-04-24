@@ -5,7 +5,7 @@ import { Inscripcion } from '../../domain/entities/inscripcion.entity';
 
 @Injectable()
 export class PrismaInscripcionRepository implements IInscripcionRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async findById(id: string): Promise<Inscripcion | null> {
     const data = await this.prisma.programaInscripcion.findUnique({
@@ -39,8 +39,38 @@ export class PrismaInscripcionRepository implements IInscripcionRepository {
   }
 
   async findAll(filter: any = {}): Promise<Inscripcion[]> {
+    const { page = 1, limit = 50, search, versionId, ...rest } = filter;
+    const skip = (Number(page) - 1) * Number(limit);
+    const take = Number(limit);
+
+    const where: any = { ...rest, estado: { not: 'eliminado' } };
+
+    if (search) {
+      // Si el search parece un número (CI), buscar por CI.
+      const ciValue = parseInt(search);
+      if (!isNaN(ciValue)) {
+        where.persona = {
+          ci: BigInt(ciValue)
+        };
+      } else {
+        // Opcional: Búsqueda por nombre si no es CI
+        where.persona = {
+          OR: [
+            { nombre: { contains: search, mode: 'insensitive' } },
+            { apellidos: { contains: search, mode: 'insensitive' } },
+          ]
+        };
+      }
+    }
+
+    if (versionId) {
+      where.programa = {
+        versionId: versionId
+      };
+    }
+
     const data = await this.prisma.programaInscripcion.findMany({
-      where: { ...filter, estado: { not: 'eliminado' } },
+      where,
       include: {
         programa: {
           include: {
@@ -66,6 +96,8 @@ export class PrismaInscripcionRepository implements IInscripcionRepository {
         baucher: true,
       },
       orderBy: { createdAt: 'desc' },
+      skip,
+      take,
     });
     return data.map((d) => new Inscripcion(d as any));
   }
@@ -139,7 +171,7 @@ export class PrismaInscripcionRepository implements IInscripcionRepository {
         turnoId: data.turnoId,
         sedeId: data.sedeId,
         estadoInscripcionId:
-          data.estadoInscripcionId || '05a0199e-76f8-4b72-97ad-e78a632128bd', // Example UUID if not provided
+          data.estadoInscripcionId, // No default hardcoded ID here to avoid FK errors
         observacion: data.observacion,
         createdBy: data.createdBy,
         documentoDigital: data.documentoDigital,

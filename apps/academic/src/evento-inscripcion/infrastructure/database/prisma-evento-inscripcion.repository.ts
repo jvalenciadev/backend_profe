@@ -29,8 +29,10 @@ export class PrismaEventoInscripcionRepository implements IEventoInscripcionRepo
       where = {
         ...where,
         OR: [
-          { persona: { nombre: { contains: s, mode: 'insensitive' } } },
-          { persona: { apellidos: { contains: s, mode: 'insensitive' } } },
+          { persona: { nombre1: { contains: s, mode: 'insensitive' } } },
+          { persona: { nombre2: { contains: s, mode: 'insensitive' } } },
+          { persona: { apellido1: { contains: s, mode: 'insensitive' } } },
+          { persona: { apellido2: { contains: s, mode: 'insensitive' } } },
           ...(isNumeric ? [{ persona: { ci: { equals: BigInt(s) } } }] : []),
         ],
       };

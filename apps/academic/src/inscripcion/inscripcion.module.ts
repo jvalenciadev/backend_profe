@@ -9,6 +9,7 @@ import { UpdateInscripcionUseCase } from './application/use-cases/update-inscrip
 import { DeleteInscripcionUseCase } from './application/use-cases/delete-inscripcion.use-case';
 import { ConfirmBaucherUseCase } from './application/use-cases/confirm-baucher.use-case';
 import { ConfirmInscripcionUseCase } from './application/use-cases/confirm-inscripcion.use-case';
+import { BulkImportInscripcionUseCase } from './application/use-cases/bulk-import-inscripcion.use-case';
 import { OfertaModule } from '../oferta/oferta.module';
 import { INSCRIPCION_REPOSITORY } from './domain/repositories/inscripcion.repository.interface';
 
@@ -24,6 +25,7 @@ import { INSCRIPCION_REPOSITORY } from './domain/repositories/inscripcion.reposi
     DeleteInscripcionUseCase,
     ConfirmBaucherUseCase,
     ConfirmInscripcionUseCase,
+    BulkImportInscripcionUseCase,
     {
       provide: INSCRIPCION_REPOSITORY,
       useClass: PrismaInscripcionRepository,

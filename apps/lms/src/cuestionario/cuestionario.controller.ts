@@ -48,8 +48,8 @@ export class CuestionarioController {
   }
 
   @Post(':id/iniciar')
-  async iniciar(@Param('id') id: string, @Request() req: any) {
-    return this.cuestionarioService.iniciarIntento(req.user.id, id);
+  async iniciar(@Param('id') id: string, @Request() req: any, @Body() body: any) {
+    return this.cuestionarioService.iniciarIntento(req.user.id, id, body);
   }
 
   @Post('intento/:intentoId/responder')
@@ -60,5 +60,24 @@ export class CuestionarioController {
   @Post('intento/:intentoId/finalizar')
   async finalizar(@Param('intentoId') intentoId: string) {
     return this.cuestionarioService.finalizarIntento(intentoId);
+  }
+
+  // ─── FACILITADOR ────────────────────────────────────────────
+
+  @Get(':id/buscar-intento/:ci')
+  async buscarIntento(@Param('id') id: string, @Param('ci') ci: string) {
+    return this.cuestionarioService.buscarIntentoPorCI(id, ci);
+  }
+
+  @Post(':id/verificar-facilitador')
+  async verificarFacilitador(@Param('id') id: string, @Body() body: any) {
+    console.log('DEBUG: Verificando facilitador para cuestionario', id);
+    const isAuthorized = await this.cuestionarioService.verificarFacilitadorPassword(id, body.password);
+    return { isAuthorized };
+  }
+
+  @Post('intento/:intentoId/reset')
+  async resetIntento(@Param('intentoId') intentoId: string, @Request() req: any) {
+    return this.cuestionarioService.resetearIntento(intentoId, req.user.id);
   }
 }

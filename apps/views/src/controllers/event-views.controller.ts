@@ -638,7 +638,7 @@ export class EventViewsController {
       puntaje: puntajeTotal,
       puntajeMaximo,
       nota,
-      aprobado: nota >= 100,
+      aprobado: nota >= 75,
       respuestas: respuestas.map((r) => ({
         pregunta: r.pregunta.texto,
         respuesta: r.texto || r.opcion?.texto,
@@ -690,7 +690,7 @@ export class EventViewsController {
           where: { cuestionarioId: c.id, personaId: persona.id },
         });
 
-        const finalizado = respuestas.length > 0;
+        const finalizado = respuestas.length > 0 || (intento?.estado === 'finished' || (intento?.numeroIntentos || 0) > 0);
         let aprobado = false;
         let puntajeTotal = 0;
         let puntajeMaximo = 0;
@@ -719,7 +719,7 @@ export class EventViewsController {
             if (puntajeMaximo === 0) puntajeMaximo = 100;
 
             nota = Math.round((puntajeTotal / puntajeMaximo) * 100);
-            aprobado = nota >= 100;
+            aprobado = nota >= 75;
           }
         }
 

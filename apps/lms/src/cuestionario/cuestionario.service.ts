@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '@app/database';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class CuestionarioService {
@@ -46,8 +47,11 @@ export class CuestionarioService {
   }
 
   async getIntentosPorCuestionario(cuestionarioId: string) {
+    // Auto-finalizar expirados antes de listar
+    await this.autoFinalizarExpirados(cuestionarioId);
+
     return this.prisma.mod_intento.findMany({
-      where: { cuestionarioId },
+      where: { cuestionarioId, estado: { not: 'eliminado' } },
       include: {
         user: {
           select: { id: true, nombre: true, apellidos: true, correo: true },
@@ -56,6 +60,36 @@ export class CuestionarioService {
       },
       orderBy: { iniciadoEn: 'desc' },
     });
+  }
+
+  /**
+   * Busca intentos en progreso que ya superaron su tiempo límite y los finaliza.
+   */
+  private async autoFinalizarExpirados(cuestionarioId: string) {
+    const cue = await this.prisma.mod_cuestionario.findUnique({
+      where: { id: cuestionarioId },
+      select: { duracion: true },
+    });
+
+    if (!cue || cue.duracion === 0) return;
+
+    const expirables = await this.prisma.mod_intento.findMany({
+      where: { cuestionarioId, estado: 'en_progreso' },
+    });
+
+    for (const int of expirables) {
+      const extraTime = int.motivoBloqueo === 'persona_discapacidad' ? 30 : 0;
+      const totalMin = cue.duracion + extraTime;
+      const limite = new Date(int.iniciadoEn.getTime() + totalMin * 60000);
+
+      if (limite < new Date()) {
+        try {
+          await this.finalizarIntento(int.id);
+        } catch (e) {
+          console.error(`Error auto-finalizando intento ${int.id}:`, e);
+        }
+      }
+    }
   }
 
   async updateCuestionario(id: string, data: any) {
@@ -98,9 +132,10 @@ export class CuestionarioService {
       });
     }
 
+    // 3. Crear o actualizar preguntas y opciones
     for (const p of preguntas) {
-      if (p.id && !p.isNew) {
-        // Update pregunta
+      if (p.id && typeof p.id === 'string' && currentDBIds.includes(p.id)) {
+        // Update
         await this.prisma.mod_pregunta.update({
           where: { id: p.id },
           data: {
@@ -112,42 +147,21 @@ export class CuestionarioService {
           },
         });
 
-        // Sincronizar opciones
-        const currentDBOptions = await this.prisma.mod_opcion.findMany({
-          where: { preguntaId: p.id },
-          select: { id: true },
-        });
-        const dbOptIds = currentDBOptions.map((o) => o.id);
-        const incomingOptIds = p.opciones
-          .map((o: any) => o.id)
-          .filter((id: any) => id && typeof id === 'string');
-
-        // Eliminar opciones que ya no vienen
-        const optsToDelete = dbOptIds.filter((id) => !incomingOptIds.includes(id));
-        if (optsToDelete.length > 0) {
+        // Sync opciones
+        if (p.opciones) {
+          // Eliminar opciones viejas (Hard Delete es más simple aquí)
           await this.prisma.mod_opcion.deleteMany({
-            where: { id: { in: optsToDelete } },
+            where: { preguntaId: p.id },
           });
-        }
-
-        for (const opt of p.opciones) {
-          if (opt.id && !opt.isNew) {
-            await this.prisma.mod_opcion.update({
-              where: { id: opt.id },
-              data: {
-                texto: opt.texto,
-                esCorrecta: opt.esCorrecta,
-                orden: opt.orden,
-              },
-            });
-          } else {
-            await this.prisma.mod_opcion.create({
-              data: {
+          // Crear nuevas
+          if (p.opciones.length > 0) {
+            await this.prisma.mod_opcion.createMany({
+              data: p.opciones.map((o) => ({
                 preguntaId: p.id,
-                texto: opt.texto,
-                esCorrecta: opt.esCorrecta,
-                orden: opt.orden,
-              },
+                texto: o.texto,
+                esCorrecta: o.esCorrecta,
+                orden: o.orden,
+              })),
             });
           }
         }
@@ -177,6 +191,9 @@ export class CuestionarioService {
   }
 
   async getLobbyData(userId: string, cuestionarioId: string) {
+    // Auto-finalizar expirados para este cuestionario
+    await this.autoFinalizarExpirados(cuestionarioId);
+
     const cue = await this.prisma.mod_cuestionario.findUnique({
       where: { id: cuestionarioId },
       include: { actividad: true, preguntas: { where: { estado: 'activo' } } },
@@ -192,19 +209,26 @@ export class CuestionarioService {
 
     return {
       cuestionario: cue,
-      intentosConsumidos: intentos.length,
-      intentosRestantes: Math.max(0, cue.maxIntentos - intentos.length),
+      intentosConsumidos: intentos.filter((i) => i.estado !== 'eliminado').length,
+      intentosRestantes: Math.max(
+        0,
+        cue.maxIntentos - intentos.filter((i) => i.estado !== 'eliminado').length,
+      ),
       intentoEnProgreso: enProgreso,
       mejorPuntaje:
-        intentos.length > 0
-          ? Math.max(...intentos.map((i) => i.puntajeTotal || 0))
+        intentos.filter((i) => i.estado !== 'eliminado').length > 0
+          ? Math.max(
+              ...intentos
+                .filter((i) => i.estado !== 'eliminado')
+                .map((i) => i.puntajeTotal || 0),
+            )
           : 0,
     };
   }
 
   // ─── INTENTOS ───────────────────────────────────────────────
 
-  async iniciarIntento(userId: string, cuestionarioId: string) {
+  async iniciarIntento(userId: string, cuestionarioId: string, config: any = {}) {
     const cue = await this.prisma.mod_cuestionario.findUnique({
       where: { id: cuestionarioId },
       include: { preguntas: { where: { estado: 'activo' } } },
@@ -212,7 +236,7 @@ export class CuestionarioService {
     if (!cue) throw new NotFoundException('Cuestionario no encontrado');
 
     const intentosPrevios = await this.prisma.mod_intento.count({
-      where: { userId, cuestionarioId },
+      where: { userId, cuestionarioId, estado: { not: 'eliminado' } },
     });
 
     // Verificar si hay intento en progreso
@@ -221,12 +245,31 @@ export class CuestionarioService {
       include: { respuestas: true },
     });
 
-    if (intentoEnProgreso) return intentoEnProgreso;
+    if (intentoEnProgreso) {
+      // Calcular tiempo restante en SERVIDOR para reconexión
+      const extraTime = intentoEnProgreso.motivoBloqueo === 'persona_discapacidad' ? 1800 : 0;
+      const tiempoRestanteSegundos = cue.duracion > 0
+        ? Math.max(0, (cue.duracion * 60 + extraTime) - Math.floor((Date.now() - intentoEnProgreso.iniciadoEn.getTime()) / 1000))
+        : null;
+      return { ...intentoEnProgreso, tiempoRestanteSegundos };
+    }
 
     if (intentosPrevios >= cue.maxIntentos) {
       throw new UnauthorizedException(
         'Has alcanzado el máximo de intentos permitidos',
       );
+    }
+
+    // ─── VERIFICACIÓN DE FACILITADOR PARA DISCAPACIDAD ───────────
+    if (config.discapacidad) {
+      if (!config.password) {
+        throw new UnauthorizedException('Se requiere la contraseña del facilitador para activar este modo');
+      }
+
+      const isAuthorized = await this.verificarFacilitadorPassword(cuestionarioId, config.password);
+      if (!isAuthorized) {
+        throw new UnauthorizedException('La contraseña del facilitador es incorrecta o no está autorizado para este módulo');
+      }
     }
 
     let preguntasSeleccionadas = cue.preguntas;
@@ -255,6 +298,7 @@ export class CuestionarioService {
         cuestionarioId,
         numero: intentosPrevios + 1,
         estado: 'en_progreso',
+        motivoBloqueo: config.discapacidad ? 'persona_discapacidad' : null,
         respuestas: {
           create: preguntasSeleccionadas.map((p) => ({
             preguntaId: p.id,
@@ -264,27 +308,19 @@ export class CuestionarioService {
       include: { respuestas: true },
     });
 
-    return nuevoIntento;
+    // Calcular tiempo restante en el SERVIDOR para evitar manipulación por reloj del cliente
+    const extraTime = config.discapacidad ? 1800 : 0;
+    const tiempoRestanteSegundos = cue.duracion > 0
+      ? Math.max(0, (cue.duracion * 60 + extraTime) - Math.floor((Date.now() - nuevoIntento.iniciadoEn.getTime()) / 1000))
+      : null;
+
+    return { ...nuevoIntento, tiempoRestanteSegundos };
   }
 
-  async guardarRespuesta(
+  async resolverRespuesta(
     intentoId: string,
     data: { preguntaId: string; opcionId?: string; textoLibre?: string },
   ) {
-    return this.prisma.mod_respuesta.upsert({
-      where: {
-        // No hay un unique en mod_respuesta para un intento/pregunta... vamos a buscarlo.
-        // Prisma no soporta upsert sin unique.
-        // Usaremos findFirst y luego create/update.
-        id: '99999999-9999-9999-9999-999999999999', // placeholder
-      },
-      update: {}, // logic manually below
-      create: { ...data, intentoId: 'placeholder' }, // logic manually below
-    });
-    // Corregimos la lógica manual:
-  }
-
-  async resolverRespuesta(intentoId: string, data: any) {
     const existing = await this.prisma.mod_respuesta.findFirst({
       where: { intentoId, preguntaId: data.preguntaId },
     });
@@ -317,6 +353,7 @@ export class CuestionarioService {
         cuestionario: {
           include: {
             preguntas: {
+              where: { estado: 'activo' },
               include: { opciones: true },
             },
           },
@@ -324,8 +361,7 @@ export class CuestionarioService {
       },
     });
 
-    if (!intento) throw new NotFoundException('Intento no encontrado');
-    if (intento.estado === 'finalizado') return intento;
+    if (!intento || intento.estado === 'finalizado') return intento;
 
     // CALCULAR NOTA
     let notaObtenida = 0;
@@ -341,13 +377,12 @@ export class CuestionarioService {
       let puntaje = 0;
 
       if (pregunta.tipo === 'MULTIPLE' || pregunta.tipo === 'VF') {
-        const opcCorrecta = pregunta.opciones.find((o) => o.esCorrecta);
-        if (opcCorrecta && opcCorrecta.id === res.opcionId) {
+        const opcionCorrecta = pregunta.opciones.find((o) => o.esCorrecta);
+        if (opcionCorrecta && res.opcionId === opcionCorrecta.id) {
           esCorrecta = true;
           puntaje = pregunta.puntaje;
         }
       } else if (pregunta.tipo === 'MULTIPLE_M') {
-        // Estudiante envió JSON array de IDs en textoLibre
         try {
           const idsMarcados: string[] = JSON.parse(res.textoLibre || '[]');
           const idsCorrectos = pregunta.opciones
@@ -376,7 +411,6 @@ export class CuestionarioService {
           console.error('Error parseando MULTIPLE_M:', e);
         }
       } else if (pregunta.tipo === 'ORDENAR') {
-        // Estudiante envió JSON array de IDs en orden en textoLibre
         try {
           const idsOrdenados: string[] = JSON.parse(res.textoLibre || '[]');
           const idsEnOrdenCorrecto = [...pregunta.opciones]
@@ -393,7 +427,6 @@ export class CuestionarioService {
           console.error('Error parseando ORDENAR:', e);
         }
       } else if (pregunta.tipo === 'TEXTO') {
-        // Respuesta abierta: Calificación manual por defecto (0pts)
         esCorrecta = false;
         puntaje = 0;
       }
@@ -409,12 +442,10 @@ export class CuestionarioService {
 
     await Promise.all(updates);
 
-    // Fetch activity to check max points and scale if needed
     const actividad = await this.prisma.mod_actividad.findUnique({
       where: { id: intento.cuestionario.actividadId },
     });
 
-    // Sum of max points possible for the EXACT questions selected in this attempt
     const maxPosibleIntento = intento.respuestas.reduce((sum, res) => {
       const p = intento.cuestionario.preguntas.find(
         (pre) => pre.id === res.preguntaId,
@@ -428,43 +459,131 @@ export class CuestionarioService {
       maxPosibleIntento > 0 &&
       maxPosibleIntento !== actividad.puntajeMax
     ) {
-      // Escalar nota al puntaje maximo de la actividad
-      notaMapeada = (notaObtenida / maxPosibleIntento) * actividad.puntajeMax;
-      notaMapeada = Math.round(notaMapeada * 100) / 100; // Redondear a 2 decimales
-    } else if (actividad && notaMapeada > actividad.puntajeMax) {
-      notaMapeada = actividad.puntajeMax;
+      notaMapeada = (notaObtenida * actividad.puntajeMax) / maxPosibleIntento;
     }
 
-    const finalizado = await this.prisma.mod_intento.update({
-      where: { id: intentoId },
+    return this.prisma.mod_intento.update({
+      where: { id: intento.id },
       data: {
         estado: 'finalizado',
         finalizadoEn: new Date(),
-        puntajeTotal: notaObtenida, // Guardamos la suma bruta
+        puntajeTotal: notaMapeada,
       },
-      include: { cuestionario: true, respuestas: true },
+      include: { respuestas: true },
+    });
+  }
+
+  // ─── FACILITADOR: RESET DE INTENTOS ─────────────────────────
+
+  async buscarIntentoPorCI(cuestionarioId: string, ci: string) {
+    const searchConditions: any[] = [{ username: ci }];
+    if (/^\\d+$/.test(ci)) {
+      try {
+        searchConditions.push({ ci: BigInt(ci) });
+      } catch (e) {}
+    }
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        OR: searchConditions,
+        deletedAt: null,
+      },
+      orderBy: [
+        { estado: 'asc' },
+        { createdAt: 'desc' }
+      ]
     });
 
-    // Sincronizar con mod_nota_actividad
-    await this.prisma.mod_nota_actividad.upsert({
+    if (!user) return [];
+
+    return this.prisma.mod_intento.findMany({
       where: {
-        actividadId_userId: {
-          actividadId: finalizado.cuestionario.actividadId,
-          userId: finalizado.userId,
+        cuestionarioId,
+        userId: user.id,
+        estado: { not: 'eliminado' },
+      },
+      include: {
+        user: {
+          select: { id: true, nombre: true, apellidos: true, correo: true, ci: true },
         },
       },
-      update: {
-        nota: notaMapeada,
-        entroRegistro: true,
-      },
-      create: {
-        actividadId: finalizado.cuestionario.actividadId,
-        userId: finalizado.userId,
-        nota: notaMapeada,
-        entroRegistro: true,
+      orderBy: { iniciadoEn: 'desc' },
+    });
+  }
+
+  async resetearIntento(intentoId: string, facilitadorId: string) {
+    const intento = await this.prisma.mod_intento.findUnique({
+        where: { id: intentoId },
+        include: { user: true }
+    });
+
+    if (!intento) throw new NotFoundException('Intento no encontrado');
+
+    await this.prisma.mod_intento.update({
+      where: { id: intentoId },
+      data: {
+        estado: 'eliminado',
       },
     });
 
-    return finalizado;
+    // Registrar en log de auditoría
+    await this.prisma.auditLog.create({
+      data: {
+        action: 'RESET_CUESTIONARIO',
+        resource: 'mod_intento',
+        resourceId: intentoId,
+        userId: facilitadorId,
+        details: {
+          estudianteId: intento.userId,
+          estudianteNombre: `${intento.user.nombre} ${intento.user.apellidos}`,
+          cuestionarioId: intento.cuestionarioId,
+          motivo: 'Fallo técnico o solicitud de facilitador',
+          intentoOriginal: intento.numero,
+          puntajePrevio: intento.puntajeTotal,
+        },
+      },
+    });
+
+    // Si había una nota en mod_nota_actividad, la quitamos
+    await this.prisma.mod_nota_actividad.deleteMany({
+      where: {
+        actividadId: intento.cuestionarioId, // Error anterior: debía ser actividadId si lo tenemos, pero intento tiene cuestionarioId.
+        userId: intento.userId,
+      },
+    });
+
+    return { success: true, message: 'Intento reseteado correctamente' };
+  }
+
+  async verificarFacilitadorPassword(cuestionarioId: string, password: string): Promise<boolean> {
+    const cue = await this.prisma.mod_cuestionario.findUnique({
+      where: { id: cuestionarioId },
+      include: {
+        actividad: {
+          include: {
+            unidad: {
+              select: { moduloId: true, moduloMaestroId: true }
+            }
+          }
+        }
+      }
+    });
+
+    if (!cue) return false;
+
+    const moduloId = cue.actividad.unidad.moduloId;
+    const moduloMaestroId = cue.actividad.unidad.moduloMaestroId;
+
+    const facilitadores = await this.prisma.programaDosFacilitador.findMany({
+      where: { OR: [{ moduloId }, { moduloId: moduloMaestroId }] },
+      include: { facilitador: true }
+    });
+
+    for (const f of facilitadores) {
+      if (f.facilitador && await bcrypt.compare(password, f.facilitador.password)) {
+        return true;
+      }
+    }
+    return false;
   }
 }

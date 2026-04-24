@@ -207,6 +207,8 @@ export class CuestionarioAppService {
     // Usar la lógica de base que ya califica y guarda el intento
     const finalizado = await this.baseService.finalizarIntento(intentoId);
     
+    if (!finalizado) throw new NotFoundException('No se pudo finalizar el intento');
+
     // Devolvemos el resultado dependiente de las opciones (mostrarNota, retroInmediata)
     const result: any = {
       intentoId,
