@@ -231,7 +231,13 @@ export class CuestionarioService {
   async iniciarIntento(userId: string, cuestionarioId: string, config: any = {}) {
     const cue = await this.prisma.mod_cuestionario.findUnique({
       where: { id: cuestionarioId },
-      include: { preguntas: { where: { estado: 'activo' }, include: { opciones: true } } },
+      include: {
+        preguntas: {
+          where: { estado: 'activo' },
+          orderBy: { orden: 'asc' },
+          include: { opciones: { orderBy: { orden: 'asc' } } }
+        }
+      },
     });
     if (!cue) throw new NotFoundException('Cuestionario no encontrado');
 
@@ -242,7 +248,7 @@ export class CuestionarioService {
     // Verificar si hay intento en progreso
     const intentoEnProgreso = await this.prisma.mod_intento.findFirst({
       where: { userId, cuestionarioId, estado: 'en_progreso' },
-      include: { respuestas: true },
+      include: { respuestas: { orderBy: { id: 'asc' } } },
     });
 
     if (intentoEnProgreso) {
@@ -316,7 +322,7 @@ export class CuestionarioService {
           })),
         },
       },
-      include: { respuestas: true },
+      include: { respuestas: { orderBy: { id: 'asc' } } },
     });
 
     // Calcular tiempo restante en el SERVIDOR para evitar manipulación por reloj del cliente
@@ -480,7 +486,7 @@ export class CuestionarioService {
         finalizadoEn: new Date(),
         puntajeTotal: notaMapeada,
       },
-      include: { respuestas: true },
+      include: { respuestas: { orderBy: { id: 'asc' } } },
     });
   }
 
