@@ -381,6 +381,7 @@ export class EventViewsController {
     if (!cuestionario)
       throw new NotFoundException('Cuestionario no encontrado');
 
+    const now = new Date();
     // Período de gracia de 12h para compensar zona horaria (servidor UTC vs Bolivia UTC-4)
     const fechaFinConGracia = new Date(cuestionario.fechaFin.getTime() + 12 * 60 * 60 * 1000);
     if (now < cuestionario.fechaInicio)
