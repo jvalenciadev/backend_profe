@@ -65,7 +65,10 @@ export class EventViewsController {
       })),
     };
 
-    return sanitized;
+    return {
+      ...sanitized,
+      serverTime: new Date(),
+    };
   }
 
   @Post('persona/buscar')
