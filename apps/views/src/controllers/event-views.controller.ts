@@ -409,10 +409,19 @@ export class EventViewsController {
     
     // Eliminamos el bloqueo por fechaFin. Solo el estado 'activo' manda.
 
+    // LOGICA SENIOR: Si el cuestionario tiene video pero la DB no lo marcó (error de sync), 
+    // lo marcamos ahora mismo para no bloquear al usuario si ya está enviando respuestas.
     if (cuestionario.urlVideo && !intentoActual?.videoCompletado) {
-      throw new ForbiddenException(
-        'Debes terminar de ver el video obligatorio antes de responder el cuestionario.',
-      );
+      await this.prisma.eventoCuestionarioIntento.upsert({
+        where: { unique_persona_cuestionario: { cuestionarioId, personaId: persona.id } },
+        update: { videoCompletado: true },
+        create: {
+          cuestionarioId,
+          personaId: persona.id,
+          videoCompletado: true,
+          numeroIntentos: 0,
+        },
+      });
     }
 
     // Si NO es evaluativo, solo se puede completar una vez
