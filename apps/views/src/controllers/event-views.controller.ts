@@ -381,14 +381,6 @@ export class EventViewsController {
     if (!cuestionario)
       throw new NotFoundException('Cuestionario no encontrado');
 
-    const now = new Date();
-    // Período de gracia de 12h para compensar zona horaria (servidor UTC vs Bolivia UTC-4)
-    const fechaFinConGracia = new Date(cuestionario.fechaFin.getTime() + 12 * 60 * 60 * 1000);
-    if (now < cuestionario.fechaInicio)
-      throw new ForbiddenException('El cuestionario aún no ha comenzado');
-    if (now > fechaFinConGracia)
-      throw new ForbiddenException('El cuestionario ya ha cerrado');
-
     const persona = await this.prisma.eventoPersona.findFirst({
       where: {
         ci: BigInt(body.ci),
@@ -404,6 +396,20 @@ export class EventViewsController {
         where: { cuestionarioId, personaId: persona.id },
       },
     );
+
+    const now = new Date();
+    // Período de gracia de 12h para compensar zona horaria
+    const fechaFinConGracia = new Date(cuestionario.fechaFin.getTime() + 12 * 60 * 60 * 1000);
+    
+    // LOGICA SENIOR: Si ya vio el video, le permitimos responder aunque la fecha haya pasado
+    const ignorarFechaPorVideo = intentoActual?.videoCompletado === true;
+
+    if (!ignorarFechaPorVideo) {
+      if (now < cuestionario.fechaInicio)
+        throw new ForbiddenException('El cuestionario aún no ha comenzado');
+      if (now > fechaFinConGracia)
+        throw new ForbiddenException('El cuestionario ya ha cerrado');
+    }
 
     if (cuestionario.urlVideo && !intentoActual?.videoCompletado) {
       throw new ForbiddenException(
