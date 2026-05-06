@@ -84,6 +84,10 @@ model User {
   mod_nota_actividads_facilitadas mod_nota_actividad[]        @relation("FacilitadorNotas")
   mod_campos_extra_regs           mod_campo_extra_respuesta[]
 
+  // --- Correspondencia ---
+  cor_participaciones CorParticipante[]
+  cor_seguimientos    CorSeguimiento[]
+
   @@index([ci])
   @@index([ci, complemento])
   @@map("admins")
@@ -1871,4 +1875,69 @@ enum ModTipoCampoExtra {
   BOOLEAN
   MULTIPLE_SELECT
   SINGLE_SELECT
+}
+
+// --- SISTEMA DE CORRESPONDENCIA ---
+
+enum CorTipoDocumento {
+  INFORME
+  NOTA_INTERNA
+  MEMORANDUM
+  INSTRUCTIVO
+}
+
+model CorDocumento {
+  id          String           @id @default(uuid()) @db.Uuid
+  tipo        CorTipoDocumento
+  cite        String           @unique @map("cor_cite")
+  hr          String?          @map("cor_hr")
+  correlativo Int              @map("cor_correlativo")
+  gestion     Int              @map("cor_gestion")
+  referencia  String           @map("cor_referencia") @db.Text
+  contenido   String?          @map("cor_contenido") @db.Text
+  archivoPdf  String?          @map("cor_archivo_pdf")
+  estado      String           @default("ELABORACION") @map("cor_estado")
+  tenantId    String?          @map("tenant_id") @db.Uuid
+
+  // Relaciones
+  participantes CorParticipante[]
+  seguimientos  CorSeguimiento[]
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@index([cite])
+  @@index([gestion, correlativo])
+  @@map("cor_documentos")
+}
+
+model CorParticipante {
+  id           String  @id @default(uuid()) @db.Uuid
+  documentoId  String  @map("doc_id") @db.Uuid
+  userId       String  @map("user_id") @db.Uuid
+  rol          String  @map("par_rol") // DESTINATARIO, VIA, REMITENTE
+  cargoLiteral String? @map("par_cargo_literal") @db.Text
+
+  documento CorDocumento @relation(fields: [documentoId], references: [id], onDelete: Cascade)
+  usuario   User         @relation(fields: [userId], references: [id])
+
+  @@index([userId, rol])
+  @@map("cor_participantes")
+}
+
+model CorSeguimiento {
+  id          String   @id @default(uuid()) @db.Uuid
+  documentoId String   @map("doc_id") @db.Uuid
+  fecha       DateTime @default(now()) @map("seg_fecha")
+  accion      String   @map("seg_accion") // CREACION, ENVIO, RECEPCION, DERIVACION, OBSERVACION
+  detalle     String?  @map("seg_detalle") @db.Text
+  usuarioId   String   @map("user_id") @db.Uuid
+  archivoUrl  String?  @map("seg_archivo_url")
+
+  documento CorDocumento @relation(fields: [documentoId], references: [id], onDelete: Cascade)
+  usuario   User         @relation(fields: [usuarioId], references: [id])
+
+  @@index([documentoId])
+  @@map("cor_seguimientos")
 }

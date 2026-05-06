@@ -17,7 +17,7 @@ import { PrismaService } from '@app/database';
  */
 @Controller('public/eventos')
 export class EventViewsController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   @Get(':codigo')
   async getEvento(@Param('codigo') codigo: string) {
@@ -38,7 +38,7 @@ export class EventViewsController {
           orderBy: { orden: 'asc' },
         },
         cuestionarios: {
-          where: { estado: 'activo' },
+          where: { estado: { in: ['activo', 'prologa' as any] } },
           orderBy: { orden: 'asc' },
           include: {
             preguntas: {
@@ -115,6 +115,7 @@ export class EventViewsController {
       departamentoId: string;
       modalidadId: string;
       respuestasExtras?: Array<{ campoId: string; valor: any }>;
+      isEditingProfile?: boolean;
     },
   ) {
     const evento = await this.prisma.evento.findFirst({
@@ -167,8 +168,15 @@ export class EventViewsController {
       where: { personaId: persona.id, eventoId, deletedAt: null },
     });
 
-    if (existente)
+    if (existente) {
+      if (body.isEditingProfile) {
+        return {
+          persona: { ...persona, ci: persona.ci.toString(), generoId: persona.generoId.toString() },
+          inscripcion: { ...existente, id: existente.id.toString(), personaId: existente.personaId.toString(), departamentoId: existente.departamentoId.toString(), modalidadId: existente.modalidadId.toString() }
+        };
+      }
       throw new ConflictException('Ya estás inscrito en este evento');
+    }
 
     const inscripcion = await this.prisma.eventoInscripcion.create({
       data: {
@@ -406,7 +414,7 @@ export class EventViewsController {
     if (now < cuestionario.fechaInicio) {
       throw new ForbiddenException('El cuestionario aún no ha comenzado');
     }
-    
+
     // Eliminamos el bloqueo por fechaFin. Solo el estado 'activo' manda.
 
     // LOGICA SENIOR: Si el cuestionario tiene video pero la DB no lo marcó (error de sync), 
@@ -497,9 +505,9 @@ export class EventViewsController {
           const puntosParciales =
             cuestionario.esEvaluativo && esCorrecta
               ? Math.round(
-                  pregunta.puntos /
-                    (pregunta.opciones.filter((o) => o.esCorrecta).length || 1),
-                )
+                pregunta.puntos /
+                (pregunta.opciones.filter((o) => o.esCorrecta).length || 1),
+              )
               : 0;
           puntajeTotal += puntosParciales;
           respuestasData.push({
@@ -686,7 +694,7 @@ export class EventViewsController {
       throw new NotFoundException('No estás inscrito en este evento');
 
     const cuestionarios = await this.prisma.eventoCuestionario.findMany({
-      where: { eventoId, estado: 'activo' },
+      where: { eventoId, estado: { in: ['activo', 'prologa' as any] } },
       orderBy: { orden: 'asc' },
     });
 

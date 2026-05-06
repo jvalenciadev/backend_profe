@@ -30,6 +30,7 @@ import { EventoCuestionarioModule } from './evento-cuestionario/evento-cuestiona
 import { EventoPreguntaModule } from './evento-pregunta/evento-pregunta.module';
 import { AsignacionFacilitadorModule } from './asignacion-facilitador/asignacion-facilitador.module';
 import { AulaCategoriaModule } from './aula-categoria/aula-categoria.module';
+import { CorrespondenciaModule } from './correspondencia/correspondencia.module';
 
 import { AcademicController } from './academic.controller';
 import { AcademicService } from './academic.service';
@@ -67,6 +68,7 @@ import { AcademicService } from './academic.service';
     EventoPreguntaModule,
     AsignacionFacilitadorModule,
     AulaCategoriaModule,
+    CorrespondenciaModule,
   ],
   controllers: [AcademicController],
   providers: [AcademicService],

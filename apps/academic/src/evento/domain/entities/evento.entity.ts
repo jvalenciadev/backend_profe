@@ -18,5 +18,6 @@ export class Evento {
     public inscritos: number = 0,
     public asistidos: number = 0,
     public camposExtras: any[] = [],
-  ) {}
+    public cuestionarios: any[] = [],
+  ) { }
 }

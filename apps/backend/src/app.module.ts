@@ -41,7 +41,7 @@ import { UploadConfigController } from '@app/common/upload/upload-config.control
       },
     }),
   ],
-  controllers: [AppController, UploadController, UploadConfigController],
+  controllers: [AppController],
   providers: [
     AppService,
     Reflector,
