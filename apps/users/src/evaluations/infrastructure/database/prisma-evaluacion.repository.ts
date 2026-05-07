@@ -243,7 +243,19 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
         : false;
 
     return this.db.user.findMany({
-      where,
+      where: {
+        ...where,
+        roles: {
+          none: {
+            role: {
+              name: {
+                in: ['PARTICIPANTE', 'ESTUDIANTE'],
+                mode: 'insensitive',
+              },
+            },
+          },
+        },
+      },
       select: {
         id: true,
         nombre: true,

@@ -143,21 +143,64 @@ export class CorrespondenciaService {
             usuario: { select: { id: true, nombre: true, apellidos: true, cargoStr: true, imagen: true } },
           },
         },
-        seguimientos: { orderBy: { fecha: 'desc' }, take: 1, include: { usuario: { select: { nombre: true, apellidos: true } } } },
+        seguimientos: {
+          orderBy: { fecha: 'desc' },
+          include: { usuario: { select: { id: true, nombre: true, apellidos: true } } }
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
 
+    const ahora = new Date();
+
+    const mapearConAlerta = (docs: any[]) => docs.map(d => {
+      // Calcular días desde el último movimiento
+      const ultimoMovimiento = d.seguimientos[0]?.fecha || d.createdAt;
+      const diasTranscurridos = Math.floor((ahora.getTime() - new Date(ultimoMovimiento).getTime()) / (1000 * 60 * 60 * 24));
+      
+      return {
+        ...d,
+        diasMora: diasTranscurridos,
+        alerta: diasTranscurridos > 10,
+        nivelAlerta: diasTranscurridos > 15 ? 'CRITICO' : (diasTranscurridos > 10 ? 'MORA' : 'NORMAL')
+      };
+    });
+
+    const recibidosPrev = todos.filter(d => {
+      if (d.estado === 'ELABORACION' || d.estado === 'ARCHIVADO') return false;
+
+      const miParticipacion = d.participantes.find(p => p.userId === userId);
+      if (!miParticipacion) return false;
+
+      if (miParticipacion.rol === 'VIA') {
+        const yaDerive = d.seguimientos.some(s => s.usuarioId === userId && (s.accion === 'DERIVACION' || s.accion === 'ENVIO'));
+        return !yaDerive;
+      }
+
+      if (miParticipacion.rol === 'DESTINATARIO') {
+        const vias = d.participantes.filter(p => p.rol === 'VIA');
+        if (vias.length === 0) return true;
+
+        const viaYaDerivo = d.seguimientos.some(s =>
+          vias.some(v => v.userId === s.usuarioId) &&
+          (s.accion === 'DERIVACION' || s.accion === 'ENVIO')
+        );
+        return viaYaDerivo;
+      }
+
+      return false;
+    });
+
     return {
-      recibidos: todos.filter(d =>
-        d.estado !== 'ELABORACION' &&
-        d.estado !== 'ARCHIVADO' &&
-        d.participantes.some(p => p.userId === userId && (p.rol === 'DESTINATARIO' || p.rol === 'VIA'))
-      ),
+      recibidos: mapearConAlerta(recibidosPrev),
       enviados: todos.filter(d =>
         d.estado !== 'ELABORACION' &&
         d.estado !== 'ARCHIVADO' &&
-        d.participantes.some(p => p.userId === userId && p.rol === 'REMITENTE')
+        (
+          d.participantes.some(p => p.userId === userId && p.rol === 'REMITENTE') ||
+          (d.participantes.some(p => p.userId === userId && p.rol === 'VIA') &&
+           d.seguimientos.some(s => s.usuarioId === userId && (s.accion === 'DERIVACION' || s.accion === 'ENVIO')))
+        )
       ),
       enProceso: todos.filter(d =>
         d.estado === 'ELABORACION' &&

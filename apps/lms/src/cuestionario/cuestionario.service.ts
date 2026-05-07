@@ -196,7 +196,13 @@ export class CuestionarioService {
 
     const cue = await this.prisma.mod_cuestionario.findUnique({
       where: { id: cuestionarioId },
-      include: { actividad: true, preguntas: { where: { estado: 'activo' } } },
+      include: { 
+        actividad: true, 
+        preguntas: { 
+          where: { estado: 'activo' },
+          orderBy: { orden: 'asc' }
+        } 
+      },
     });
     if (!cue) throw new NotFoundException('Cuestionario no encontrado');
 

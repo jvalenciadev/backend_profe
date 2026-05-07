@@ -21,13 +21,16 @@ export class PrismaBancoProfesionalRepository implements IBancoProfesionalReposi
   }
 
   async findAll(filter: any = {}): Promise<BancoProfesional[]> {
-    const whereClause: any = { ...filter };
+    const { take, skip, ...rest } = filter;
+    const whereClause: any = { ...rest };
     if (!whereClause.estado) {
       whereClause.estado = { not: 'eliminado' };
     }
 
     const users = await this.prisma.user.findMany({
       where: whereClause,
+      take: take ? Number(take) : 100, // Limite senior por defecto para evitar lag
+      skip: skip ? Number(skip) : undefined,
       include: {
         cargoPostulacion: true,
         tenant: true,

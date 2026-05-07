@@ -43,8 +43,12 @@ export class EventViewsController {
           include: {
             preguntas: {
               where: { estado: 'activo' },
+              orderBy: { createdAt: 'asc' },
               include: {
-                opciones: { where: { estado: 'activo' } },
+                opciones: { 
+                  where: { estado: 'activo' },
+                  orderBy: { createdAt: 'asc' }
+                },
               },
             },
           },
@@ -55,14 +59,36 @@ export class EventViewsController {
     if (!evento) throw new NotFoundException('Evento no encontrado');
 
     const sanitized = {
-      ...evento,
-      cuestionarios: evento.cuestionarios.map((c) => ({
-        ...c,
-        preguntas: c.preguntas.map((p) => ({
-          ...p,
-          opciones: p.opciones.map(({ esCorrecta: _, ...opt }) => opt),
-        })),
-      })),
+      ...(evento as any),
+      cuestionarios: (evento as any).cuestionarios.map((c: any) => {
+        let preguntas = [...c.preguntas];
+
+        if (c.esAleatorio) {
+          // Fisher-Yates shuffle para eventos si esAleatorio es true
+          for (let i = preguntas.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [preguntas[i], preguntas[j]] = [preguntas[j], preguntas[i]];
+          }
+
+          // También mezclar opciones si es aleatorio
+          preguntas.forEach((p: any) => {
+            if (p.opciones && p.opciones.length > 0) {
+              for (let i = p.opciones.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [p.opciones[i], p.opciones[j]] = [p.opciones[j], p.opciones[i]];
+              }
+            }
+          });
+        }
+
+        return {
+          ...c,
+          preguntas: preguntas.map((p: any) => ({
+            ...p,
+            opciones: p.opciones.map(({ esCorrecta: _, ...opt }: any) => opt),
+          })),
+        };
+      }),
     };
 
     return {

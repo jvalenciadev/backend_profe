@@ -239,7 +239,7 @@ describe('CuestionarioService (Blindaje Completo - 443 líneas)', () => {
     it('debe retornar intento si ya estaba finalizado', async () => {
       mockPrisma.mod_intento.findUnique.mockResolvedValue({ id: 'int-1', estado: 'finalizado' });
       const result = await service.finalizarIntento('int-1');
-      expect(result.estado).toBe('finalizado');
+      expect(result!.estado).toBe('finalizado');
       expect(mockPrisma.mod_intento.update).not.toHaveBeenCalled();
     });
 
@@ -262,7 +262,7 @@ describe('CuestionarioService (Blindaje Completo - 443 líneas)', () => {
       mockPrisma.mod_nota_actividad.upsert.mockResolvedValue({});
 
       const result = await service.finalizarIntento('int-1');
-      expect(result.estado).toBe('finalizado');
+      expect(result!.estado).toBe('finalizado');
       // Verificar que la respuesta correcta se marcó
       expect(mockPrisma.mod_respuesta.update).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ esCorrecta: true, puntaje: 10 }) })
