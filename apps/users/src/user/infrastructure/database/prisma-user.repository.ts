@@ -23,7 +23,7 @@ export class PrismaUserRepository implements IUserRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly caslPrisma: CaslPrismaService,
-  ) { }
+  ) {}
 
   async findById(id: string, ability?: any): Promise<User | null> {
     const where: any = { id, estado: { not: 'eliminado' } };
@@ -95,24 +95,24 @@ export class PrismaUserRepository implements IUserRepository {
         ...userData,
         roles: roles
           ? {
-            create: roles.map((roleId: string) => ({
-              roleId,
-              modelType: 'App\\User',
-            })),
-          }
+              create: roles.map((roleId: string) => ({
+                roleId,
+                modelType: 'App\\User',
+              })),
+            }
           : undefined,
         sedes: sedes
           ? { create: sedes.map((sedeId: string) => ({ sedeId })) }
           : undefined,
         mod_campos_extra_regs: data.mod_campos_extra_regs
           ? {
-            create: Object.entries(data.mod_campos_extra_regs).map(
-              ([campoExtraId, valor]: [string, any]) => ({
-                campoExtraId,
-                valor: String(valor),
-              }),
-            ),
-          }
+              create: Object.entries(data.mod_campos_extra_regs).map(
+                ([campoExtraId, valor]: [string, any]) => ({
+                  campoExtraId,
+                  valor: String(valor),
+                }),
+              ),
+            }
           : undefined,
       },
       include: USER_INCLUDE,
