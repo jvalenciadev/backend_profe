@@ -687,7 +687,7 @@ export class EventViewsController {
       puntaje: puntajeTotal,
       puntajeMaximo,
       nota,
-      aprobado: nota >= 75,
+      aprobado: nota >= (cuestionario?.puntajeMinimo || 75),
       respuestas: respuestas.map((r) => ({
         pregunta: r.pregunta.texto,
         respuesta: r.texto || r.opcion?.texto,
@@ -724,74 +724,81 @@ export class EventViewsController {
       orderBy: { orden: 'asc' },
     });
 
-    const progress = await Promise.all(
-      cuestionarios.map(async (c) => {
-        const respuestas = await this.prisma.evento_respuestas.findMany({
-          where: {
-            cuestionarioId: c.id,
-            personaId: persona.id,
-            deletedAt: null,
-          },
-          include: { pregunta: true },
-        });
+    const cuestionarioIds = cuestionarios.map((c) => c.id);
 
-        const intento = await this.prisma.eventoCuestionarioIntento.findFirst({
-          where: { cuestionarioId: c.id, personaId: persona.id },
-        });
+    // Búsqueda batch de respuestas e intentos para evitar consultas N+1
+    const todasLasRespuestas = await this.prisma.evento_respuestas.findMany({
+      where: {
+        cuestionarioId: { in: cuestionarioIds },
+        personaId: persona.id,
+        deletedAt: null,
+      },
+      include: { pregunta: true },
+    });
 
-        const finalizado = respuestas.length > 0 || (intento?.estado === 'finished' || (intento?.numeroIntentos || 0) > 0);
-        let aprobado = false;
-        let puntajeTotal = 0;
-        let puntajeMaximo = 0;
-        let nota = 0;
+    const todosLosIntentos = await this.prisma.eventoCuestionarioIntento.findMany({
+      where: {
+        cuestionarioId: { in: cuestionarioIds },
+        personaId: persona.id,
+      },
+    });
 
-        if (finalizado) {
-          if (!c.esEvaluativo) {
-            aprobado = true;
-          } else {
-            puntajeTotal = respuestas.reduce((s, r) => s + r.puntos, 0);
+    const progress = cuestionarios.map((c) => {
+      const respuestas = todasLasRespuestas.filter((r) => r.cuestionarioId === c.id);
+      const intento = todosLosIntentos.find((i) => i.cuestionarioId === c.id);
 
-            puntajeMaximo = c.puntosMaximos || 0;
-            if (
-              !puntajeMaximo ||
-              (c.cantidadPreguntas && c.cantidadPreguntas > 0)
-            ) {
-              // Sumar puntos de preguntas únicas respondidas
-              const uniquePreguntas = Array.from(
-                new Set(respuestas.map((r) => r.preguntaId)),
-              );
-              puntajeMaximo = uniquePreguntas.reduce((acc, pId) => {
-                const r = respuestas.find((resp) => resp.preguntaId === pId);
-                return acc + (r?.pregunta?.puntos || 0);
-              }, 0);
-            }
-            if (puntajeMaximo === 0) puntajeMaximo = 100;
+      const finalizado = respuestas.length > 0 || (intento?.estado === 'finished' || (intento?.numeroIntentos || 0) > 0);
+      let aprobado = false;
+      let puntajeTotal = 0;
+      let puntajeMaximo = 0;
+      let nota = 0;
 
-            nota = Math.round((puntajeTotal / puntajeMaximo) * 100);
-            aprobado = nota >= 75;
+      if (finalizado) {
+        if (!c.esEvaluativo) {
+          aprobado = true;
+        } else {
+          puntajeTotal = respuestas.reduce((s, r) => s + r.puntos, 0);
+
+          puntajeMaximo = c.puntosMaximos || 0;
+          if (
+            !puntajeMaximo ||
+            (c.cantidadPreguntas && c.cantidadPreguntas > 0)
+          ) {
+            // Sumar puntos de preguntas únicas respondidas
+            const uniquePreguntas = Array.from(
+              new Set(respuestas.map((r) => r.preguntaId)),
+            );
+            puntajeMaximo = uniquePreguntas.reduce((acc, pId) => {
+              const r = respuestas.find((resp) => resp.preguntaId === pId);
+              return acc + (r?.pregunta?.puntos || 0);
+            }, 0);
           }
-        }
+          if (puntajeMaximo === 0) puntajeMaximo = 100;
 
-        return {
-          id: c.id,
-          titulo: c.titulo,
-          orden: c.orden,
-          esObligatorio: c.esObligatorio,
-          esEvaluativo: c.esEvaluativo,
-          finalizado,
-          aprobado,
-          puntaje: puntajeTotal,
-          puntajeMaximo,
-          nota,
-          limiteIntentos: c.limiteIntentos,
-          urlVideo: c.urlVideo,
-          esAleatorio: c.esAleatorio,
-          cantidadPreguntas: c.cantidadPreguntas,
-          numeroIntentos: intento?.numeroIntentos || 0,
-          videoCompletado: intento?.videoCompletado || false,
-        };
-      }),
-    );
+          nota = Math.round((puntajeTotal / puntajeMaximo) * 100);
+          aprobado = nota >= (c.puntajeMinimo || 75);
+        }
+      }
+
+      return {
+        id: c.id,
+        titulo: c.titulo,
+        orden: c.orden,
+        esObligatorio: c.esObligatorio,
+        esEvaluativo: c.esEvaluativo,
+        finalizado,
+        aprobado,
+        puntaje: puntajeTotal,
+        puntajeMaximo,
+        nota,
+        limiteIntentos: c.limiteIntentos,
+        urlVideo: c.urlVideo,
+        esAleatorio: c.esAleatorio,
+        cantidadPreguntas: c.cantidadPreguntas,
+        numeroIntentos: intento?.numeroIntentos || 0,
+        videoCompletado: intento?.videoCompletado || false,
+      };
+    });
 
     return {
       persona: { ...persona, ci: persona.ci.toString() },

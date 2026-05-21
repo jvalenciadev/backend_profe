@@ -37,6 +37,7 @@ describe('LandingViewsController (Fase: Vistas Públicas - Blindaje Masivo)', ()
     tipoEvento: { findMany: jest.fn() },
     programaBaucher: { create: jest.fn() },
     role: { findFirst: jest.fn() },
+    mod_campo_extra_respuesta: { findMany: jest.fn().mockResolvedValue([]) },
   };
 
   const mockMailService = {

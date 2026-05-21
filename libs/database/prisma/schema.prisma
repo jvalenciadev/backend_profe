@@ -488,6 +488,8 @@ model evento_respuestas {
   pregunta       evento_pregunta  @relation(fields: [preguntaId], references: [id])
   opcion         evento_opciones? @relation(fields: [opcionId], references: [id])
 
+  @@index([cuestionarioId, personaId])
+  @@index([personaId])
   @@map("evento_respuestas")
 }
 
