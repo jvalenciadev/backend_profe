@@ -43,11 +43,17 @@ export class EventViewsController {
           include: {
             preguntas: {
               where: { estado: 'activo' },
-              orderBy: { createdAt: 'asc' },
+              orderBy: [
+                { createdAt: 'asc' },
+                { id: 'asc' }
+              ],
               include: {
                 opciones: { 
                   where: { estado: 'activo' },
-                  orderBy: { createdAt: 'asc' }
+                  orderBy: [
+                    { createdAt: 'asc' },
+                    { id: 'asc' }
+                  ]
                 },
               },
             },
