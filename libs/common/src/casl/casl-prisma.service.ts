@@ -23,9 +23,11 @@ export class CaslPrismaService {
   private cleanCriteria(criteria: any, subject: string): any {
     const depIdSubjects = [
       'Sede',
-      'Distrito',
+      'distrito',        // model distrito (snake_case en Prisma)
       'ProgramaDos',
       'EventoInscripcion',
+      'UnidadEducativa',
+      'unidad_educativa',
     ];
     const tenantIdSubjects = [
       'User',
@@ -38,6 +40,7 @@ export class CaslPrismaService {
       'Inscripcion',
       'EvaluacionAdmins',
       'EvaluacionPuntaje',
+      'CorDocumento',
     ];
     const globalSubjects = [
       'Departamento',
@@ -56,25 +59,61 @@ export class CaslPrismaService {
       'MapPersona',
       'AreaTrabajo',
       'Genero',
-      'Provincia',
-      'UnidadEducativa',
+      'provincia',                    // model provincia (snake_case)
+      'unidad_educativa',             // model unidad_educativa (snake_case)
       'ActaConclusion',
       'Profe',
+      'programa_inscripcion_estado',  // model programa_inscripcion_estado (snake_case)
       'ProgramaInscripcionEstado',
-      'ProgramaBaucher',
-      'ProgramaRestriccion',
+      'Baucher',
+      'programa_restriccion',         // model programa_restriccion (snake_case)
       'CalificacionParticipante',
       'ProgramaCalificacion',
       'ProgramaTipoCalificacion',
-      'EventoRestriccion',
+      'evento_restriccion',           // model evento_restriccion (snake_case)
       'EventoCuestionario',
-      'EventoPregunta',
-      'EventoOpciones',
-      'EventoRespuestas',
+      'evento_pregunta',              // model evento_pregunta (snake_case)
+      'evento_opciones',              // model evento_opciones (snake_case)
+      'evento_respuestas',            // model evento_respuestas (snake_case)
       'Galeria',
       'AsignacionFacilitador',
       'AsignarFacilitador',
+      'bp_posgrado',
+      'bp_produccion_intelectual',
+      'bp_tipo_posgrado',
+      'Cargo',
+      'EvaluacionCriterio',
+      'EvaluacionPeriodo',
+      'EventoPersona',
+      'EventoCuestionarioIntento',
+      'EventoCampoExtra',
+      'EventoCampoExtraRespuesta',
+      'UploadConfig',
+      'UserRole',
+      'Permission',
+      'ProgramaDosFacilitador',
+      'ProgramaDosTurno',
+      'RolePermission',
+      'Role',
+      'token_dispositivo',
+      'UserSede',
+      'MapCargo',
+      'MapCategoria',
+      'MapEspecialidad',
+      'MapNivel',
+      'MapSubsistema',
+      'MapPersonaNr',
+      'MapGenero',
+      'MapArea',
+      'UnidadEducativa',
+      'Provincia',
+      'Sede',
+      'Distrito',
+      'CorParticipante',
+      'CorSeguimiento',
     ];
+
+
 
     const fieldsToRemove: string[] = [];
     const subj = subject.toLowerCase();

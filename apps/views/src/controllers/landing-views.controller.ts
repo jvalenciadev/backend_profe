@@ -658,6 +658,9 @@ export class LandingViewsController {
         personaId: user.id, // per_id = admins.id (SIEMPRE no-null)
         estadoInscripcionId: estadoId,
         observacion: 'Inscripción desde plataforma pública',
+        unidadEducativa: datosPersona?.unidadEducativa || null,
+        nivel: datosPersona?.nivel || null,
+        materia: datosPersona?.area || null,
       },
     });
 

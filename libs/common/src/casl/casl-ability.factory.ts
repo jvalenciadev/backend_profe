@@ -73,7 +73,9 @@ export class CaslAbilityFactory {
           'Inscripcion',
           'EvaluacionAdmins',
           'EvaluacionPuntaje',
+          'CorDocumento',
         ];
+
 
         // Si tiene acceso 'all', aplicamos AMBOS filtros para evitar fuga de datos
         if (subject === 'all') {

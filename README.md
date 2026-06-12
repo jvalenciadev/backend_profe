@@ -1,4 +1,4 @@
-# PROFE OS - Backend
+# AULA PROFE - Backend
 
 Motor de servicios basado en NestJS.
 

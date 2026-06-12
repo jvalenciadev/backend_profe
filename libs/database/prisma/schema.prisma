@@ -85,8 +85,9 @@ model User {
   mod_campos_extra_regs           mod_campo_extra_respuesta[]
 
   // --- Correspondencia ---
-  cor_participaciones CorParticipante[]
-  cor_seguimientos    CorSeguimiento[]
+  cor_participaciones        CorParticipante[]
+  cor_seguimientos           CorSeguimiento[]
+  cor_seguimientos_como_dest CorSeguimiento[]  @relation("CorSeguimientoDestinatario")
 
   @@index([ci])
   @@index([ci, complemento])
@@ -1930,16 +1931,18 @@ model CorParticipante {
 }
 
 model CorSeguimiento {
-  id          String   @id @default(uuid()) @db.Uuid
-  documentoId String   @map("doc_id") @db.Uuid
-  fecha       DateTime @default(now()) @map("seg_fecha")
-  accion      String   @map("seg_accion") // CREACION, ENVIO, RECEPCION, DERIVACION, OBSERVACION
-  detalle     String?  @map("seg_detalle") @db.Text
-  usuarioId   String   @map("user_id") @db.Uuid
-  archivoUrl  String?  @map("seg_archivo_url")
+  id             String   @id @default(uuid()) @db.Uuid
+  documentoId    String   @map("doc_id") @db.Uuid
+  fecha          DateTime @default(now()) @map("seg_fecha")
+  accion         String   @map("seg_accion") // CREACION, ENVIO, RECEPCION, DERIVACION, OBSERVACION, CANCELAR, DEVOLUCION
+  detalle        String?  @map("seg_detalle") @db.Text
+  usuarioId      String   @map("user_id") @db.Uuid
+  archivoUrl     String?  @map("seg_archivo_url")
+  destinatarioId String?  @map("seg_destinatario_id") @db.Uuid // A quién se envía/deriva
 
-  documento CorDocumento @relation(fields: [documentoId], references: [id], onDelete: Cascade)
-  usuario   User         @relation(fields: [usuarioId], references: [id])
+  documento    CorDocumento @relation(fields: [documentoId], references: [id], onDelete: Cascade)
+  usuario      User         @relation(fields: [usuarioId], references: [id])
+  destinatario User?        @relation("CorSeguimientoDestinatario", fields: [destinatarioId], references: [id])
 
   @@index([documentoId])
   @@map("cor_seguimientos")

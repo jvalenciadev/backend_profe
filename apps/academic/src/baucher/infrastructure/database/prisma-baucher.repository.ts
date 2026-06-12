@@ -8,7 +8,7 @@ export class PrismaBaucherRepository implements IBaucherRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly caslPrisma: CaslPrismaService,
-  ) {}
+  ) { }
 
   async findAll(filter: any = {}, ability?: any): Promise<any[]> {
     const { tenantId, search, ...rest } = filter;
@@ -42,8 +42,18 @@ export class PrismaBaucherRepository implements IBaucherRepository {
     userId?: string,
     forcedTenantId?: string,
   ): Promise<any> {
+    const preparedData = { ...data };
+    if (preparedData.nroDeposito !== undefined && preparedData.nroDeposito !== null) {
+      preparedData.nroDeposito = BigInt(String(preparedData.nroDeposito).replace(/\D/g, ''));
+    }
+    if (preparedData.monto !== undefined) {
+      preparedData.monto = parseInt(String(preparedData.monto), 10);
+    }
+    if (preparedData.fecha) {
+      preparedData.fecha = new Date(preparedData.fecha);
+    }
     return await (this.prisma as any).programaBaucher.create({
-      data: { ...data, createdBy: userId },
+      data: { ...preparedData, createdBy: userId },
     });
   }
 
@@ -66,9 +76,20 @@ export class PrismaBaucherRepository implements IBaucherRepository {
         'No tiene permisos para editar este registro o no existe',
       );
 
+    const preparedData = { ...data };
+    if (preparedData.nroDeposito !== undefined && preparedData.nroDeposito !== null) {
+      preparedData.nroDeposito = BigInt(String(preparedData.nroDeposito).replace(/\D/g, ''));
+    }
+    if (preparedData.monto !== undefined) {
+      preparedData.monto = parseInt(String(preparedData.monto), 10);
+    }
+    if (preparedData.fecha) {
+      preparedData.fecha = new Date(preparedData.fecha);
+    }
+
     return await (this.prisma as any).programaBaucher.update({
       where: { id },
-      data: { ...data, updatedBy: userId },
+      data: { ...preparedData, updatedBy: userId },
     });
   }
 

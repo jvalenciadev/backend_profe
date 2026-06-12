@@ -19,6 +19,14 @@ import { PrismaService } from '@app/database';
 export class EventViewsController {
   constructor(private readonly prisma: PrismaService) { }
 
+  private parseCi(ci: string | number | undefined | null): bigint {
+    if (ci === undefined || ci === null) return BigInt(0);
+    const ciStr = String(ci).trim();
+    const cleanStr = ciStr.split('-')[0].trim();
+    const numericStr = cleanStr.replace(/\D/g, '');
+    return BigInt(numericStr || '0');
+  }
+
   @Get(':codigo')
   async getEvento(@Param('codigo') codigo: string) {
     const isUuid =
@@ -48,7 +56,7 @@ export class EventViewsController {
                 { id: 'asc' }
               ],
               include: {
-                opciones: { 
+                opciones: {
                   where: { estado: 'activo' },
                   orderBy: [
                     { createdAt: 'asc' },
@@ -111,7 +119,7 @@ export class EventViewsController {
 
     const persona = await this.prisma.eventoPersona.findFirst({
       where: {
-        ci: BigInt(ci),
+        ci: this.parseCi(ci),
         fechaNacimiento: new Date(fechaNacimiento),
         deletedAt: null,
       },
@@ -158,9 +166,20 @@ export class EventViewsController {
     if (!evento.inscripcionAbierta)
       throw new ForbiddenException('La inscripción está cerrada');
 
+    let ciLimpio = body.ci;
+    let complemento = body.complemento || '';
+    if (body.ci && String(body.ci).includes('-')) {
+      const parts = String(body.ci).split('-');
+      ciLimpio = parts[0].trim();
+      if (!complemento) {
+        complemento = parts[1].trim();
+      }
+    }
+    const ciBigInt = this.parseCi(ciLimpio);
+
     let persona = await this.prisma.eventoPersona.findFirst({
       where: {
-        ci: BigInt(body.ci),
+        ci: ciBigInt,
         fechaNacimiento: new Date(body.fechaNacimiento),
         deletedAt: null,
       },
@@ -169,8 +188,8 @@ export class EventViewsController {
     if (!persona) {
       persona = await this.prisma.eventoPersona.create({
         data: {
-          ci: BigInt(body.ci),
-          complemento: body.complemento || '',
+          ci: ciBigInt,
+          complemento: complemento || '',
           expedido: body.expedido || 'LP',
           nombre1: body.nombre1.toUpperCase(),
           nombre2: body.nombre2?.toUpperCase() || '',
@@ -268,7 +287,7 @@ export class EventViewsController {
   ) {
     const persona = await this.prisma.eventoPersona.findFirst({
       where: {
-        ci: BigInt(body.ci),
+        ci: this.parseCi(body.ci),
         fechaNacimiento: new Date(body.fechaNacimiento),
         deletedAt: null,
       },
@@ -315,7 +334,7 @@ export class EventViewsController {
 
     const persona = await this.prisma.eventoPersona.findFirst({
       where: {
-        ci: BigInt(body.ci),
+        ci: this.parseCi(body.ci),
         fechaNacimiento: new Date(body.fechaNacimiento),
         deletedAt: null,
       },
@@ -371,7 +390,7 @@ export class EventViewsController {
   ) {
     const persona = await this.prisma.eventoPersona.findFirst({
       where: {
-        ci: BigInt(body.ci),
+        ci: this.parseCi(body.ci),
         fechaNacimiento: new Date(body.fechaNacimiento),
         deletedAt: null,
       },
@@ -426,7 +445,7 @@ export class EventViewsController {
 
     const persona = await this.prisma.eventoPersona.findFirst({
       where: {
-        ci: BigInt(body.ci),
+        ci: this.parseCi(body.ci),
         fechaNacimiento: new Date(body.fechaNacimiento),
         deletedAt: null,
       },
@@ -630,6 +649,7 @@ export class EventViewsController {
       puntaje: cuestionario.esEvaluativo ? puntajeTotal : null,
       puntajeMaximo: cuestionario.esEvaluativo ? puntajeMaximo : null,
       nota: cuestionario.esEvaluativo ? nota : null,
+      aprobado: cuestionario.esEvaluativo ? (nota >= (cuestionario.puntajeMinimo || 75)) : true,
       persona: { ...persona, ci: persona.ci.toString() },
       cuestionario: { titulo: cuestionario.titulo },
       evento: { id: eventoId },
@@ -644,7 +664,7 @@ export class EventViewsController {
   ) {
     const persona = await this.prisma.eventoPersona.findFirst({
       where: {
-        ci: BigInt(body.ci),
+        ci: this.parseCi(body.ci),
         fechaNacimiento: new Date(body.fechaNacimiento),
         deletedAt: null,
       },
@@ -710,7 +730,7 @@ export class EventViewsController {
   ) {
     const persona = await this.prisma.eventoPersona.findFirst({
       where: {
-        ci: BigInt(body.ci),
+        ci: this.parseCi(body.ci),
         fechaNacimiento: new Date(body.fechaNacimiento),
         deletedAt: null,
       },

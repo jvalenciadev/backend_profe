@@ -10,4 +10,5 @@ import { InsigniasController } from './insignias.controller';
   providers: [InsigniasService],
   exports: [InsigniasService],
 })
-export class InsigniasModule {}
+export class InsigniasModule { }
+
