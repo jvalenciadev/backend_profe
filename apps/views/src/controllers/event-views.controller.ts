@@ -36,7 +36,7 @@ export class EventViewsController {
     const evento = await this.prisma.evento.findFirst({
       where: {
         OR: [{ codigo }, ...(isUuid ? [{ id: codigo }] : [])],
-        estado: 'activo',
+        estado: { in: ['activo', 'finalizado', 'vista'] },
       },
       include: {
         tipo: true,
@@ -159,12 +159,20 @@ export class EventViewsController {
     },
   ) {
     const evento = await this.prisma.evento.findFirst({
-      where: { id: eventoId, estado: 'activo' },
+      where: { id: eventoId, estado: { in: ['activo', 'finalizado', 'vista'] } },
     });
 
     if (!evento) throw new NotFoundException('Evento no encontrado');
-    if (!evento.inscripcionAbierta)
-      throw new ForbiddenException('La inscripción está cerrada');
+    if (evento.estado === 'finalizado') {
+      throw new ForbiddenException('El evento ha finalizado');
+    }
+    if (body.isEditingProfile) {
+      // Se permite actualizar datos si el evento no ha finalizado
+    } else {
+      if (evento.estado !== 'activo' || !evento.inscripcionAbierta) {
+        throw new ForbiddenException('La inscripción está cerrada');
+      }
+    }
 
     let ciLimpio = body.ci;
     let complemento = body.complemento || '';

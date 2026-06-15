@@ -23,6 +23,7 @@ describe('EventViewsController (Blindaje Completo - 752 líneas)', () => {
     fechaNacimiento: new Date('1990-01-01'),
     correo: 'juan@test.com',
     celular: '70000000',
+    generoId: BigInt(1),
   };
 
   const mockEvento = {
@@ -167,6 +168,51 @@ describe('EventViewsController (Blindaje Completo - 752 líneas)', () => {
       const result = await controller.inscribirse('evt-1', inscripcionBody);
       expect(result.success).toBe(true);
       expect(mockPrisma.eventoPersona.update).toHaveBeenCalled();
+    });
+
+    it('debería permitir actualizar datos si inscripción está cerrada (isEditingProfile es true) pero el evento no está finalizado', async () => {
+      mockPrisma.evento.findFirst.mockResolvedValue({ ...mockEvento, inscripcionAbierta: false, estado: 'activo' });
+      mockPrisma.eventoPersona.findFirst.mockResolvedValue(mockPersona);
+      mockPrisma.eventoPersona.update.mockResolvedValue(mockPersona);
+      mockPrisma.eventoInscripcion.findFirst.mockResolvedValue({
+        id: 'ins-1',
+        personaId: 'per-1',
+        eventoId: 'evt-1',
+        departamentoId: 'dep-1',
+        modalidadId: 'mod-1',
+      });
+
+      const result = await controller.inscribirse('evt-1', {
+        ...inscripcionBody,
+        isEditingProfile: true,
+      });
+
+      expect(result.persona).toBeDefined();
+      expect(result.inscripcion).toBeDefined();
+      expect(mockPrisma.eventoPersona.update).toHaveBeenCalled();
+    });
+
+    it('debería lanzar ForbiddenException al intentar editar perfil si el evento está finalizado', async () => {
+      mockPrisma.evento.findFirst.mockResolvedValue({ ...mockEvento, estado: 'finalizado' });
+      mockPrisma.eventoPersona.findFirst.mockResolvedValue(mockPersona);
+
+      await expect(
+        controller.inscribirse('evt-1', {
+          ...inscripcionBody,
+          isEditingProfile: true,
+        }),
+      ).rejects.toThrow(new ForbiddenException('El evento ha finalizado'));
+    });
+
+    it('debería lanzar ForbiddenException al intentar una nueva inscripción si el evento está finalizado', async () => {
+      mockPrisma.evento.findFirst.mockResolvedValue({ ...mockEvento, estado: 'finalizado' });
+
+      await expect(
+        controller.inscribirse('evt-1', {
+          ...inscripcionBody,
+          isEditingProfile: false,
+        }),
+      ).rejects.toThrow(new ForbiddenException('El evento ha finalizado'));
     });
   });
 

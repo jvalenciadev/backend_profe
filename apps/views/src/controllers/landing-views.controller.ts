@@ -60,7 +60,7 @@ export class LandingViewsController {
     ] = await Promise.all([
       this.prisma.profe.findFirst({ where: { estado: Estado.activo } }),
       this.prisma.evento.findMany({
-        where: { estado: Estado.activo, ...(tenantId ? { tenantId } : {}) },
+        where: { estado: { in: [Estado.activo, Estado.finalizado, Estado.vista] }, ...(tenantId ? { tenantId } : {}) },
         take: 12,
         orderBy: { fecha: 'desc' },
         include: { tipo: true, cuestionarios: { where: { estado: Estado.activo } } },
