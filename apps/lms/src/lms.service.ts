@@ -1599,9 +1599,9 @@ export class LmsService {
     //   await this.validarPuntajeCategoria(data.categoriaId, data.puntajeMax || 0);
     // }
 
-    // 2. Crear actividad y subtipo en transacción atómica
-    return this.prisma.$transaction(async (tx) => {
-      const actividad = await tx.mod_actividad.create({
+    // 2. Crear actividad y subtipo en transacción atómica (se resuelve muy rápido)
+    const actividad = await this.prisma.$transaction(async (tx) => {
+      const act = await tx.mod_actividad.create({
         data: {
           unidadId: data.unidadId,
           tipo: data.tipo,
@@ -1620,14 +1620,14 @@ export class LmsService {
       if (data.tipo === 'FORO') {
         await tx.mod_foro.create({
           data: {
-            actividadId: actividad.id,
+            actividadId: act.id,
             permitirFiles: data.permitirFiles ?? true,
           },
         });
       } else if (data.tipo === 'TAREA') {
         await tx.mod_tarea.create({
           data: {
-            actividadId: actividad.id,
+            actividadId: act.id,
             allowFiles: data.allowFiles ?? true,
             allowText: data.allowText ?? true,
             maxArchivos: data.maxArchivos || 1,
@@ -1637,7 +1637,7 @@ export class LmsService {
       } else if (data.tipo === 'CUESTIONARIO' || data.tipo === 'FORMULARIO') {
         await tx.mod_cuestionario.create({
           data: {
-            actividadId: actividad.id,
+            actividadId: act.id,
             duracion: data.duracion || 60,
             maxIntentos: data.maxIntentos || 1,
           },
@@ -1650,8 +1650,8 @@ export class LmsService {
           true;
         await tx.mod_asistencia.create({
           data: {
-            actividadId: actividad.id,
-            fecha: actividad.fechaInicio || new Date(),
+            actividadId: act.id,
+            fecha: act.fechaInicio || new Date(),
             moduloId: unit.moduloId || null,
             moduloMaestroId: unit.moduloMaestroId || null,
             turnoId: unit.turnoId || null,
@@ -1660,53 +1660,53 @@ export class LmsService {
         });
       }
 
-      // 4. Notificar a los estudiantes
-      const modId = unit.moduloId || unit.moduloMaestroId;
-      let modName = 'Módulo';
-      const whereInscritos: any = { estado: 'activo' };
-
-      if (unit.moduloId) {
-        const mod = await tx.programaModuloDos.findUnique({
-          where: { id: unit.moduloId },
-        });
-        modName = mod?.nombre || 'Módulo';
-        whereInscritos.programaId = mod?.programaDosId;
-      } else if (unit.moduloMaestroId) {
-        const mod = await tx.programaModulo.findUnique({
-          where: { id: unit.moduloMaestroId },
-          include: { programa: true },
-        });
-        modName = mod?.nombre || 'Módulo';
-        whereInscritos.programa = { programaId: mod?.programaId };
-      }
-
-      if (unit.turnoId) {
-        whereInscritos.turnoId = unit.turnoId;
-      }
-
-      const inscritos = await tx.programaInscripcion.findMany({
-        where: whereInscritos,
-      });
-
-      for (const insc of inscritos) {
-        try {
-          await this.notiService.emit({
-            userId: insc.personaId,
-            titulo: `Nueva Actividad: ${actividad.titulo}`,
-            mensaje: `Se ha publicado una nueva actividad en el módulo ${modName}.`,
-            tipo: 'NUEVA_ACTIVIDAD',
-            linkRef: `/aula/curso/${modId}/actividad/${actividad.id}`,
-          });
-        } catch (e) {
-          console.error(
-            `[ERROR] Notification failed for user ${insc.personaId}:`,
-            e,
-          );
-        }
-      }
-
-      return actividad;
+      return act;
     });
+
+    // 4. Notificar a los estudiantes (Ejecutado FUERA de la transacción de base de datos)
+    const modId = unit.moduloId || unit.moduloMaestroId;
+    let modName = 'Módulo';
+    const whereInscritos: any = { estado: 'activo' };
+
+    if (unit.moduloId) {
+      const mod = await this.prisma.programaModuloDos.findUnique({
+        where: { id: unit.moduloId },
+      });
+      modName = mod?.nombre || 'Módulo';
+      whereInscritos.programaId = mod?.programaDosId;
+    } else if (unit.moduloMaestroId) {
+      const mod = await this.prisma.programaModulo.findUnique({
+        where: { id: unit.moduloMaestroId },
+        include: { programa: true },
+      });
+      modName = mod?.nombre || 'Módulo';
+      whereInscritos.programa = { programaId: mod?.programaId };
+    }
+
+    if (unit.turnoId) {
+      whereInscritos.turnoId = unit.turnoId;
+    }
+
+    // Buscamos los alumnos inscritos y enviamos notificaciones en segundo plano asíncronamente en lote
+    this.prisma.programaInscripcion.findMany({
+      where: whereInscritos,
+      select: { personaId: true },
+    }).then(async (inscritos) => {
+      const userIds = Array.from(new Set(inscritos.map((i) => i.personaId)));
+      if (userIds.length > 0) {
+        await this.notiService.emitBulk({
+          userIds,
+          titulo: `Nueva Actividad: ${actividad.titulo}`,
+          mensaje: `Se ha publicado una nueva actividad en el módulo ${modName}.`,
+          tipo: 'NUEVA_ACTIVIDAD',
+          linkRef: `/aula/curso/${modId}/actividad/${actividad.id}`,
+        });
+      }
+    }).catch((err) => {
+      console.error(`[ERROR] Failed to fetch enrolled students for notifications:`, err);
+    });
+
+    return actividad;
   }
 
   async updateActividad(userId: string, actId: string, data: any) {

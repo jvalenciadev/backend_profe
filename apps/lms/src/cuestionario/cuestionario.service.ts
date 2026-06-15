@@ -384,7 +384,8 @@ export class CuestionarioService {
       },
     });
 
-    if (!intento || intento.estado === 'finalizado') return intento;
+    if (!intento) throw new NotFoundException('Intento no encontrado');
+    if (intento.estado === 'finalizado') return intento;
 
     // CALCULAR NOTA
     let notaObtenida = 0;

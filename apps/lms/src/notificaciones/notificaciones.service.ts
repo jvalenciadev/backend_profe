@@ -107,6 +107,62 @@ export class NotificacionesService {
 
     return record;
   }
+
+  async emitBulk(data: {
+    userIds: string[];
+    titulo: string;
+    mensaje: string;
+    tipo: string;
+    linkRef?: string;
+  }) {
+    if (!data.userIds || data.userIds.length === 0) return;
+
+    // 1. Crear en la base de datos local en lote
+    await this.prisma.mod_notificacion.createMany({
+      data: data.userIds.map((userId) => ({
+        userId,
+        titulo: data.titulo,
+        mensaje: data.mensaje,
+        tipo: data.tipo,
+        linkRef: data.linkRef,
+      })),
+    });
+
+    // 2. Enviar PUSH NOTIFICATION a todos los dispositivos registrados del lote
+    try {
+      const devices = await this.prisma.token_dispositivo.findMany({
+        where: { userId: { in: data.userIds } },
+      });
+
+      const tokens = devices
+        .map((d) => d.token)
+        .filter((t): t is string => t !== null && t.length > 5);
+
+      if (tokens.length > 0) {
+        // Enviar a múltiples dispositivos (multicast) en lotes de 500
+        const chunkSize = 500;
+        for (let i = 0; i < tokens.length; i += chunkSize) {
+          const tokenChunk = tokens.slice(i, i + chunkSize);
+          await admin.messaging().sendEachForMulticast({
+            tokens: tokenChunk,
+            notification: {
+              title: data.titulo,
+              body: data.mensaje,
+            },
+            data: {
+              tipo: data.tipo,
+              linkRef: data.linkRef || '',
+            },
+          }).catch((err) => {
+            console.error('[FCM] Error en lote multicast de emitBulk:', err);
+          });
+        }
+      }
+    } catch (e) {
+      console.error('[FCM] Error enviando notificaciones PUSH bulk:', e);
+    }
+  }
+
   async markAsRead(id: string) {
     return this.prisma.mod_notificacion.update({
       where: { id },

@@ -16,8 +16,8 @@ describe('CuestionarioService (Blindaje Completo - 443 líneas)', () => {
       update: jest.fn(),
       count: jest.fn(),
     },
-    mod_pregunta: { update: jest.fn(), create: jest.fn() },
-    mod_opcion: { update: jest.fn(), create: jest.fn() },
+    mod_pregunta: { update: jest.fn(), create: jest.fn(), findMany: jest.fn(), updateMany: jest.fn() },
+    mod_opcion: { update: jest.fn(), create: jest.fn(), deleteMany: jest.fn(), createMany: jest.fn() },
     mod_respuesta: {
       findFirst: jest.fn(),
       update: jest.fn(),
@@ -89,6 +89,7 @@ describe('CuestionarioService (Blindaje Completo - 443 líneas)', () => {
   // ─── syncPreguntas ─────────────────────────────────────────────────
   describe('syncPreguntas', () => {
     it('debe crear preguntas nuevas (isNew=true)', async () => {
+      mockPrisma.mod_pregunta.findMany.mockResolvedValue([]);
       mockPrisma.mod_pregunta.create.mockResolvedValue({ id: 'preg-new' });
       const preguntas = [{
         isNew: true, texto: '¿Qué es?', tipo: 'MULTIPLE', puntaje: 10, orden: 1, imagen: null,
@@ -100,7 +101,10 @@ describe('CuestionarioService (Blindaje Completo - 443 líneas)', () => {
     });
 
     it('debe actualizar preguntas e opciones existentes (id sin isNew)', async () => {
+      mockPrisma.mod_pregunta.findMany.mockResolvedValue([{ id: 'preg-1' }]);
       mockPrisma.mod_pregunta.update.mockResolvedValue({});
+      mockPrisma.mod_opcion.deleteMany.mockResolvedValue({});
+      mockPrisma.mod_opcion.createMany.mockResolvedValue({});
       mockPrisma.mod_opcion.update.mockResolvedValue({});
       const preguntas = [{
         id: 'preg-1', isNew: false, texto: 'Actualizada', tipo: 'MULTIPLE', puntaje: 5, orden: 1, imagen: null,
@@ -109,18 +113,20 @@ describe('CuestionarioService (Blindaje Completo - 443 líneas)', () => {
       const result = await service.syncPreguntas('cue-1', preguntas);
       expect(result.success).toBe(true);
       expect(mockPrisma.mod_pregunta.update).toHaveBeenCalled();
-      expect(mockPrisma.mod_opcion.update).toHaveBeenCalled();
+      expect(mockPrisma.mod_opcion.deleteMany).toHaveBeenCalled();
     });
 
     it('debe crear opciones nuevas (sin id) en preguntas existentes', async () => {
+      mockPrisma.mod_pregunta.findMany.mockResolvedValue([{ id: 'preg-1' }]);
       mockPrisma.mod_pregunta.update.mockResolvedValue({});
-      mockPrisma.mod_opcion.create.mockResolvedValue({});
+      mockPrisma.mod_opcion.deleteMany.mockResolvedValue({});
+      mockPrisma.mod_opcion.createMany.mockResolvedValue({});
       const preguntas = [{
         id: 'preg-1', isNew: false, texto: 'Q', tipo: 'MULTIPLE', puntaje: 5, orden: 1, imagen: null,
         opciones: [{ isNew: true, texto: 'Nueva opción', esCorrecta: true, orden: 2 }],
       }];
       await service.syncPreguntas('cue-1', preguntas);
-      expect(mockPrisma.mod_opcion.create).toHaveBeenCalled();
+      expect(mockPrisma.mod_opcion.createMany).toHaveBeenCalled();
     });
   });
 
@@ -132,11 +138,11 @@ describe('CuestionarioService (Blindaje Completo - 443 líneas)', () => {
     });
 
     it('debe retornar los datos del lobby con intentos restantes', async () => {
-      const cue = { id: 'cue-1', maxIntentos: 3, preguntas: [] };
+      const cue = { id: 'cue-1', maxIntentos: 3, duracion: 0, preguntas: [] };
       mockPrisma.mod_cuestionario.findUnique.mockResolvedValue(cue);
       mockPrisma.mod_intento.findMany.mockResolvedValue([
-        { estado: 'finalizado', puntajeTotal: 80 },
-        { estado: 'finalizado', puntajeTotal: 90 },
+        { estado: 'finalizado', puntajeTotal: 80, iniciadoEn: new Date() },
+        { estado: 'finalizado', puntajeTotal: 90, iniciadoEn: new Date() },
       ]);
       const result = await service.getLobbyData('user-1', 'cue-1');
       expect(result.intentosConsumidos).toBe(2);
@@ -145,10 +151,10 @@ describe('CuestionarioService (Blindaje Completo - 443 líneas)', () => {
     });
 
     it('debe detectar un intento en progreso y calcularlo bien', async () => {
-      const cue = { id: 'cue-1', maxIntentos: 3, preguntas: [] };
+      const cue = { id: 'cue-1', maxIntentos: 3, duracion: 0, preguntas: [] };
       mockPrisma.mod_cuestionario.findUnique.mockResolvedValue(cue);
       mockPrisma.mod_intento.findMany.mockResolvedValue([
-        { estado: 'en_progreso', puntajeTotal: 0 },
+        { estado: 'en_progreso', puntajeTotal: 0, iniciadoEn: new Date() },
       ]);
       const result = await service.getLobbyData('user-1', 'cue-1');
       expect(result.intentoEnProgreso).toBeDefined();

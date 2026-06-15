@@ -31,6 +31,7 @@ describe('NotificacionesService (Blindaje Completo)', () => {
     mod_notificacion: {
       findMany: jest.fn(),
       create: jest.fn(),
+      createMany: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
       delete: jest.fn(),
@@ -164,6 +165,45 @@ describe('NotificacionesService (Blindaje Completo)', () => {
       await expect(
         service.emit({ userId: 'u', titulo: 'T', mensaje: 'M', tipo: 'URGENTE' }),
       ).resolves.not.toThrow();
+    });
+  });
+
+  // ─── emitBulk ────────────────────────────────────────────────────────
+  describe('emitBulk', () => {
+    it('debe retornar temprano si el listado de userIds está vacío', async () => {
+      await service.emitBulk({
+        userIds: [],
+        titulo: 'T',
+        mensaje: 'M',
+        tipo: 'TIPO',
+      });
+      expect(mockPrisma.mod_notificacion.createMany).not.toHaveBeenCalled();
+    });
+
+    it('debe realizar inserción masiva en BD y buscar tokens de dispositivos', async () => {
+      mockPrisma.mod_notificacion.createMany.mockResolvedValue({ count: 2 });
+      mockPrisma.token_dispositivo.findMany.mockResolvedValue([
+        { token: 'token-bulk-1' },
+      ]);
+
+      await service.emitBulk({
+        userIds: ['u1', 'u2'],
+        titulo: 'Bulk Title',
+        mensaje: 'Bulk Msg',
+        tipo: 'BULK_TYPE',
+        linkRef: '/link',
+      });
+
+      expect(mockPrisma.mod_notificacion.createMany).toHaveBeenCalledWith({
+        data: [
+          { userId: 'u1', titulo: 'Bulk Title', mensaje: 'Bulk Msg', tipo: 'BULK_TYPE', linkRef: '/link' },
+          { userId: 'u2', titulo: 'Bulk Title', mensaje: 'Bulk Msg', tipo: 'BULK_TYPE', linkRef: '/link' },
+        ],
+      });
+
+      expect(mockPrisma.token_dispositivo.findMany).toHaveBeenCalledWith({
+        where: { userId: { in: ['u1', 'u2'] } },
+      });
     });
   });
 
