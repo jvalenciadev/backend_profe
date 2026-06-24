@@ -65,6 +65,7 @@ export class CreateInscripcionUseCase {
       const inscripcion = await this.repository.create({
         ...dto,
         sedeId: oferta.sedeId, // Force Sede from Offer
+        tenantId: oferta.departamentoId, // Set tenantId to the department of the offering!
         createdBy: currentUserId,
         estadoInscripcionId: dto.estadoInscripcionId,
       });

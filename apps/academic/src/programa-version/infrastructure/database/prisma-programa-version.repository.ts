@@ -25,11 +25,22 @@ export class PrismaProgramaVersionRepository implements IProgramaVersionReposito
     };
   }
 
-  async findAll(filter: any = {}, ability?: any): Promise<any[]> {
-    const { tenantId, search, ...rest } = filter;
+  async findAll(filter: any = {}, ability?: any, user?: any): Promise<any[]> {
+    const { tenantId, search, sedeId, ...rest } = filter;
     let where: any = { ...rest };
+    if (sedeId) where.sedeId = sedeId;
     const hasStatus = true;
     if (hasStatus) where.estado = { not: 'eliminado' };
+
+    // Apply User-Sedes/Tenant filtering if the user is not superadmin
+    if (user && user.tenantId) {
+      if (sedeId) {
+        where.sedeId = sedeId;
+      } else if (user.sedes && user.sedes.length > 0) {
+        where.sedeId = { in: user.sedes };
+      }
+      where.departamentoId = user.tenantId;
+    }
 
     if (ability) {
       const caslWhere = this.caslPrisma.getWhere(

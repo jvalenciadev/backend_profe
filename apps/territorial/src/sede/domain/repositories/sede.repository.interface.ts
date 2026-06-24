@@ -15,6 +15,7 @@ export interface ISedeRepository {
   findAll(
     filters?: SedeFilters,
     ability?: any,
+    user?: any,
   ): Promise<{ data: Sede[]; total: number }>;
   update(id: string, data: Partial<Sede>): Promise<Sede>;
   delete(id: string): Promise<boolean>;

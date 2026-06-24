@@ -13,7 +13,7 @@ export class PrismaSedeRepository implements ISedeRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly caslPrisma: CaslPrismaService,
-  ) {}
+  ) { }
 
   private mapToDomain(record: any): Sede {
     return new Sede(
@@ -111,11 +111,20 @@ export class PrismaSedeRepository implements ISedeRepository {
   async findAll(
     filters: SedeFilters = {},
     ability?: any,
+    user?: any,
   ): Promise<{ data: Sede[]; total: number }> {
     const { search, estado, page = 1, limit = 20 } = filters;
     let where: any = { estado: { not: 'eliminado' } };
     if (estado && estado !== 'todos') where.estado = estado;
     if (search) where.nombre = { contains: search, mode: 'insensitive' };
+
+    // Apply User-Sedes/Tenant filtering if the user is not superadmin
+    if (user && user.tenantId) {
+      if (user.sedes && user.sedes.length > 0) {
+        where.id = { in: user.sedes };
+      }
+      where.departamentoId = user.tenantId;
+    }
 
     if (ability) {
       const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'Sede');

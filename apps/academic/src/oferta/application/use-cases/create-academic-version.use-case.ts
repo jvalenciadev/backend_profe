@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Inject } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '@app/database';
 
 @Injectable()
@@ -18,6 +18,53 @@ export class CreateAcademicVersionUseCase {
     if (!master) throw new NotFoundException('Programa Maestro no encontrado');
 
     const { modulos, turnos, ...rest } = versionData;
+
+    // Validación de versión automática y secuencial
+    if (!rest.versionId) {
+      throw new BadRequestException('Debe seleccionar una versión o gestión de referencia');
+    }
+
+    const selectedVersion = await this.prisma.programaVersion.findUnique({
+      where: { id: rest.versionId },
+    });
+
+    if (!selectedVersion) {
+      throw new NotFoundException('La versión de referencia seleccionada no existe');
+    }
+
+    const gestion = selectedVersion.gestion;
+
+    // Contar cuántas ofertas operativas activas del mismo programa ya existen en esta gestión
+    const existingOffersCount = await this.prisma.programaDos.count({
+      where: {
+        programaId: masterId,
+        version: {
+          gestion: gestion,
+        },
+        deletedAt: null,
+      },
+    });
+
+    const siguienteNumero = existingOffersCount + 1;
+
+    // Buscar si existe esa versión (número secuencial) en el catálogo de versiones para esta gestión
+    const targetVersion = await this.prisma.programaVersion.findFirst({
+      where: {
+        gestion: gestion,
+        numero: siguienteNumero,
+        deletedAt: null,
+        estado: 'activo',
+      },
+    });
+
+    if (!targetVersion) {
+      throw new BadRequestException(
+        `No se puede registrar la oferta. La Versión ${siguienteNumero} para la gestión ${gestion} no está habilitada. El administrador debe habilitar nuevas versiones.`,
+      );
+    }
+
+    // Usar la versión calculada secuencialmente
+    rest.versionId = targetVersion.id;
 
     // Snapshot de los datos del maestro + variables de la versión
     const {

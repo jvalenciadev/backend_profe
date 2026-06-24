@@ -8,8 +8,8 @@ export class GetProgramaVersionsUseCase {
     @Inject(PROGRAMAVERSION_REPOSITORY)
     private readonly repo: IProgramaVersionRepository,
   ) {}
-  async execute(filter?: any, ability?: any): Promise<any[]> {
-    return this.repo.findAll(filter, ability);
+  async execute(filter?: any, ability?: any, user?: any): Promise<any[]> {
+    return this.repo.findAll(filter, ability, user);
   }
 }
 

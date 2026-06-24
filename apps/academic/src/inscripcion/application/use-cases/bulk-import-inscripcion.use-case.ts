@@ -37,6 +37,15 @@ export class BulkImportInscripcionUseCase {
       errors: [] as { ci: string; error: string }[],
     };
 
+    const oferta = await this.prisma.programaDos.findUnique({
+      where: { id: dto.programaId },
+      select: { departamentoId: true },
+    });
+    if (!oferta) {
+      throw new BadRequestException('La oferta académica no existe');
+    }
+    const tenantId = oferta.departamentoId;
+
     const defaultPassword = 'AulaProfe*2026';
     const salt = await bcrypt.genSalt(10);
     const hashedDefaultPassword = await bcrypt.hash(defaultPassword, salt);
@@ -142,6 +151,7 @@ export class BulkImportInscripcionUseCase {
           programaId: dto.programaId,
           turnoId: dto.turnoId,
           sedeId: dto.sedeId,
+          tenantId: tenantId,
           createdBy: currentUserId,
           licenciatura: p.licenciatura || user.licenciatura,
           unidadEducativa: p.unidadEducativa,

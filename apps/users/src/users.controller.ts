@@ -45,8 +45,13 @@ export class UsersController {
 
   @Get()
   @CheckPolicies((ability) => ability.can('read', 'User'))
-  findAll(@Req() req: any, @Query('search') search?: string) {
-    return this.findAllUsersUseCase.execute(req.ability, search);
+  findAll(
+    @Req() req: any,
+    @Query('search') search?: string,
+    @Query('global') global?: string,
+  ) {
+    const includeParticipants = global === 'true';
+    return this.findAllUsersUseCase.execute(req.ability, search, includeParticipants);
   }
 
   @Get(':id')

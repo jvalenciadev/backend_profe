@@ -124,8 +124,8 @@ export class FindAllUsersUseCase {
     @Inject(USER_REPOSITORY) private readonly repository: IUserRepository,
   ) {}
 
-  async execute(ability: any, search?: string): Promise<User[]> {
-    return this.repository.findAll({ ability, search });
+  async execute(ability: any, search?: string, includeParticipants?: boolean): Promise<User[]> {
+    return this.repository.findAll({ ability, search, includeParticipants });
   }
 }
 

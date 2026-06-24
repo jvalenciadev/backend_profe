@@ -4,7 +4,7 @@ export const INSCRIPCION_REPOSITORY = 'INSCRIPCION_REPOSITORY';
 
 export interface IInscripcionRepository {
   findById(id: string): Promise<Inscripcion | null>;
-  findAll(filter?: any): Promise<Inscripcion[]>;
+  findAll(filter?: any, user?: any): Promise<Inscripcion[]>;
   create(data: any): Promise<Inscripcion>;
   update(id: string, data: any): Promise<Inscripcion>;
   delete(id: string): Promise<void>;

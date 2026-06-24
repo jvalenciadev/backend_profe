@@ -38,12 +38,25 @@ export class PrismaInscripcionRepository implements IInscripcionRepository {
     return data ? new Inscripcion(data as any) : null;
   }
 
-  async findAll(filter: any = {}): Promise<Inscripcion[]> {
-    const { page = 1, limit = 50, search, versionId, ...rest } = filter;
+  async findAll(filter: any = {}, user?: any): Promise<Inscripcion[]> {
+    const { page = 1, limit = 50, search, versionId, sedeId, ...rest } = filter;
     const skip = (Number(page) - 1) * Number(limit);
     const take = Number(limit);
 
     const where: any = { ...rest, estado: { not: 'eliminado' } };
+    if (sedeId) {
+      where.sedeId = sedeId;
+    }
+
+    // Apply User-Sedes/Tenant filtering if the user is not superadmin
+    if (user && user.tenantId) {
+      if (sedeId) {
+        where.sedeId = sedeId;
+      } else if (user.sedes && user.sedes.length > 0) {
+        where.sedeId = { in: user.sedes };
+      }
+      where.tenantId = user.tenantId;
+    }
 
     if (search) {
       // Si el search parece un número (CI), buscar por CI.
@@ -170,6 +183,7 @@ export class PrismaInscripcionRepository implements IInscripcionRepository {
         programaId: data.programaId,
         turnoId: data.turnoId,
         sedeId: data.sedeId,
+        tenantId: data.tenantId,
         estadoInscripcionId:
           data.estadoInscripcionId, // No default hardcoded ID here to avoid FK errors
         observacion: data.observacion,

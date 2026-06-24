@@ -16,8 +16,9 @@ export class GetSedesUseCase {
   async execute(
     filters: SedeFilters = {},
     ability?: any,
+    user?: any,
   ): Promise<{ data: Sede[]; total: number }> {
-    return await this.repository.findAll(filters, ability);
+    return await this.repository.findAll(filters, ability, user);
   }
 }
 

@@ -30,7 +30,7 @@ export class SedeController {
     private readonly createSedeUseCase: CreateSedeUseCase,
     private readonly updateSedeUseCase: UpdateSedeUseCase,
     private readonly deleteSedeUseCase: DeleteSedeUseCase,
-  ) {}
+  ) { }
 
   @Get()
   @CheckPolicies((ability: any) => ability.can('read', 'Sede'))
@@ -45,6 +45,7 @@ export class SedeController {
         limit,
       },
       req.ability,
+      req.user,
     );
     return {
       ...result,

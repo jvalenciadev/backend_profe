@@ -43,42 +43,49 @@ export class PrismaUserRepository implements IUserRepository {
   }
 
   async findAll(filter: any = {}): Promise<User[]> {
-    const { ability, search, ...rest } = filter;
+    const { ability, search, includeParticipants, ...rest } = filter;
     let where: any = { ...rest, estado: { not: 'eliminado' } };
 
     if (search) {
+      const ciCondition =
+        search && /^\d+$/.test(search.trim())
+          ? { ci: BigInt(search.trim()) }
+          : null;
+
       where.OR = [
         { nombre: { contains: search, mode: 'insensitive' } },
         { apellidos: { contains: search, mode: 'insensitive' } },
         { username: { contains: search, mode: 'insensitive' } },
         { correo: { contains: search, mode: 'insensitive' } },
+        ...(ciCondition ? [ciCondition] : []),
       ];
     }
 
-    if (ability) {
+    // En búsqueda global (includeParticipants=true) se omite el filtro CASL de tenant
+    // para poder encontrar usuarios de cualquier departamento.
+    if (ability && !includeParticipants) {
       const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'User');
       where = { AND: [caslWhere, where] };
     }
 
-    // Filtro senior: Excluir participantes y estudiantes de la lista general del dashboard
-    // para que solo se vean administradores, gestores, etc.
-    where = {
-      AND: [
-        where,
-        {
-          roles: {
-            none: {
-              role: {
-                name: {
-                  in: ['PARTICIPANTE', 'ESTUDIANTE'],
-                  mode: 'insensitive',
+    // Excluir participantes y estudiantes solo en listados generales del dashboard.
+    // Si includeParticipants=true, se incluyen todos los roles (búsqueda global).
+    if (!includeParticipants) {
+      where = {
+        AND: [
+          where,
+          {
+            roles: {
+              none: {
+                role: {
+                  name: { in: ['PARTICIPANTE', 'ESTUDIANTE'], mode: 'insensitive' },
                 },
               },
             },
           },
-        },
-      ],
-    };
+        ],
+      };
+    }
 
     const users = await this.prisma.user.findMany({
       where,

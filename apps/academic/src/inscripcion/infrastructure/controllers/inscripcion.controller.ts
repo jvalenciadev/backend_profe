@@ -41,8 +41,8 @@ export class InscripcionController {
   }
 
   @Get()
-  findAll(@Query() query: any) {
-    return this.getInscripcionsUseCase.execute(query);
+  findAll(@Query() query: any, @Req() req: any) {
+    return this.getInscripcionsUseCase.execute(query, req.user);
   }
 
   @Get(':id')

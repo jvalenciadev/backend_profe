@@ -10,7 +10,7 @@ export class GetInscripcionsUseCase {
     private readonly repository: IInscripcionRepository,
   ) {}
 
-  async execute(filter?: any): Promise<Inscripcion[]> {
-    return this.repository.findAll(filter);
+  async execute(filter?: any, user?: any): Promise<Inscripcion[]> {
+    return this.repository.findAll(filter, user);
   }
 }

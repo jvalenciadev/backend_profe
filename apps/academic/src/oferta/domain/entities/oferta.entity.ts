@@ -10,6 +10,7 @@ export class Oferta {
   estadoInscripcion: boolean;
   estado: string;
   sedeId?: string | null;
+  departamentoId?: string | null;
   programaId?: string | null;
   createdAt: Date;
   updatedAt: Date;
