@@ -7,7 +7,7 @@ export class CuestionarioAppService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly baseService: CuestionarioService
-  ) {}
+  ) { }
 
   async getInfo(cuestionarioId: string, userId: string) {
     const cue = await this.prisma.mod_cuestionario.findFirst({
@@ -68,13 +68,13 @@ export class CuestionarioAppService {
           { actividadId: cuestionarioId }
         ]
       },
-      include: { 
-        preguntas: { 
+      include: {
+        preguntas: {
           where: { estado: 'activo' },
           include: {
             opciones: true
           }
-        } 
+        }
       },
     });
 
@@ -132,13 +132,13 @@ export class CuestionarioAppService {
 
     // MAPEAR PREGUNTAS QUEMANDO EL "esCorrecta" PARA EVITAR HACKEOS DEL LADO CLIENTE
     const preguntasIdInIntento = intentoSeleccionado.respuestas.map(r => r.preguntaId);
-    
+
     const preguntasDisponibles = cue.preguntas
       .filter(p => preguntasIdInIntento.includes(p.id))
       .map(p => {
         // Find existing response text or option if the user reconnects and resumes
         const respuestaDada = intentoSeleccionado.respuestas.find(r => r.preguntaId === p.id);
-        
+
         return {
           id: p.id,
           texto: p.texto,
@@ -150,12 +150,20 @@ export class CuestionarioAppService {
             opcionId: respuestaDada.opcionId,
             textoLibre: respuestaDada.textoLibre
           } : null,
-          opciones: p.opciones.map(o => ({
-            id: o.id,
-            texto: o.texto,
-            orden: o.orden,
-            // SECURITY: No enviar esCorrecta al Flutter App para prevenir trampas
-          }))
+          opciones: (() => {
+            const mapped = p.opciones.map(o => ({
+              id: o.id,
+              texto: o.texto,
+              orden: o.orden,
+              // SECURITY: No enviar esCorrecta al Flutter App para prevenir trampas
+            }));
+            // Algoritmo Fisher-Yates para mezclar aleatoriamente las opciones
+            for (let i = mapped.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [mapped[i], mapped[j]] = [mapped[j], mapped[i]];
+            }
+            return mapped;
+          })()
         };
       });
 
@@ -206,7 +214,7 @@ export class CuestionarioAppService {
 
     // Usar la lógica de base que ya califica y guarda el intento
     const finalizado = await this.baseService.finalizarIntento(intentoId);
-    
+
     if (!finalizado) throw new NotFoundException('No se pudo finalizar el intento');
 
     // Devolvemos el resultado dependiente de las opciones (mostrarNota, retroInmediata)
@@ -218,7 +226,7 @@ export class CuestionarioAppService {
 
     if (intentoCheck.cuestionario.mostrarNota) {
       result.puntajeTotalObtenido = finalizado.puntajeTotal; // This could be mapped
-      
+
       const notaFinalInRegistro = await this.prisma.mod_nota_actividad.findUnique({
         where: {
           actividadId_userId: {
