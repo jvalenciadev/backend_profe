@@ -78,7 +78,7 @@ export class CuestionarioService {
     });
 
     for (const int of expirables) {
-      const extraTime = int.motivoBloqueo === 'persona_discapacidad' ? 30 : 0;
+      const extraTime = int.motivoBloqueo === 'persona_discapacidad' ? 15 : 0;
       const totalMin = cue.duracion + extraTime;
       const limite = new Date(int.iniciadoEn.getTime() + totalMin * 60000);
 
@@ -259,7 +259,7 @@ export class CuestionarioService {
 
     if (intentoEnProgreso) {
       // Calcular tiempo restante en SERVIDOR para reconexión
-      const extraTime = intentoEnProgreso.motivoBloqueo === 'persona_discapacidad' ? 1800 : 0;
+      const extraTime = intentoEnProgreso.motivoBloqueo === 'persona_discapacidad' ? 900 : 0;
       const tiempoRestanteSegundos = cue.duracion > 0
         ? Math.max(0, (cue.duracion * 60 + extraTime) - Math.floor((Date.now() - intentoEnProgreso.iniciadoEn.getTime()) / 1000))
         : null;
@@ -332,7 +332,7 @@ export class CuestionarioService {
     });
 
     // Calcular tiempo restante en el SERVIDOR para evitar manipulación por reloj del cliente
-    const extraTime = config.discapacidad ? 1800 : 0;
+    const extraTime = config.discapacidad ? 900 : 0;
     const tiempoRestanteSegundos = cue.duracion > 0
       ? Math.max(0, (cue.duracion * 60 + extraTime) - Math.floor((Date.now() - nuevoIntento.iniciadoEn.getTime()) / 1000))
       : null;
