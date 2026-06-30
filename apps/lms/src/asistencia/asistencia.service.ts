@@ -616,10 +616,12 @@ export class AsistenciaService {
       where: {
         AND: [
           { OR: [{ moduloId: id }, { moduloMaestroId: id }] },
-          { NOT: { actividad: { estado: 'eliminado' } } }
+          { NOT: { actividad: { estado: 'eliminado' } } },
+          // Si el estudiante tiene turno, ver sesiones de su turno o globales (turnoId: null)
+          ...(studentTurnoId
+            ? [{ OR: [{ turnoId: studentTurnoId }, { turnoId: null }] }]
+            : []),
         ],
-        // Ver solo sesiones de su turno o globales
-        turnoId: studentTurnoId || null,
       },
       include: {
         registros: {

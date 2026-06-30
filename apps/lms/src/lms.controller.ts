@@ -317,4 +317,34 @@ export class LmsController {
   async getVersionMobile() {
     return this.appConfigService.getVersionMobile();
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('modulo/:id/exportar')
+  async exportarModulo(
+    @Param('id') id: string,
+    @Query('turnoId') turnoId: string,
+    @Request() req: any,
+  ) {
+    return this.lmsService.exportarModulo(req.user.id, id, turnoId);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('modulo/:id/importar')
+  async importarModulo(
+    @Param('id') id: string,
+    @Query('turnoId') turnoId: string,
+    @Body() body: { data: any; ajustarFechas: boolean },
+    @Request() req: any,
+  ) {
+    if (!body || !body.data) {
+      throw new BadRequestException('Se requiere la estructura de datos para importar');
+    }
+    return this.lmsService.importarModulo(
+      req.user.id,
+      id,
+      turnoId,
+      body.data,
+      body.ajustarFechas,
+    );
+  }
 }

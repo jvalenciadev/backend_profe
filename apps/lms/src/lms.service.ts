@@ -71,10 +71,44 @@ export class LmsService {
 
     // Solo roles permitidos en el aula
     const roles = user.roles.map((ur) => ur.role.name);
-    const ALLOWED_ROLES = ['PARTICIPANTE', 'FACILITADOR', 'ADMIN'];
-    const canAccess = roles.some((r) =>
+    const ALLOWED_ROLES = ['PARTICIPANTE', 'FACILITADOR', 'ADMIN', 'SUPER_ADMIN', 'ADMINISTRADOR'];
+    let canAccess = roles.some((r) =>
       ALLOWED_ROLES.includes(r.toUpperCase()),
     );
+
+    // Fallback: si no tiene rol, verificar si tiene inscripción activa y auto-asignar rol PARTICIPANTE
+    if (!canAccess) {
+      const INSCRITO_ID = '89da2cd1-ac47-41fb-9f48-5850128d78db';
+      const CONFIRMADO_ID = 'adfbbf09-a486-4b79-8fe0-04cf85d83cae';
+      const inscripcionActiva = await this.prisma.programaInscripcion.findFirst({
+        where: {
+          personaId: user.id,
+          estadoInscripcionId: { in: [INSCRITO_ID, CONFIRMADO_ID] },
+        },
+      });
+      if (inscripcionActiva) {
+        // Auto-asignar el rol PARTICIPANTE (corrección retroactiva)
+        const rolePart = await this.prisma.role.findFirst({
+          where: { name: { contains: 'PARTICIPANTE', mode: 'insensitive' } },
+        });
+        if (rolePart) {
+          const already = await this.prisma.userRole.findFirst({
+            where: { userId: user.id, roleId: rolePart.id },
+          });
+          if (!already) {
+            await this.prisma.userRole.create({
+              data: {
+                userId: user.id,
+                roleId: rolePart.id,
+                modelType: 'App\\Models\\User',
+              },
+            });
+          }
+          roles.push(rolePart.name);
+        }
+        canAccess = true;
+      }
+    }
 
     if (!canAccess)
       throw new UnauthorizedException(
@@ -1404,7 +1438,11 @@ export class LmsService {
             },
           },
         },
-        categoria: true,
+        categoria: {
+          include: {
+            config: true,
+          },
+        },
       },
     });
     if (!actividad) throw new NotFoundException('Actividad no encontrada');
@@ -1601,6 +1639,17 @@ export class LmsService {
 
     // 2. Crear actividad y subtipo en transacción atómica (se resuelve muy rápido)
     const actividad = await this.prisma.$transaction(async (tx) => {
+      // Calculate max order for the unit among resources and activities
+      const maxRecurso = await tx.mod_recurso.aggregate({
+        where: { unidadId: data.unidadId, estado: { not: 'eliminado' } },
+        _max: { orden: true },
+      });
+      const maxActividad = await tx.mod_actividad.aggregate({
+        where: { unidadId: data.unidadId, estado: { not: 'eliminado' } },
+        _max: { orden: true },
+      });
+      const nextOrden = Math.max(maxRecurso._max.orden || 0, maxActividad._max.orden || 0) + 1;
+
       const act = await tx.mod_actividad.create({
         data: {
           unidadId: data.unidadId,
@@ -1612,6 +1661,7 @@ export class LmsService {
           fechaInicio: new Date(data.fechaInicio),
           fechaFin: new Date(data.fechaFin),
           categoriaId: data.categoriaId || null,
+          orden: data.orden !== undefined ? data.orden : nextOrden,
           estado: 'activo',
         },
       });
@@ -2315,6 +2365,17 @@ export class LmsService {
     });
     if (!unit) throw new NotFoundException('Unidad no encontrada');
 
+    // Calculate max order for the unit among resources and activities
+    const maxRecurso = await this.prisma.mod_recurso.aggregate({
+      where: { unidadId: data.unidadId, estado: { not: 'eliminado' } },
+      _max: { orden: true },
+    });
+    const maxActividad = await this.prisma.mod_actividad.aggregate({
+      where: { unidadId: data.unidadId, estado: { not: 'eliminado' } },
+      _max: { orden: true },
+    });
+    const nextOrden = Math.max(maxRecurso._max.orden || 0, maxActividad._max.orden || 0) + 1;
+
     return this.prisma.mod_recurso.create({
       data: {
         unidadId: data.unidadId,
@@ -2322,7 +2383,7 @@ export class LmsService {
         tipo: data.tipo,
         url: data.url,
         descripcion: data.descripcion,
-        orden: data.orden || 0,
+        orden: data.orden !== undefined ? data.orden : nextOrden,
         estado: 'activo',
       },
     });
@@ -2413,14 +2474,36 @@ export class LmsService {
 
     if (!act) throw new NotFoundException('Actividad no encontrada');
 
-    // Verificar si es facilitador
-    const isFacilitador = await this.prisma.programaDosFacilitador.findFirst({
+    // Verificar si es facilitador por asignación de módulo o módulo maestro
+    let isFacilitador = false;
+    const assignment = await this.prisma.programaDosFacilitador.findFirst({
       where: {
         facilitadorId: userId,
-        moduloId: act.unidad.moduloId || undefined,
+        OR: [
+          { moduloId: act.unidad.moduloId || undefined },
+          { moduloMaestroId: act.unidad.moduloMaestroId || undefined },
+        ],
         estado: 'activo',
       },
     });
+
+    if (assignment) {
+      isFacilitador = true;
+    } else {
+      // Fallback: Si el usuario tiene rol de Admin/Facilitador global
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: { roles: { include: { role: true } } },
+      });
+      const roles = user?.roles?.map((ur) => ur.role.name.toUpperCase()) || [];
+      if (
+        roles.some((r) =>
+          ['ADMIN', 'SUPER_ADMIN', 'ADMINISTRADOR', 'FACILITADOR', 'DOCENTE'].includes(r),
+        )
+      ) {
+        isFacilitador = true;
+      }
+    }
 
     if (act.tipo === 'TAREA' && act.tarea) {
       const whereClause: any = { tareaId: act.tarea.id };
@@ -2499,7 +2582,8 @@ export class LmsService {
     });
     if (!act) throw new NotFoundException('Actividad no encontrada');
 
-    const isFacReal = await this.prisma.programaDosFacilitador.findFirst({
+    let isFacReal = false;
+    const assignment = await this.prisma.programaDosFacilitador.findFirst({
       where: {
         facilitadorId: userId,
         OR: [
@@ -2509,6 +2593,23 @@ export class LmsService {
         estado: 'activo',
       },
     });
+
+    if (assignment) {
+      isFacReal = true;
+    } else {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        include: { roles: { include: { role: true } } },
+      });
+      const roles = user?.roles?.map((ur) => ur.role.name.toUpperCase()) || [];
+      if (
+        roles.some((r) =>
+          ['ADMIN', 'SUPER_ADMIN', 'ADMINISTRADOR', 'FACILITADOR', 'DOCENTE'].includes(r),
+        )
+      ) {
+        isFacReal = true;
+      }
+    }
     if (!isFacReal) throw new UnauthorizedException('No autorizado');
 
     // 2. Si es TAREA, actualizar mod_entrega
@@ -3261,5 +3362,361 @@ export class LmsService {
         estadoInscripcion: true,
       },
     });
+  }
+
+  async exportarModulo(userId: string, moduloId: string, turnoId?: string) {
+    const isFac = await this.prisma.programaDosFacilitador.findFirst({
+      where: {
+        facilitadorId: userId,
+        OR: [
+          { moduloId },
+          { moduloMaestroId: moduloId },
+        ],
+        estado: 'activo',
+      },
+    });
+
+    const isAdmin = await this.prisma.userRole.findFirst({
+      where: {
+        userId,
+        role: { name: { in: ['ADMIN', 'SUPER_ADMIN', 'ADMINISTRADOR'] } },
+      },
+    });
+
+    if (!isFac && !isAdmin) {
+      throw new ForbiddenException('No tienes permisos en este módulo');
+    }
+
+    const unidades = await this.prisma.mod_unidad_tematica.findMany({
+      where: {
+        OR: [
+          { moduloId },
+          { moduloMaestroId: moduloId },
+        ],
+        turnoId: turnoId || null,
+        estado: 'activo',
+      },
+      include: {
+        recursos: {
+          where: { estado: 'activo' },
+        },
+        actividades: {
+          where: { estado: 'activo' },
+          include: {
+            categoria: {
+              include: {
+                config: true,
+              },
+            },
+            foro: true,
+            tarea: true,
+            cuestionario: {
+              include: {
+                preguntas: {
+                  where: { estado: 'activo' },
+                  include: {
+                    opciones: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: { orden: 'asc' },
+    });
+
+    const exportData = unidades.map((u) => ({
+      titulo: u.titulo,
+      descripcion: u.descripcion,
+      semana: u.semana,
+      fechaInicio: u.fechaInicio,
+      fechaFin: u.fechaFin,
+      orden: u.orden,
+      recursos: u.recursos.map((r) => ({
+        titulo: r.titulo,
+        tipo: r.tipo,
+        url: r.url,
+        externo: r.externo,
+        descripcion: r.descripcion,
+        orden: r.orden,
+      })),
+      actividades: u.actividades.map((a) => ({
+        tipo: a.tipo,
+        titulo: a.titulo,
+        instrucciones: a.instrucciones,
+        puntajeMax: a.puntajeMax,
+        esCalificable: a.esCalificable,
+        fechaInicio: a.fechaInicio,
+        fechaFin: a.fechaFin,
+        orden: a.orden,
+        categoriaNombre: a.categoria?.config?.nombre || null,
+        foro: a.foro ? {
+          permitirFiles: a.foro.permitirFiles,
+          maxArchivos: a.foro.maxArchivos,
+        } : null,
+        tarea: a.tarea ? {
+          allowFiles: a.tarea.allowFiles,
+          allowText: a.tarea.allowText,
+          maxArchivos: a.tarea.maxArchivos,
+          tiposArch: a.tarea.tiposArch,
+        } : null,
+        cuestionario: a.cuestionario ? {
+          duracion: a.cuestionario.duracion,
+          maxIntentos: a.cuestionario.maxIntentos,
+          aleatorizar: a.cuestionario.aleatorizar,
+          randomCount: a.cuestionario.randomCount,
+          mostrarNota: a.cuestionario.mostrarNota,
+          retroInmediata: a.cuestionario.retroInmediata,
+          soloMobile: a.cuestionario.soloMobile,
+          bloquearCopia: a.cuestionario.bloquearCopia,
+          preguntas: a.cuestionario.preguntas.map((p) => ({
+            texto: p.texto,
+            tipo: p.tipo,
+            puntaje: p.puntaje,
+            imagen: p.imagen,
+            orden: p.orden,
+            opciones: p.opciones.map((o) => ({
+              texto: o.texto,
+              esCorrecta: o.esCorrecta,
+              orden: o.orden,
+            })),
+          })),
+        } : null,
+      })),
+    }));
+
+    return {
+      version: '1.0',
+      moduloId,
+      exportedAt: new Date().toISOString(),
+      unidades: exportData,
+    };
+  }
+
+  async importarModulo(
+    userId: string,
+    moduloId: string,
+    turnoId: string,
+    importData: any,
+    ajustarFechas: boolean,
+  ) {
+    const isFac = await this.prisma.programaDosFacilitador.findFirst({
+      where: {
+        facilitadorId: userId,
+        OR: [
+          { moduloId },
+          { moduloMaestroId: moduloId },
+        ],
+        estado: 'activo',
+      },
+    });
+
+    const isAdmin = await this.prisma.userRole.findFirst({
+      where: {
+        userId,
+        role: { name: { in: ['ADMIN', 'SUPER_ADMIN', 'ADMINISTRADOR'] } },
+      },
+    });
+
+    if (!isFac && !isAdmin) {
+      throw new ForbiddenException('No tienes permisos en este módulo');
+    }
+
+    if (!importData || !Array.isArray(importData.unidades)) {
+      throw new BadRequestException('El formato del archivo de importación es inválido');
+    }
+
+    const isModuloNormal = await this.prisma.programaModuloDos.findUnique({
+      where: { id: moduloId },
+    });
+    const targetModuloId = isModuloNormal ? moduloId : null;
+    const targetModuloMaestroId = isModuloNormal ? null : moduloId;
+
+    const categoriasDestino = await this.prisma.mod_categoria_calificacion.findMany({
+      where: {
+        OR: [
+          { moduloId },
+          { moduloMaestroId: moduloId },
+        ],
+        turnoId: turnoId || null,
+        estado: 'activo',
+      },
+      include: {
+        config: true,
+      },
+    });
+
+    const catMap = new Map<string, string>();
+    categoriasDestino.forEach((c) => {
+      catMap.set(c.config.nombre.toLowerCase().trim(), c.id);
+    });
+
+    let dateOffsetMs = 0;
+    if (ajustarFechas && importData.unidades.length > 0) {
+      let minOrigDate: Date | null = null;
+      importData.unidades.forEach((u: any) => {
+        if (u.fechaInicio) {
+          const d = new Date(u.fechaInicio);
+          if (!minOrigDate || d < minOrigDate) {
+            minOrigDate = d;
+          }
+        }
+      });
+
+      if (minOrigDate) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        dateOffsetMs = today.getTime() - (minOrigDate as Date).getTime();
+      }
+    }
+
+    const shiftDate = (dateStr: string | Date | undefined): Date => {
+      if (!dateStr) return new Date();
+      const origDate = new Date(dateStr);
+      if (dateOffsetMs === 0) return origDate;
+      return new Date(origDate.getTime() + dateOffsetMs);
+    };
+
+    await this.prisma.$transaction(async (tx) => {
+      for (const u of importData.unidades) {
+        const nuevaUnidad = await tx.mod_unidad_tematica.create({
+          data: {
+            moduloId: targetModuloId,
+            moduloMaestroId: targetModuloMaestroId,
+            turnoId: turnoId || null,
+            titulo: u.titulo,
+            descripcion: u.descripcion,
+            semana: u.semana,
+            fechaInicio: shiftDate(u.fechaInicio),
+            fechaFin: shiftDate(u.fechaFin),
+            orden: u.orden,
+            estado: 'activo',
+          },
+        });
+
+        if (Array.isArray(u.recursos)) {
+          for (const r of u.recursos) {
+            await tx.mod_recurso.create({
+              data: {
+                unidadId: nuevaUnidad.id,
+                titulo: r.titulo,
+                tipo: r.tipo,
+                url: r.url,
+                externo: r.externo ?? false,
+                descripcion: r.descripcion,
+                orden: r.orden,
+                estado: 'activo',
+              },
+            });
+          }
+        }
+
+        if (Array.isArray(u.actividades)) {
+          for (const a of u.actividades) {
+            let targetCategoriaId: string | null = null;
+            if (a.categoriaNombre) {
+              const key = a.categoriaNombre.toLowerCase().trim();
+              if (catMap.has(key)) {
+                targetCategoriaId = catMap.get(key) || null;
+              }
+            }
+
+            const nuevaActividad = await tx.mod_actividad.create({
+              data: {
+                unidadId: nuevaUnidad.id,
+                categoriaId: targetCategoriaId,
+                tipo: a.tipo,
+                titulo: a.titulo,
+                instrucciones: a.instrucciones,
+                puntajeMax: a.puntajeMax,
+                esCalificable: a.esCalificable,
+                fechaInicio: shiftDate(a.fechaInicio),
+                fechaFin: shiftDate(a.fechaFin),
+                orden: a.orden,
+                estado: 'activo',
+              },
+            });
+
+            if (a.tipo === 'FORO' && a.foro) {
+              await tx.mod_foro.create({
+                data: {
+                  actividadId: nuevaActividad.id,
+                  permitirFiles: a.foro.permitirFiles ?? true,
+                  maxArchivos: a.foro.maxArchivos || 3,
+                },
+              });
+            } else if (a.tipo === 'TAREA' && a.tarea) {
+              await tx.mod_tarea.create({
+                data: {
+                  actividadId: nuevaActividad.id,
+                  allowFiles: a.tarea.allowFiles ?? true,
+                  allowText: a.tarea.allowText ?? true,
+                  maxArchivos: a.tarea.maxArchivos || 1,
+                  tiposArch: a.tarea.tiposArch || 'pdf,doc,docx,jpg,png,zip,rar',
+                },
+              });
+            } else if ((a.tipo === 'CUESTIONARIO' || a.tipo === 'FORMULARIO') && a.cuestionario) {
+              const nuevoCuestionario = await tx.mod_cuestionario.create({
+                data: {
+                  actividadId: nuevaActividad.id,
+                  duracion: a.cuestionario.duracion || 60,
+                  maxIntentos: a.cuestionario.maxIntentos || 1,
+                  aleatorizar: a.cuestionario.aleatorizar ?? false,
+                  randomCount: a.cuestionario.randomCount,
+                  mostrarNota: a.cuestionario.mostrarNota ?? true,
+                  retroInmediata: a.cuestionario.retroInmediata ?? false,
+                  soloMobile: a.cuestionario.soloMobile ?? false,
+                  bloquearCopia: a.cuestionario.bloquearCopia ?? false,
+                },
+              });
+
+              if (Array.isArray(a.cuestionario.preguntas)) {
+                for (const p of a.cuestionario.preguntas) {
+                  const nuevaPregunta = await tx.mod_pregunta.create({
+                    data: {
+                      cuestionarioId: nuevoCuestionario.id,
+                      texto: p.texto,
+                      tipo: p.tipo,
+                      puntaje: p.puntaje ?? 1,
+                      imagen: p.imagen,
+                      orden: p.orden,
+                      estado: 'activo',
+                    },
+                  });
+
+                  if (Array.isArray(p.opciones)) {
+                    for (const o of p.opciones) {
+                      await tx.mod_opcion.create({
+                        data: {
+                          preguntaId: nuevaPregunta.id,
+                          texto: o.texto,
+                          esCorrecta: o.esCorrecta ?? false,
+                          orden: o.orden,
+                        },
+                      });
+                    }
+                  }
+                }
+              }
+            } else if (a.tipo === 'ASISTENCIA') {
+              const esPresencial = a.esPresencial ?? a.mod_asi_presencial ?? true;
+              await tx.mod_asistencia.create({
+                data: {
+                  actividadId: nuevaActividad.id,
+                  fecha: nuevaActividad.fechaInicio || new Date(),
+                  moduloId: targetModuloId,
+                  moduloMaestroId: targetModuloMaestroId,
+                  turnoId: turnoId || null,
+                  esPresencial,
+                },
+              });
+            }
+          }
+        }
+      }
+    });
+
+    return { success: true, message: 'La estructura académica ha sido importada exitosamente' };
   }
 }
