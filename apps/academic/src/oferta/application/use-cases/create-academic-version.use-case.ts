@@ -34,10 +34,11 @@ export class CreateAcademicVersionUseCase {
 
     const gestion = selectedVersion.gestion;
 
-    // Contar cuántas ofertas operativas activas del mismo programa ya existen en esta gestión
+    // Contar cuántas ofertas operativas activas del mismo programa ya existen en esta gestión para la misma Sede
     const existingOffersCount = await this.prisma.programaDos.count({
       where: {
         programaId: masterId,
+        sedeId: rest.sedeId,
         version: {
           gestion: gestion,
         },
