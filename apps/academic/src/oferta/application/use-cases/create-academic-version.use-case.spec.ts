@@ -13,6 +13,11 @@ describe('CreateAcademicVersionUseCase (Fase 1: Academia)', () => {
     },
     programaDos: {
       create: jest.fn(),
+      count: jest.fn(),
+    },
+    programaVersion: {
+      findUnique: jest.fn(),
+      findFirst: jest.fn(),
     },
   };
 
@@ -32,7 +37,7 @@ describe('CreateAcademicVersionUseCase (Fase 1: Academia)', () => {
     mockPrismaService.programa.findUnique.mockResolvedValue(null);
 
     await expect(
-      useCase.execute('invalid_id', {}, { id: 'user_1' })
+      useCase.execute('invalid_id', { versionId: 'ver_1' }, { id: 'user_1' })
     ).rejects.toThrow(NotFoundException);
   });
 
@@ -50,10 +55,15 @@ describe('CreateAcademicVersionUseCase (Fase 1: Academia)', () => {
     const versionData = {
       nombre: 'DIA - Versión 2024',
       fechaIniClase: '2024-05-01',
+      versionId: 'ver_ref_1',
+      sedeId: 'sede_ref_1',
       turnos: [{ turnoId: 't1', cupo: 30 }],
     };
 
     mockPrismaService.programa.findUnique.mockResolvedValue(mockMaster);
+    mockPrismaService.programaVersion.findUnique.mockResolvedValue({ id: 'ver_ref_1', gestion: '2024' });
+    mockPrismaService.programaDos.count.mockResolvedValue(0);
+    mockPrismaService.programaVersion.findFirst.mockResolvedValue({ id: 'ver_calc_1', numero: 1, nombre: 'Versión 1', gestion: '2024' });
     mockPrismaService.programaDos.create.mockResolvedValue({ id: 'v1', ...versionData });
 
     const result = await useCase.execute('master_1', versionData, { id: 'admin' });
