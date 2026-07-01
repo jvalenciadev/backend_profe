@@ -554,17 +554,20 @@ export class AsistenciaService {
 
       for (const r of data.registros) {
         let notaValue = 0;
-        let observacion =
-          r.estado === 'P'
-            ? 'Asistencia registrada'
-            : `Inasistencia: ${r.estado}`;
+        let observacion = '';
 
-        if (r.estado === 'P' || r.estado === 'L') {
+        if (r.estado === 'P') {
           notaValue = puntajeMax;
-          if (r.estado === 'L') observacion = 'Licencia validada (Con Nota)';
+          observacion = 'Presente (100% de la nota)';
         } else if (r.estado === 'T') {
-          notaValue = puntajeMax / 2;
-          observacion = 'Atraso (50% de la nota)';
+          notaValue = Math.round(puntajeMax * 0.8 * 100) / 100;
+          observacion = 'Atraso (80% de la nota)';
+        } else if (r.estado === 'L') {
+          notaValue = Math.round(puntajeMax * 0.5 * 100) / 100;
+          observacion = 'Licencia (50% de la nota)';
+        } else {
+          notaValue = 0;
+          observacion = 'Falta (0% de la nota)';
         }
 
         // Upsert en mod_nota_actividad
