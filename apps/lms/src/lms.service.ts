@@ -1388,6 +1388,12 @@ export class LmsService {
       }
     }
 
+    if (modulo && modulo.mod_unidades && turnoId) {
+      modulo.mod_unidades = modulo.mod_unidades.filter(
+        (u) => !u.turnoId || u.turnoId === turnoId,
+      );
+    }
+
     // Traer participantes ACTIVOS filtrados por el turno elegido
     const participantes = await this.prisma.programaInscripcion.findMany({
       where: {
