@@ -2710,22 +2710,28 @@ export class LmsService {
       }
     >();
     for (const cat of categoriasModulo) {
-      catMap.set(cat.id, {
-        nombre: cat.config?.nombre ?? 'General',
-        peso: cat.config?.peso ?? 0,
-        orden: cat.config?.orden ?? 99,
-        esEvalFinal: cat.config?.esEvalFinal ?? false,
-        actividades: [],
-      });
+      const key = cat.configId || cat.id;
+      if (!catMap.has(key)) {
+        catMap.set(key, {
+          nombre: cat.config?.nombre ?? 'General',
+          peso: cat.config?.peso ?? 0,
+          orden: cat.config?.orden ?? 99,
+          esEvalFinal: cat.config?.esEvalFinal ?? false,
+          actividades: [],
+        });
+      }
     }
 
     for (const act of actividades) {
       const catId = act.categoriaId;
       if (!catId) continue;
 
-      const config = (act.categoria as any)?.config;
-      if (!catMap.has(catId)) {
-        catMap.set(catId, {
+      const configId = (act.categoria as any)?.configId;
+      const key = configId || catId;
+
+      if (!catMap.has(key)) {
+        const config = (act.categoria as any)?.config;
+        catMap.set(key, {
           nombre: config?.nombre ?? 'General',
           peso: config?.peso ?? 0,
           orden: config?.orden ?? 99,
@@ -2734,7 +2740,7 @@ export class LmsService {
         });
       }
       const nota = notaMap.get(act.id);
-      catMap.get(catId)!.actividades.push({
+      catMap.get(key)!.actividades.push({
         id: act.id,
         titulo: act.titulo,
         tipo: act.tipo,
