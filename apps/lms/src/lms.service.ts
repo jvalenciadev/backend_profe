@@ -574,14 +574,51 @@ export class LmsService {
 
     if (categorias.length === 0) return { total: 0, breakdown: [] };
 
+    const catMap = new Map<
+      string,
+      {
+        id: string;
+        nombre: string;
+        peso: number;
+        orden: number;
+        actividades: any[];
+      }
+    >();
+
+    for (const cat of categorias) {
+      const key = cat.configId || cat.id;
+      if (!catMap.has(key)) {
+        catMap.set(key, {
+          id: cat.id,
+          nombre: cat.config?.nombre ?? 'General',
+          peso: cat.config?.peso ?? 0,
+          orden: cat.config?.orden ?? 99,
+          actividades: [],
+        });
+      }
+      if (cat.actividades) {
+        for (const act of cat.actividades) {
+          const exists = catMap
+            .get(key)!
+            .actividades.some((a) => a.id === act.id);
+          if (!exists) {
+            catMap.get(key)!.actividades.push(act);
+          }
+        }
+      }
+    }
+
     let totalPonderado = 0;
-    const breakdown = categorias.map((cat) => {
+    const sortedCats = [...catMap.values()].sort((a, b) => a.orden - b.orden);
+
+    const breakdown = sortedCats.map((cat) => {
       const activities = cat.actividades || [];
-      const pesoCat = cat.config?.peso || 0;
+      const pesoCat = cat.peso;
 
       if (activities.length === 0) {
         return {
-          nombre: cat.config?.nombre,
+          id: cat.id,
+          nombre: cat.nombre,
           peso: pesoCat,
           promedio: 0,
           aporte: 0,
@@ -592,7 +629,6 @@ export class LmsService {
       const sumaNormalizada = activities.reduce((sum, act) => {
         const nota = act.notas?.[0]?.nota || 0;
         const max = act.puntajeMax || 100;
-        // Normalizar nota a 100 pts para promediar parejo
         const notaNormalizada = (nota / max) * 100;
         return sum + notaNormalizada;
       }, 0);
@@ -603,7 +639,7 @@ export class LmsService {
 
       return {
         id: cat.id,
-        nombre: cat.config?.nombre,
+        nombre: cat.nombre,
         peso: pesoCat,
         promedio: Math.round(promedio * 100) / 100,
         aporte: Math.round(aporte * 100) / 100,
