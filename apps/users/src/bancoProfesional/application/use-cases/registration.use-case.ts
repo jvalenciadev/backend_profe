@@ -23,7 +23,7 @@ export class RegistrationUseCase {
 
   async execute(data: any): Promise<any> {
     // 1. Validation of code
-    const isVerified = this.verificationUseCase.verifyCode(
+    const isVerified = await this.verificationUseCase.verifyCode(
       data.correo,
       data.verificationCode,
     );

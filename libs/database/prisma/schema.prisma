@@ -110,6 +110,17 @@ model AuditLog {
   @@map("audit_logs")
 }
 
+model verificacion_codigo {
+  id        Int      @id @default(autoincrement())
+  correo    String
+  codigo    String
+  expires   DateTime
+  createdAt DateTime @default(now())
+
+  @@index([correo])
+  @@map("verificacion_codigos")
+}
+
 model Blog {
   id          String        @id @default(uuid()) @map("blog_id") @db.Uuid
   titulo      String        @map("blog_titulo")
