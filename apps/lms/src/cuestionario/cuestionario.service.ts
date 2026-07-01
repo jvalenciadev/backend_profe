@@ -486,7 +486,7 @@ export class CuestionarioService {
       notaMapeada = (notaObtenida * actividad.puntajeMax) / maxPosibleIntento;
     }
 
-    return this.prisma.mod_intento.update({
+    const finalizado = await this.prisma.mod_intento.update({
       where: { id: intento.id },
       data: {
         estado: 'finalizado',
@@ -495,6 +495,44 @@ export class CuestionarioService {
       },
       include: { respuestas: { orderBy: { id: 'asc' } } },
     });
+
+    // Sincronizar la mejor nota del cuestionario con mod_nota_actividad
+    try {
+      const intentosUsuario = await this.prisma.mod_intento.findMany({
+        where: {
+          cuestionarioId: intento.cuestionarioId,
+          userId: intento.userId,
+          estado: 'finalizado',
+        },
+        select: { puntajeTotal: true },
+      });
+
+      const mejorNota = Math.max(
+        notaMapeada,
+        ...intentosUsuario.map((i) => i.puntajeTotal || 0),
+      );
+
+      await this.prisma.mod_nota_actividad.upsert({
+        where: {
+          actividadId_userId: {
+            actividadId: intento.cuestionario.actividadId,
+            userId: intento.userId,
+          },
+        },
+        update: {
+          nota: mejorNota,
+        },
+        create: {
+          actividadId: intento.cuestionario.actividadId,
+          userId: intento.userId,
+          nota: mejorNota,
+        },
+      });
+    } catch (error) {
+      console.error('Error al sincronizar nota en mod_nota_actividad:', error);
+    }
+
+    return finalizado;
   }
 
   // ─── FACILITADOR: RESET DE INTENTOS ─────────────────────────
