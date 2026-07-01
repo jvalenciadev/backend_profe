@@ -796,12 +796,14 @@ export class LmsService {
                 where: {
                   unidad: { moduloMaestroId: gm.id, estado: 'activo' },
                   estado: 'activo',
+                  tipo: { not: 'ASISTENCIA' },
                 },
               });
               const compMod = await this.prisma.mod_actividad.count({
                 where: {
                   unidad: { moduloMaestroId: gm.id, estado: 'activo' },
                   estado: 'activo',
+                  tipo: { not: 'ASISTENCIA' },
                   OR: [
                     { tarea: { entregas: { some: { userId } } } },
                     { foro: { posts: { some: { userId } } } },
@@ -892,12 +894,13 @@ export class LmsService {
               });
 
             const totalMod = await this.prisma.mod_actividad.count({
-              where: { unidad: { moduloId: m.id }, estado: 'activo' },
+              where: { unidad: { moduloId: m.id }, estado: 'activo', tipo: { not: 'ASISTENCIA' } },
             });
             const compMod = await this.prisma.mod_actividad.count({
               where: {
                 unidad: { moduloId: m.id },
                 estado: 'activo',
+                tipo: { not: 'ASISTENCIA' },
                 OR: [
                   { tarea: { entregas: { some: { userId } } } },
                   { foro: { posts: { some: { userId } } } },
@@ -947,12 +950,13 @@ export class LmsService {
             .sort((a: any, b: any) => (a.orden || 0) - (b.orden || 0));
           for (const m of regularMasters) {
             const totalMod = await this.prisma.mod_actividad.count({
-              where: { unidad: { moduloId: m.id }, estado: 'activo' },
+              where: { unidad: { moduloId: m.id }, estado: 'activo', tipo: { not: 'ASISTENCIA' } },
             });
             const compMod = await this.prisma.mod_actividad.count({
               where: {
                 unidad: { moduloId: m.id },
                 estado: 'activo',
+                tipo: { not: 'ASISTENCIA' },
                 OR: [
                   { tarea: { entregas: { some: { userId } } } },
                   { foro: { posts: { some: { userId } } } },
