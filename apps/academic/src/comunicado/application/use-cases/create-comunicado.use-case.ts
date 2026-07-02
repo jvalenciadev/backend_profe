@@ -71,7 +71,7 @@ export class CreateComunicadoUseCase {
               // Extraer solo emails únicos
               const emails = Array.from(
                 new Set(users.map((u) => u.correo).filter(Boolean)),
-              ) as string[];
+              );
 
               if (emails.length > 0) {
                 console.log(

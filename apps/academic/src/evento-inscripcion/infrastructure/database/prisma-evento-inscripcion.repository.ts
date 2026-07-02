@@ -17,8 +17,8 @@ export class PrismaEventoInscripcionRepository implements IEventoInscripcionRepo
    */
   async findAll(filter: any = {}, ability?: any): Promise<any> {
     const { tenantId, search, page, limit, exportAll, ...rest } = filter;
-    const take = exportAll ? undefined : (Number(limit) || 100);
-    const skip = exportAll ? undefined : ((Number(page) - 1 || 0) * take!);
+    const take = exportAll ? undefined : Number(limit) || 100;
+    const skip = exportAll ? undefined : (Number(page) - 1 || 0) * take!;
 
     let where: any = { ...rest };
     where.estado = { not: 'eliminado' };
@@ -39,16 +39,22 @@ export class PrismaEventoInscripcionRepository implements IEventoInscripcionRepo
     }
 
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'EventoInscripcion');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'read',
+        'EventoInscripcion',
+      );
       where = { AND: [where, caslWhere] };
     }
 
     const include = {
       persona: {
         include: {
-          eventoCuestionarioIntentos: exportAll ? true : {
-            select: { id: true, cuestionarioId: true, estado: true },
-          },
+          eventoCuestionarioIntentos: exportAll
+            ? true
+            : {
+                select: { id: true, cuestionarioId: true, estado: true },
+              },
         },
       },
       respuestasExtras: {
@@ -97,7 +103,8 @@ export class PrismaEventoInscripcionRepository implements IEventoInscripcionRepo
       total,
       conAsistencia,
       sinAsistencia: total - conAsistencia,
-      porcentajeAsistencia: total > 0 ? Math.round((conAsistencia / total) * 100) : 0,
+      porcentajeAsistencia:
+        total > 0 ? Math.round((conAsistencia / total) * 100) : 0,
       porCampoExtra,
     };
   }
@@ -105,7 +112,11 @@ export class PrismaEventoInscripcionRepository implements IEventoInscripcionRepo
   async findById(id: string, ability?: any): Promise<any | null> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'EventoInscripcion');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'read',
+        'EventoInscripcion',
+      );
       where = { AND: [where, caslWhere] };
     }
     return await (this.prisma as any).eventoInscripcion.findFirst({
@@ -114,7 +125,11 @@ export class PrismaEventoInscripcionRepository implements IEventoInscripcionRepo
     });
   }
 
-  async create(data: any, userId?: string, forcedTenantId?: string): Promise<any> {
+  async create(
+    data: any,
+    userId?: string,
+    forcedTenantId?: string,
+  ): Promise<any> {
     const { respuestasExtras, ...cleanData } = data;
     return await (this.prisma as any).eventoInscripcion.create({
       data: {
@@ -136,14 +151,28 @@ export class PrismaEventoInscripcionRepository implements IEventoInscripcionRepo
     });
   }
 
-  async update(id: string, data: any, userId?: string, ability?: any): Promise<any> {
+  async update(
+    id: string,
+    data: any,
+    userId?: string,
+    ability?: any,
+  ): Promise<any> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'update', 'EventoInscripcion');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'update',
+        'EventoInscripcion',
+      );
       where = { AND: [where, caslWhere] };
     }
-    const exists = await (this.prisma as any).eventoInscripcion.findFirst({ where });
-    if (!exists) throw new Error('No tiene permisos para editar este registro o no existe');
+    const exists = await (this.prisma as any).eventoInscripcion.findFirst({
+      where,
+    });
+    if (!exists)
+      throw new Error(
+        'No tiene permisos para editar este registro o no existe',
+      );
 
     return await (this.prisma as any).eventoInscripcion.update({
       where: { id },
@@ -154,11 +183,20 @@ export class PrismaEventoInscripcionRepository implements IEventoInscripcionRepo
   async delete(id: string, userId?: string, ability?: any): Promise<void> {
     let where: any = { id };
     if (ability) {
-      const caslWhere = this.caslPrisma.getWhere(ability, 'delete', 'EventoInscripcion');
+      const caslWhere = this.caslPrisma.getWhere(
+        ability,
+        'delete',
+        'EventoInscripcion',
+      );
       where = { AND: [where, caslWhere] };
     }
-    const exists = await (this.prisma as any).eventoInscripcion.findFirst({ where });
-    if (!exists) throw new Error('No tiene permisos para eliminar este registro o no existe');
+    const exists = await (this.prisma as any).eventoInscripcion.findFirst({
+      where,
+    });
+    if (!exists)
+      throw new Error(
+        'No tiene permisos para eliminar este registro o no existe',
+      );
 
     await (this.prisma as any).eventoInscripcion.update({
       where: { id },

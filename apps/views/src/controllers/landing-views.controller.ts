@@ -35,7 +35,7 @@ export class LandingViewsController {
     private prisma: PrismaService,
     private mailService: MailService,
     private readonly uploadConfig: UploadConfigService,
-  ) { }
+  ) {}
 
   // ─── LANDING DATA ────────────────────────────────────────────────────────────
   @Get('landing-page')
@@ -60,10 +60,16 @@ export class LandingViewsController {
     ] = await Promise.all([
       this.prisma.profe.findFirst({ where: { estado: Estado.activo } }),
       this.prisma.evento.findMany({
-        where: { estado: { in: [Estado.activo, Estado.finalizado, Estado.vista] }, ...(tenantId ? { tenantId } : {}) },
+        where: {
+          estado: { in: [Estado.activo, Estado.finalizado, Estado.vista] },
+          ...(tenantId ? { tenantId } : {}),
+        },
         take: 12,
         orderBy: { fecha: 'desc' },
-        include: { tipo: true, cuestionarios: { where: { estado: Estado.activo } } },
+        include: {
+          tipo: true,
+          cuestionarios: { where: { estado: Estado.activo } },
+        },
       }),
       this.prisma.programaDos.findMany({
         where: {
@@ -86,13 +92,15 @@ export class LandingViewsController {
                   inscripciones: {
                     where: {
                       estadoInscripcion: {
-                        nombre: { in: ['PREINSCRITO', 'INSCRITO', 'INSCRITOS'] }
-                      }
-                    }
-                  }
-                }
-              }
-            }
+                        nombre: {
+                          in: ['PREINSCRITO', 'INSCRITO', 'INSCRITOS'],
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
       }),
@@ -168,12 +176,12 @@ export class LandingViewsController {
               inscripciones: {
                 where: {
                   estadoInscripcion: {
-                    nombre: { in: ['PREINSCRITO', 'INSCRITO', 'INSCRITOS'] }
-                  }
-                }
-              }
-            }
-          }
+                    nombre: { in: ['PREINSCRITO', 'INSCRITO', 'INSCRITOS'] },
+                  },
+                },
+              },
+            },
+          },
         },
       },
       modulos: {
@@ -326,10 +334,11 @@ export class LandingViewsController {
         fechaNacimiento: persona.fechaNacimiento,
         celular: persona.celular?.toString(),
         correo: persona.correo || user.correo,
-        mod_campos_extra_regs: await this.prisma.mod_campo_extra_respuesta.findMany({
-          where: { userId: user.id },
-          include: { campoExtra: true }
-        }),
+        mod_campos_extra_regs:
+          await this.prisma.mod_campo_extra_respuesta.findMany({
+            where: { userId: user.id },
+            include: { campoExtra: true },
+          }),
         alreadyEnrolled: programaId
           ? await this.checkEnrollment(user.id, programaId)
           : null,
@@ -382,10 +391,11 @@ export class LandingViewsController {
           celular: adminUser.celular,
           correo: adminUser.correo,
           complemento: adminUser.complemento,
-          mod_campos_extra_regs: await this.prisma.mod_campo_extra_respuesta.findMany({
-            where: { userId: adminUser.id },
-            include: { campoExtra: true }
-          }),
+          mod_campos_extra_regs:
+            await this.prisma.mod_campo_extra_respuesta.findMany({
+              where: { userId: adminUser.id },
+              include: { campoExtra: true },
+            }),
           alreadyEnrolled: programaId
             ? await this.checkEnrollment(adminUser.id, programaId)
             : null,
@@ -571,8 +581,13 @@ export class LandingViewsController {
     }
 
     // Persistir campos extra si se enviaron
-    if (mod_campos_extra_regs && Object.keys(mod_campos_extra_regs).length > 0) {
-      for (const [campoExtraId, valor] of Object.entries(mod_campos_extra_regs)) {
+    if (
+      mod_campos_extra_regs &&
+      Object.keys(mod_campos_extra_regs).length > 0
+    ) {
+      for (const [campoExtraId, valor] of Object.entries(
+        mod_campos_extra_regs,
+      )) {
         await this.prisma.mod_campo_extra_respuesta.upsert({
           where: {
             campoExtraId_userId: {
@@ -670,8 +685,8 @@ export class LandingViewsController {
     });
     const alreadyHasRole = rolePart
       ? await this.prisma.userRole.findFirst({
-        where: { userId: user.id, roleId: rolePart.id },
-      })
+          where: { userId: user.id, roleId: rolePart.id },
+        })
       : null;
     if (rolePart && !alreadyHasRole) {
       await this.prisma.userRole.create({

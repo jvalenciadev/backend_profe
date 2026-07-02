@@ -13,7 +13,6 @@ jest.mock('bcryptjs', () => ({
 }));
 
 describe('LandingViewsController (Fase: Vistas Públicas - Blindaje Masivo)', () => {
-
   let controller: LandingViewsController;
   let prisma: PrismaService;
 
@@ -28,7 +27,12 @@ describe('LandingViewsController (Fase: Vistas Públicas - Blindaje Masivo)', ()
     sede: { findMany: jest.fn() },
     cargo: { findMany: jest.fn() },
     mapPersona: { findFirst: jest.fn() },
-    user: { findFirst: jest.fn(), findUnique: jest.fn(), create: jest.fn(), update: jest.fn() },
+    user: {
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
     programaInscripcion: { findFirst: jest.fn(), create: jest.fn() },
     programa_inscripcion_estado: { findFirst: jest.fn() },
     userRole: { findFirst: jest.fn(), create: jest.fn() },
@@ -88,7 +92,9 @@ describe('LandingViewsController (Fase: Vistas Públicas - Blindaje Masivo)', ()
   describe('getProgramaById', () => {
     it('debería lanzar BadRequestException si el programa no existe', async () => {
       mockPrisma.programaDos.findUnique.mockResolvedValue(null);
-      await expect(controller.getProgramaById('invalid')).rejects.toThrow(BadRequestException);
+      await expect(controller.getProgramaById('invalid')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('debería retornar el detalle del programa y sus sedes hermanas', async () => {
@@ -114,7 +120,7 @@ describe('LandingViewsController (Fase: Vistas Públicas - Blindaje Masivo)', ()
         id: 'per1',
         nombre1: 'JUAN',
         apellido1: 'PEREZ',
-        genero: { nombre: 'MASCULINO' }
+        genero: { nombre: 'MASCULINO' },
       });
       const result = await controller.checkPersona('1234567');
       expect(result!.nombre).toBe('JUAN');
@@ -124,10 +130,15 @@ describe('LandingViewsController (Fase: Vistas Públicas - Blindaje Masivo)', ()
   describe('registerInscripcion (Flujo Crítico)', () => {
     it('debería inscribir a un usuario existente en un programa', async () => {
       const body = { userId: 'u1', programaId: 'p1', sedeId: 's1' };
-      mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1', correo: 'test@test.com' });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'u1',
+        correo: 'test@test.com',
+      });
       mockPrisma.programaDos.findUnique.mockResolvedValue({ id: 'p1' });
       mockPrisma.programaInscripcion.findFirst.mockResolvedValue(null); // No inscrito aún
-      mockPrisma.programa_inscripcion_estado.findFirst.mockResolvedValue({ id: 'est1' });
+      mockPrisma.programa_inscripcion_estado.findFirst.mockResolvedValue({
+        id: 'est1',
+      });
       mockPrisma.programaInscripcion.create.mockResolvedValue({ id: 'ins1' });
 
       const result = await controller.registerInscripcion(body);
@@ -141,15 +152,26 @@ describe('LandingViewsController (Fase: Vistas Públicas - Blindaje Masivo)', ()
     const validDate = '1990-01-01';
 
     it('debe lanzar BadRequestException si faltan datos', async () => {
-      await expect(controller.checkPersonaByDate('123', ''))
-        .rejects.toThrow(BadRequestException);
+      await expect(controller.checkPersonaByDate('123', '')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('debe encontrar persona en map_persona y crear usuario si no existe', async () => {
-      const mockPer = { id: 'p1', ci: '12345', nombre1: 'JAIME', apellido1: 'V', fechaNacimiento: new Date(validDate) };
+      const mockPer = {
+        id: 'p1',
+        ci: '12345',
+        nombre1: 'JAIME',
+        apellido1: 'V',
+        fechaNacimiento: new Date(validDate),
+      };
       mockPrisma.mapPersona.findFirst.mockResolvedValue(mockPer);
       mockPrisma.user.findFirst.mockResolvedValue(null); // No tiene usuario
-      mockPrisma.user.create.mockResolvedValue({ id: 'u-new', nombre: 'JAIME', correo: 'j@test.com' });
+      mockPrisma.user.create.mockResolvedValue({
+        id: 'u-new',
+        nombre: 'JAIME',
+        correo: 'j@test.com',
+      });
 
       const result = await controller.checkPersonaByDate('12345', validDate);
 
@@ -159,7 +181,11 @@ describe('LandingViewsController (Fase: Vistas Públicas - Blindaje Masivo)', ()
     });
 
     it('debe retornar found=false si la fecha de nacimiento no coincide', async () => {
-      const mockPer = { id: 'p1', ci: '123', fechaNacimiento: new Date('1980-01-01') };
+      const mockPer = {
+        id: 'p1',
+        ci: '123',
+        fechaNacimiento: new Date('1980-01-01'),
+      };
       mockPrisma.mapPersona.findFirst.mockResolvedValue(mockPer);
       mockPrisma.user.findFirst.mockResolvedValue(null);
 
@@ -172,14 +198,26 @@ describe('LandingViewsController (Fase: Vistas Públicas - Blindaje Masivo)', ()
     it('debe crear un usuario nuevo si no se provee userId', async () => {
       const body = {
         programaId: 'prog-1',
-        datosPersona: { nombre: 'LUIS', apellidos: 'PAZ', ci: '999', fechaNacimiento: '1995-05-05' }
+        datosPersona: {
+          nombre: 'LUIS',
+          apellidos: 'PAZ',
+          ci: '999',
+          fechaNacimiento: '1995-05-05',
+        },
       };
       mockPrisma.user.findFirst.mockResolvedValue(null);
-      mockPrisma.user.create.mockResolvedValue({ id: 'u-auto', nombre: 'LUIS' });
+      mockPrisma.user.create.mockResolvedValue({
+        id: 'u-auto',
+        nombre: 'LUIS',
+      });
       mockPrisma.programaDos.findUnique.mockResolvedValue({ id: 'prog-1' });
       mockPrisma.programaInscripcion.findFirst.mockResolvedValue(null);
-      mockPrisma.programa_inscripcion_estado.findFirst.mockResolvedValue({ id: 'e1' });
-      mockPrisma.programaInscripcion.create.mockResolvedValue({ id: 'ins-new' });
+      mockPrisma.programa_inscripcion_estado.findFirst.mockResolvedValue({
+        id: 'e1',
+      });
+      mockPrisma.programaInscripcion.create.mockResolvedValue({
+        id: 'ins-new',
+      });
 
       await controller.registerInscripcion(body);
       expect(mockPrisma.user.create).toHaveBeenCalled();
@@ -188,24 +226,41 @@ describe('LandingViewsController (Fase: Vistas Públicas - Blindaje Masivo)', ()
     it('debe bloquear inscripción si ya está en otra sede de la MISMA versión', async () => {
       const body = { userId: 'u1', programaId: 'prog-hijo-2' };
       mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1' });
-      mockPrisma.programaDos.findUnique.mockResolvedValue({ id: 'prog-hijo-2', programaId: 'master-x', versionId: 'v1' });
-      mockPrisma.programaDos.findMany.mockResolvedValue([{ id: 'prog-hijo-1' }, { id: 'prog-hijo-2' }]);
-      mockPrisma.programaInscripcion.findFirst.mockResolvedValue({ id: 'ins-exist' });
+      mockPrisma.programaDos.findUnique.mockResolvedValue({
+        id: 'prog-hijo-2',
+        programaId: 'master-x',
+        versionId: 'v1',
+      });
+      mockPrisma.programaDos.findMany.mockResolvedValue([
+        { id: 'prog-hijo-1' },
+        { id: 'prog-hijo-2' },
+      ]);
+      mockPrisma.programaInscripcion.findFirst.mockResolvedValue({
+        id: 'ins-exist',
+      });
 
-      await expect(controller.registerInscripcion(body))
-        .rejects.toThrow(BadRequestException);
+      await expect(controller.registerInscripcion(body)).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('debe registrar baucher si se adjunta en el body', async () => {
       const body = {
         userId: 'u1',
         programaId: 'p1',
-        baucher: { imagen: 'b.jpg', nroDeposito: '123', monto: '100', fecha: '2025-01-01' }
+        baucher: {
+          imagen: 'b.jpg',
+          nroDeposito: '123',
+          monto: '100',
+          fecha: '2025-01-01',
+        },
       };
       mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1' });
       mockPrisma.programaDos.findUnique.mockResolvedValue({ id: 'p1' });
       mockPrisma.programaInscripcion.findFirst.mockResolvedValue(null);
-      mockPrisma.programa_inscripcion_estado.findFirst.mockResolvedValue({ id: 'e1' });
+      mockPrisma.programa_inscripcion_estado.findFirst.mockResolvedValue({
+        id: 'e1',
+      });
       mockPrisma.programaInscripcion.create.mockResolvedValue({ id: 'ins-1' });
       mockPrisma.programaBaucher.create.mockResolvedValue({});
 
@@ -221,23 +276,41 @@ describe('LandingViewsController (Fase: Vistas Públicas - Blindaje Masivo)', ()
     it('sendVerificationCode: debe generar un código y guardarlo en el mapa interno', async () => {
       mockPrisma.user.findFirst.mockResolvedValue(null);
       mockMailService.sendVerificationCodeEmail.mockResolvedValue(true);
-      const result = await controller.sendVerificationCode({ correo: email, nombre: 'Test' });
+      const result = await controller.sendVerificationCode({
+        correo: email,
+        nombre: 'Test',
+      });
       expect(result.success).toBe(true);
       expect(mockMailService.sendVerificationCodeEmail).toHaveBeenCalled();
     });
 
     it('verifyCode: debe fallar si el código es incorrecto', async () => {
-      (controller as any).verificationCodes.set(email, { code: '000', expires: Date.now() + 10000 });
-      await expect(controller.verifyCode({ correo: email, code: '999' }))
-        .rejects.toThrow(BadRequestException);
+      (controller as any).verificationCodes.set(email, {
+        code: '000',
+        expires: Date.now() + 10000,
+      });
+      await expect(
+        controller.verifyCode({ correo: email, code: '999' }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('resetPasswordWithCode: debe actualizar password si el código es válido', async () => {
-      (controller as any).verificationCodes.set(email, { code: '111', expires: Date.now() + 10000 });
-      mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1', correo: email, estado: 'activo' });
+      (controller as any).verificationCodes.set(email, {
+        code: '111',
+        expires: Date.now() + 10000,
+      });
+      mockPrisma.user.findUnique.mockResolvedValue({
+        id: 'u1',
+        correo: email,
+        estado: 'activo',
+      });
       mockPrisma.user.update = jest.fn().mockResolvedValue({});
 
-      const result = await controller.resetPasswordWithCode({ correo: email, code: '111', password: 'new-password' });
+      const result = await controller.resetPasswordWithCode({
+        correo: email,
+        code: '111',
+        password: 'new-password',
+      });
       expect(result.success).toBe(true);
       expect(mockPrisma.user.update).toHaveBeenCalled();
     });

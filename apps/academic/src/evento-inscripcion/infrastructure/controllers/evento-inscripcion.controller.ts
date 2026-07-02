@@ -66,10 +66,7 @@ export class EventoInscripcionController {
    */
   @Get('export/:eventoId')
   @CheckPolicies((ability: any) => ability.can('read', 'EventoInscripcion'))
-  async exportAll(
-    @Param('eventoId') eventoId: string,
-    @Req() req: any,
-  ) {
+  async exportAll(@Param('eventoId') eventoId: string, @Req() req: any) {
     return this.exportUseCase.execute(eventoId, req.ability);
   }
 
@@ -82,24 +79,42 @@ export class EventoInscripcionController {
   @Post()
   @CheckPolicies((ability: any) => ability.can('create', 'EventoInscripcion'))
   create(@Body() data: any, @Req() req: any) {
-    return this.createEventoInscripcionUseCase.execute(data, req.user?.id, req.user?.tenantId);
+    return this.createEventoInscripcionUseCase.execute(
+      data,
+      req.user?.id,
+      req.user?.tenantId,
+    );
   }
 
   @Put(':id')
   @CheckPolicies((ability: any) => ability.can('update', 'EventoInscripcion'))
   updatePut(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updateEventoInscripcionUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updateEventoInscripcionUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Patch(':id')
   @CheckPolicies((ability: any) => ability.can('update', 'EventoInscripcion'))
   updatePatch(@Param('id') id: string, @Body() data: any, @Req() req: any) {
-    return this.updateEventoInscripcionUseCase.execute(id, data, req.user?.id, req.ability);
+    return this.updateEventoInscripcionUseCase.execute(
+      id,
+      data,
+      req.user?.id,
+      req.ability,
+    );
   }
 
   @Delete(':id')
   @CheckPolicies((ability: any) => ability.can('delete', 'EventoInscripcion'))
   remove(@Param('id') id: string, @Req() req: any) {
-    return this.deleteEventoInscripcionUseCase.execute(id, req.user?.id, req.ability);
+    return this.deleteEventoInscripcionUseCase.execute(
+      id,
+      req.user?.id,
+      req.ability,
+    );
   }
 }

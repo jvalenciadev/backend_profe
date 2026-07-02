@@ -10,8 +10,14 @@ import { UsersModule } from '../../users/src/users.module';
 import { AcademicModule } from '../../academic/src/academic.module';
 import { AuditModule } from '../../audit/src/audit.module';
 import { DatabaseModule } from '@app/database';
-import { APP_GUARD, Reflector } from '@nestjs/core';
-import { CaslModule, ApiKeyGuard, MailModule, UploadModule } from '@app/common';
+import { APP_GUARD, APP_INTERCEPTOR, Reflector } from '@nestjs/core';
+import {
+  CaslModule,
+  ApiKeyGuard,
+  MailModule,
+  UploadModule,
+  AuditInterceptor,
+} from '@app/common';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { UploadController } from '@app/common/upload/upload.controller';
@@ -49,6 +55,10 @@ import { UploadConfigController } from '@app/common/upload/upload-config.control
       provide: APP_GUARD,
       useClass: ApiKeyGuard,
     },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditInterceptor,
+    },
   ],
 })
-export class AppModule { }
+export class AppModule {}

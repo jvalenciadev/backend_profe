@@ -3,7 +3,7 @@ import { PrismaService } from '@app/database';
 
 @Injectable()
 export class AppConfigService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async getAppInfo() {
     const info = await this.prisma.profe.findFirst({
@@ -61,26 +61,28 @@ export class AppConfigService {
             info?.vision ||
             'Ser referente nacional en educación técnica y tecnológica, integrando la vanguardia pedagógica con las demandas del mercado laboral global.',
           imageUrl: 'https://profe.minedu.gob.bo/frontend/images/eventos.jpg',
-          features: ['Formación Continua', 'Impacto Nacional', 'Calidad Certificada'],
+          features: [
+            'Formación Continua',
+            'Impacto Nacional',
+            'Calidad Certificada',
+          ],
         },
         {
           title: 'ESTADÍSTICAS QUE HABLAN POR NOSOTROS',
           subtitle: 'Nuestro Impacto',
-          body:
-            'Únete a una comunidad en expansión. Más de 50,000 profesionales transformando su realidad a través de nuestros programas especializados.',
+          body: 'Únete a una comunidad en expansión. Más de 50,000 profesionales transformando su realidad a través de nuestros programas especializados.',
           imageUrl:
             'https://profe.minedu.gob.bo/frontend/images/ofertasacademicas.jpg',
           features: [
             'Sedes: 9 Departamentos',
             'Éxito laboral: 98%',
-            'Cursos activos: 120+'
+            'Cursos activos: 120+',
           ],
         },
         {
           title: 'TECNOLOGÍA DE PRÓXIMA GENERACIÓN',
           subtitle: 'Aula Profe 2.4',
-          body:
-            'Tu formación no se detiene. Acceso multiplataforma, sincronización en tiempo real y descarga de contenidos para aprendizaje offline.',
+          body: 'Tu formación no se detiene. Acceso multiplataforma, sincronización en tiempo real y descarga de contenidos para aprendizaje offline.',
           imageUrl: 'https://profe.minedu.gob.bo/backend/image/logoprofe2.png',
           features: ['Sincronización Total', 'Acceso Offline', 'Soporte 24/7'],
         },

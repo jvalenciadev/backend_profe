@@ -102,8 +102,9 @@ describe('AuthService (Blindaje Completo)', () => {
   describe('resetPassword', () => {
     it('debería lanzar UnauthorizedException si el token es inválido o expirado', async () => {
       mockPrisma.user.findFirst.mockResolvedValue(null);
-      await expect(service.resetPassword('token_invalido', 'nuevaPass123'))
-        .rejects.toThrow(UnauthorizedException);
+      await expect(
+        service.resetPassword('token_invalido', 'nuevaPass123'),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('debería actualizar la contraseña si el token es válido', async () => {
@@ -136,7 +137,10 @@ describe('AuthService (Blindaje Completo)', () => {
     it('debería retornar null si la contraseña es incorrecta', async () => {
       mockPrisma.user.findFirst.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
-      const result = await service.validateUser('superadmin', 'pass_incorrecta');
+      const result = await service.validateUser(
+        'superadmin',
+        'pass_incorrecta',
+      );
       expect(result).toBeNull();
     });
 
@@ -144,8 +148,9 @@ describe('AuthService (Blindaje Completo)', () => {
       const inactiveUser = { ...mockUser, estado: 'bloqueado' };
       mockPrisma.user.findFirst.mockResolvedValue(inactiveUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      await expect(service.validateUser('superadmin', 'juanpa123'))
-        .rejects.toThrow(UnauthorizedException);
+      await expect(
+        service.validateUser('superadmin', 'juanpa123'),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('debería lanzar error si es solo PARTICIPANTE intentando acceder al admin', async () => {
@@ -155,8 +160,9 @@ describe('AuthService (Blindaje Completo)', () => {
       };
       mockPrisma.user.findFirst.mockResolvedValue(participante);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      await expect(service.validateUser('participante', 'pass'))
-        .rejects.toThrow(UnauthorizedException);
+      await expect(
+        service.validateUser('participante', 'pass'),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('debería lanzar error si la contraseña temporal ha expirado', async () => {
@@ -167,8 +173,9 @@ describe('AuthService (Blindaje Completo)', () => {
       };
       mockPrisma.user.findFirst.mockResolvedValue(expiredUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
-      await expect(service.validateUser('superadmin', 'juanpa123'))
-        .rejects.toThrow(UnauthorizedException);
+      await expect(
+        service.validateUser('superadmin', 'juanpa123'),
+      ).rejects.toThrow(UnauthorizedException);
     });
 
     it('debería retornar usuario sin contraseña si todo es válido', async () => {
@@ -215,8 +222,9 @@ describe('AuthService (Blindaje Completo)', () => {
   describe('getProfile', () => {
     it('debería lanzar UnauthorizedException si el usuario no existe', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
-      await expect(service.getProfile('user_desconocido'))
-        .rejects.toThrow(UnauthorizedException);
+      await expect(service.getProfile('user_desconocido')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('debería retornar el perfil completo del usuario', async () => {
@@ -230,7 +238,13 @@ describe('AuthService (Blindaje Completo)', () => {
   // ─── validate ──────────────────────────────────────────────────────
   describe('validate', () => {
     it('debería retornar el payload del JWT transformado en objeto usuario', async () => {
-      const payload = { sub: 'user-1', username: 'superadmin', roles: ['ADMIN'], sedes: [], tenantId: null };
+      const payload = {
+        sub: 'user-1',
+        username: 'superadmin',
+        roles: ['ADMIN'],
+        sedes: [],
+        tenantId: null,
+      };
       const result = await service.validate(payload);
       expect(result.id).toBe('user-1');
       expect(result.username).toBe('superadmin');

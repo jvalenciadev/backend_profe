@@ -29,7 +29,9 @@ describe('CreateAcademicVersionUseCase (Fase 1: Academia)', () => {
       ],
     }).compile();
 
-    useCase = module.get<CreateAcademicVersionUseCase>(CreateAcademicVersionUseCase);
+    useCase = module.get<CreateAcademicVersionUseCase>(
+      CreateAcademicVersionUseCase,
+    );
     prisma = module.get<PrismaService>(PrismaService);
   });
 
@@ -37,7 +39,7 @@ describe('CreateAcademicVersionUseCase (Fase 1: Academia)', () => {
     mockPrismaService.programa.findUnique.mockResolvedValue(null);
 
     await expect(
-      useCase.execute('invalid_id', { versionId: 'ver_1' }, { id: 'user_1' })
+      useCase.execute('invalid_id', { versionId: 'ver_1' }, { id: 'user_1' }),
     ).rejects.toThrow(NotFoundException);
   });
 
@@ -61,12 +63,25 @@ describe('CreateAcademicVersionUseCase (Fase 1: Academia)', () => {
     };
 
     mockPrismaService.programa.findUnique.mockResolvedValue(mockMaster);
-    mockPrismaService.programaVersion.findUnique.mockResolvedValue({ id: 'ver_ref_1', gestion: '2024' });
+    mockPrismaService.programaVersion.findUnique.mockResolvedValue({
+      id: 'ver_ref_1',
+      gestion: '2024',
+    });
     mockPrismaService.programaDos.count.mockResolvedValue(0);
-    mockPrismaService.programaVersion.findFirst.mockResolvedValue({ id: 'ver_calc_1', numero: 1, nombre: 'Versión 1', gestion: '2024' });
-    mockPrismaService.programaDos.create.mockResolvedValue({ id: 'v1', ...versionData });
+    mockPrismaService.programaVersion.findFirst.mockResolvedValue({
+      id: 'ver_calc_1',
+      numero: 1,
+      nombre: 'Versión 1',
+      gestion: '2024',
+    });
+    mockPrismaService.programaDos.create.mockResolvedValue({
+      id: 'v1',
+      ...versionData,
+    });
 
-    const result = await useCase.execute('master_1', versionData, { id: 'admin' });
+    const result = await useCase.execute('master_1', versionData, {
+      id: 'admin',
+    });
 
     expect(result).toBeDefined();
     expect(mockPrismaService.programaDos.create).toHaveBeenCalledWith({
@@ -75,13 +90,13 @@ describe('CreateAcademicVersionUseCase (Fase 1: Academia)', () => {
         programaId: 'master_1',
         modulos: expect.objectContaining({
           create: expect.arrayContaining([
-            expect.objectContaining({ nombre: 'Módulo 1' })
-          ])
+            expect.objectContaining({ nombre: 'Módulo 1' }),
+          ]),
         }),
       }),
       include: { modulos: true, turnos: true },
     });
-    
+
     // Verificamos que los módulos globales NO se copien a la versión operativa
     const callData = mockPrismaService.programaDos.create.mock.calls[0][0].data;
     expect(callData.modulos.create).toHaveLength(1);

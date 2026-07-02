@@ -36,7 +36,9 @@ describe('PrismaInscripcionRepository (Unit Tests)', () => {
       ],
     }).compile();
 
-    repository = module.get<PrismaInscripcionRepository>(PrismaInscripcionRepository);
+    repository = module.get<PrismaInscripcionRepository>(
+      PrismaInscripcionRepository,
+    );
   });
 
   describe('findById', () => {
@@ -47,7 +49,7 @@ describe('PrismaInscripcionRepository (Unit Tests)', () => {
       const result = await repository.findById('ins-1');
       expect(result!.id).toBe('ins-1');
       expect(mockPrisma.programaInscripcion.findUnique).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { id: 'ins-1' } })
+        expect.objectContaining({ where: { id: 'ins-1' } }),
       );
     });
 
@@ -67,8 +69,11 @@ describe('PrismaInscripcionRepository (Unit Tests)', () => {
       expect(result).toBe(true);
       expect(mockPrisma.programaDosTurno.updateMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ id: 'turno-1', programaDosId: 'prog-1' })
-        })
+          where: expect.objectContaining({
+            id: 'turno-1',
+            programaDosId: 'prog-1',
+          }),
+        }),
       );
     });
 
@@ -79,7 +84,9 @@ describe('PrismaInscripcionRepository (Unit Tests)', () => {
     });
 
     it('debe atrapar errores y retornar false', async () => {
-      mockPrisma.programaDosTurno.updateMany.mockRejectedValue(new Error('DB error'));
+      mockPrisma.programaDosTurno.updateMany.mockRejectedValue(
+        new Error('DB error'),
+      );
       const result = await repository.reserveCupo('prog-1', 'turno-1');
       expect(result).toBe(false);
     });
@@ -88,15 +95,21 @@ describe('PrismaInscripcionRepository (Unit Tests)', () => {
   describe('create', () => {
     it('debe mappear los datos correctamente al crear', async () => {
       const dto = { personaId: 'p1', programaId: 'prog-1', sedeId: 's1' };
-      mockPrisma.programaInscripcion.create.mockResolvedValue({ id: 'ins-1', ...dto });
+      mockPrisma.programaInscripcion.create.mockResolvedValue({
+        id: 'ins-1',
+        ...dto,
+      });
 
       const result = await repository.create(dto);
 
       expect(result).toBeInstanceOf(Inscripcion);
       expect(mockPrisma.programaInscripcion.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ personaId: 'p1', programaId: 'prog-1' })
-        })
+          data: expect.objectContaining({
+            personaId: 'p1',
+            programaId: 'prog-1',
+          }),
+        }),
       );
     });
   });
@@ -107,8 +120,8 @@ describe('PrismaInscripcionRepository (Unit Tests)', () => {
       expect(mockPrisma.programaInscripcion.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'ins-1' },
-          data: { estado: 'eliminado' }
-        })
+          data: { estado: 'eliminado' },
+        }),
       );
     });
   });

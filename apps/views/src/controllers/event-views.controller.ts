@@ -17,7 +17,7 @@ import { PrismaService } from '@app/database';
  */
 @Controller('public/eventos')
 export class EventViewsController {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   private parseCi(ci: string | number | undefined | null): bigint {
     if (ci === undefined || ci === null) return BigInt(0);
@@ -51,17 +51,11 @@ export class EventViewsController {
           include: {
             preguntas: {
               where: { estado: 'activo' },
-              orderBy: [
-                { createdAt: 'asc' },
-                { id: 'asc' }
-              ],
+              orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
               include: {
                 opciones: {
                   where: { estado: 'activo' },
-                  orderBy: [
-                    { createdAt: 'asc' },
-                    { id: 'asc' }
-                  ]
+                  orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
                 },
               },
             },
@@ -75,7 +69,7 @@ export class EventViewsController {
     const sanitized = {
       ...(evento as any),
       cuestionarios: (evento as any).cuestionarios.map((c: any) => {
-        let preguntas = [...c.preguntas];
+        const preguntas = [...c.preguntas];
 
         if (c.esAleatorio) {
           // Fisher-Yates shuffle para eventos si esAleatorio es true
@@ -159,7 +153,10 @@ export class EventViewsController {
     },
   ) {
     const evento = await this.prisma.evento.findFirst({
-      where: { id: eventoId, estado: { in: ['activo', 'finalizado', 'vista'] } },
+      where: {
+        id: eventoId,
+        estado: { in: ['activo', 'finalizado', 'vista'] },
+      },
     });
 
     if (!evento) throw new NotFoundException('Evento no encontrado');
@@ -230,8 +227,18 @@ export class EventViewsController {
     if (existente) {
       if (body.isEditingProfile) {
         return {
-          persona: { ...persona, ci: persona.ci.toString(), generoId: persona.generoId.toString() },
-          inscripcion: { ...existente, id: existente.id.toString(), personaId: existente.personaId.toString(), departamentoId: existente.departamentoId.toString(), modalidadId: existente.modalidadId.toString() }
+          persona: {
+            ...persona,
+            ci: persona.ci.toString(),
+            generoId: persona.generoId.toString(),
+          },
+          inscripcion: {
+            ...existente,
+            id: existente.id.toString(),
+            personaId: existente.personaId.toString(),
+            departamentoId: existente.departamentoId.toString(),
+            modalidadId: existente.modalidadId.toString(),
+          },
         };
       }
       throw new ConflictException('Ya estás inscrito en este evento');
@@ -476,11 +483,16 @@ export class EventViewsController {
 
     // Eliminamos el bloqueo por fechaFin. Solo el estado 'activo' manda.
 
-    // LOGICA SENIOR: Si el cuestionario tiene video pero la DB no lo marcó (error de sync), 
+    // LOGICA SENIOR: Si el cuestionario tiene video pero la DB no lo marcó (error de sync),
     // lo marcamos ahora mismo para no bloquear al usuario si ya está enviando respuestas.
     if (cuestionario.urlVideo && !intentoActual?.videoCompletado) {
       await this.prisma.eventoCuestionarioIntento.upsert({
-        where: { unique_persona_cuestionario: { cuestionarioId, personaId: persona.id } },
+        where: {
+          unique_persona_cuestionario: {
+            cuestionarioId,
+            personaId: persona.id,
+          },
+        },
         update: { videoCompletado: true },
         create: {
           cuestionarioId,
@@ -564,9 +576,9 @@ export class EventViewsController {
           const puntosParciales =
             cuestionario.esEvaluativo && esCorrecta
               ? Math.round(
-                pregunta.puntos /
-                (pregunta.opciones.filter((o) => o.esCorrecta).length || 1),
-              )
+                  pregunta.puntos /
+                    (pregunta.opciones.filter((o) => o.esCorrecta).length || 1),
+                )
               : 0;
           puntajeTotal += puntosParciales;
           respuestasData.push({
@@ -657,7 +669,9 @@ export class EventViewsController {
       puntaje: cuestionario.esEvaluativo ? puntajeTotal : null,
       puntajeMaximo: cuestionario.esEvaluativo ? puntajeMaximo : null,
       nota: cuestionario.esEvaluativo ? nota : null,
-      aprobado: cuestionario.esEvaluativo ? (nota >= (cuestionario.puntajeMinimo || 75)) : true,
+      aprobado: cuestionario.esEvaluativo
+        ? nota >= (cuestionario.puntajeMinimo || 75)
+        : true,
       persona: { ...persona, ci: persona.ci.toString() },
       cuestionario: { titulo: cuestionario.titulo },
       evento: { id: eventoId },
@@ -770,18 +784,24 @@ export class EventViewsController {
       include: { pregunta: true },
     });
 
-    const todosLosIntentos = await this.prisma.eventoCuestionarioIntento.findMany({
-      where: {
-        cuestionarioId: { in: cuestionarioIds },
-        personaId: persona.id,
-      },
-    });
+    const todosLosIntentos =
+      await this.prisma.eventoCuestionarioIntento.findMany({
+        where: {
+          cuestionarioId: { in: cuestionarioIds },
+          personaId: persona.id,
+        },
+      });
 
     const progress = cuestionarios.map((c) => {
-      const respuestas = todasLasRespuestas.filter((r) => r.cuestionarioId === c.id);
+      const respuestas = todasLasRespuestas.filter(
+        (r) => r.cuestionarioId === c.id,
+      );
       const intento = todosLosIntentos.find((i) => i.cuestionarioId === c.id);
 
-      const finalizado = respuestas.length > 0 || (intento?.estado === 'finished' || (intento?.numeroIntentos || 0) > 0);
+      const finalizado =
+        respuestas.length > 0 ||
+        intento?.estado === 'finished' ||
+        (intento?.numeroIntentos || 0) > 0;
       let aprobado = false;
       let puntajeTotal = 0;
       let puntajeMaximo = 0;

@@ -48,7 +48,13 @@ export class CorrespondenciaController {
   @Put(':id/avanzar')
   avanzar(
     @Param('id') id: string,
-    @Body() body: { accion: string; detalle: string; archivoUrl?: string; nuevoDestinatarioId?: string },
+    @Body()
+    body: {
+      accion: string;
+      detalle: string;
+      archivoUrl?: string;
+      nuevoDestinatarioId?: string;
+    },
     @Req() req: any,
   ) {
     const userId = req.user?.id ?? req.user?.sub;

@@ -29,22 +29,28 @@ export class EstadoInscripcionController {
     private readonly createEstadoInscripcionUseCase: CreateEstadoInscripcionUseCase,
     private readonly updateEstadoInscripcionUseCase: UpdateEstadoInscripcionUseCase,
     private readonly deleteEstadoInscripcionUseCase: DeleteEstadoInscripcionUseCase,
-  ) { }
+  ) {}
 
   @Get()
-  @CheckPolicies((ability: any) => ability.can('read', 'ProgramaInscripcionEstado'))
+  @CheckPolicies((ability: any) =>
+    ability.can('read', 'ProgramaInscripcionEstado'),
+  )
   findAll(@Query() query: any, @Req() req: any) {
     return this.getEstadoInscripcionsUseCase.execute(query, req.ability);
   }
 
   @Get(':id')
-  @CheckPolicies((ability: any) => ability.can('read', 'ProgramaInscripcionEstado'))
+  @CheckPolicies((ability: any) =>
+    ability.can('read', 'ProgramaInscripcionEstado'),
+  )
   findOne(@Param('id') id: string, @Req() req: any) {
     return this.getEstadoInscripcionByIdUseCase.execute(id, req.ability);
   }
 
   @Post()
-  @CheckPolicies((ability: any) => ability.can('create', 'ProgramaInscripcionEstado'))
+  @CheckPolicies((ability: any) =>
+    ability.can('create', 'ProgramaInscripcionEstado'),
+  )
   create(@Body() data: any, @Req() req: any) {
     return this.createEstadoInscripcionUseCase.execute(
       data,
@@ -54,7 +60,9 @@ export class EstadoInscripcionController {
   }
 
   @Put(':id')
-  @CheckPolicies((ability: any) => ability.can('update', 'ProgramaInscripcionEstado'))
+  @CheckPolicies((ability: any) =>
+    ability.can('update', 'ProgramaInscripcionEstado'),
+  )
   updatePut(@Param('id') id: string, @Body() data: any, @Req() req: any) {
     return this.updateEstadoInscripcionUseCase.execute(
       id,
@@ -65,7 +73,9 @@ export class EstadoInscripcionController {
   }
 
   @Patch(':id')
-  @CheckPolicies((ability: any) => ability.can('update', 'ProgramaInscripcionEstado'))
+  @CheckPolicies((ability: any) =>
+    ability.can('update', 'ProgramaInscripcionEstado'),
+  )
   updatePatch(@Param('id') id: string, @Body() data: any, @Req() req: any) {
     return this.updateEstadoInscripcionUseCase.execute(
       id,
@@ -76,7 +86,9 @@ export class EstadoInscripcionController {
   }
 
   @Delete(':id')
-  @CheckPolicies((ability: any) => ability.can('delete', 'ProgramaInscripcionEstado'))
+  @CheckPolicies((ability: any) =>
+    ability.can('delete', 'ProgramaInscripcionEstado'),
+  )
   remove(@Param('id') id: string, @Req() req: any) {
     return this.deleteEstadoInscripcionUseCase.execute(
       id,

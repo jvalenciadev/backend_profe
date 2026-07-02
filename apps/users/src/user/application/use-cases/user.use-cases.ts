@@ -68,7 +68,8 @@ function buildUserPayload(
       payload['ci'] = value ? BigInt(value) : null;
       continue;
     }
-    if (field !== 'verificationCode' && field !== 'mod_campos_extra_regs') payload[field] = value;
+    if (field !== 'verificationCode' && field !== 'mod_campos_extra_regs')
+      payload[field] = value;
     if (field === 'mod_campos_extra_regs') payload[field] = value;
   }
   return payload;
@@ -109,7 +110,7 @@ export class CreateUserUseCase {
 
     const user = await this.repository.create({
       ...createData,
-      mod_campos_extra_regs: data.mod_campos_extra_regs
+      mod_campos_extra_regs: data.mod_campos_extra_regs,
     });
     await this.mailService
       .sendWelcomeEmail(correo, data.nombre, data.username)
@@ -124,7 +125,11 @@ export class FindAllUsersUseCase {
     @Inject(USER_REPOSITORY) private readonly repository: IUserRepository,
   ) {}
 
-  async execute(ability: any, search?: string, includeParticipants?: boolean): Promise<User[]> {
+  async execute(
+    ability: any,
+    search?: string,
+    includeParticipants?: boolean,
+  ): Promise<User[]> {
     return this.repository.findAll({ ability, search, includeParticipants });
   }
 }
@@ -186,7 +191,8 @@ export class UpdateUserUseCase {
     if (roles !== undefined) payload['roles'] = roles;
     if (sedes !== undefined) payload['sedes'] = sedes;
 
-    if (data.mod_campos_extra_regs !== undefined) payload['mod_campos_extra_regs'] = data.mod_campos_extra_regs;
+    if (data.mod_campos_extra_regs !== undefined)
+      payload['mod_campos_extra_regs'] = data.mod_campos_extra_regs;
 
     return this.repository.update(id, payload, ability);
   }

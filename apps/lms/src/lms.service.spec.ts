@@ -17,16 +17,49 @@ describe('LmsService (Blindaje Core - Final)', () => {
   const mockPrisma = {
     user: { findFirst: jest.fn(), findUnique: jest.fn(), update: jest.fn() },
     profe: { findFirst: jest.fn() },
-    token_dispositivo: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
-    programaInscripcion: { findMany: jest.fn(), findFirst: jest.fn(), update: jest.fn(), count: jest.fn() },
+    token_dispositivo: {
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    programaInscripcion: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      update: jest.fn(),
+      count: jest.fn(),
+    },
     programaDosFacilitador: { findMany: jest.fn(), findFirst: jest.fn() },
-    programaDos: { findFirst: jest.fn(), findUnique: jest.fn(), findMany: jest.fn() },
-    programaModuloDos: { findMany: jest.fn(), findFirst: jest.fn(), findUnique: jest.fn() },
-    programaModulo: { findMany: jest.fn(), findFirst: jest.fn(), findUnique: jest.fn() },
+    programaDos: {
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+      findMany: jest.fn(),
+    },
+    programaModuloDos: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+    },
+    programaModulo: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+    },
     mod_categoria_calificacion: { findMany: jest.fn(), findFirst: jest.fn() },
-    mod_actividad: { findMany: jest.fn(), findFirst: jest.fn(), count: jest.fn() },
-    mod_nota_actividad: { findMany: jest.fn(), findFirst: jest.fn(), upsert: jest.fn() },
-    programaDosTurno: { findMany: jest.fn(), findFirst: jest.fn(), findUnique: jest.fn() },
+    mod_actividad: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      count: jest.fn(),
+    },
+    mod_nota_actividad: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      upsert: jest.fn(),
+    },
+    programaDosTurno: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      findUnique: jest.fn(),
+    },
     departamento: { findFirst: jest.fn(), findMany: jest.fn() },
     sede: { findFirst: jest.fn(), findMany: jest.fn() },
     role: { findFirst: jest.fn() },
@@ -63,14 +96,16 @@ describe('LmsService (Blindaje Core - Final)', () => {
 
     it('debe lanzar UnauthorizedException si el usuario no existe', async () => {
       mockPrisma.user.findFirst.mockResolvedValue(null);
-      await expect(service.login('none', 'p')).rejects.toThrow(UnauthorizedException);
+      await expect(service.login('none', 'p')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('debe permitir acceso a ADMIN sin validar inscripción', async () => {
       mockPrisma.user.findFirst.mockResolvedValue({
         id: 'adm-1',
         estado: 'activo',
-        roles: [{ role: { name: 'ADMIN' } }]
+        roles: [{ role: { name: 'ADMIN' } }],
       });
       const result = await service.login('admin', 'pass');
       expect(result.access_token).toBe('tk');
@@ -78,11 +113,16 @@ describe('LmsService (Blindaje Core - Final)', () => {
 
     it('debe emitir token para PARTICIPANTE con inscripción INSCRITO', async () => {
       mockPrisma.user.findFirst.mockResolvedValue({
-        id: 'p1', estado: 'activo', roles: [{ role: { name: 'PARTICIPANTE' } }]
+        id: 'p1',
+        estado: 'activo',
+        roles: [{ role: { name: 'PARTICIPANTE' } }],
       });
       const CONFIRMADO_ID = 'adfbbf09-a486-4b79-8fe0-04cf85d83cae';
       mockPrisma.programaInscripcion.findMany.mockResolvedValue([
-        { estadoInscripcionId: CONFIRMADO_ID, estadoInscripcion: { nombre: 'CONFIRMADO' } }
+        {
+          estadoInscripcionId: CONFIRMADO_ID,
+          estadoInscripcion: { nombre: 'CONFIRMADO' },
+        },
       ]);
       const result = await service.login('user', 'pass');
       expect(result.access_token).toBe('tk');
@@ -90,7 +130,9 @@ describe('LmsService (Blindaje Core - Final)', () => {
 
     it('debe registrar token de dispositivo si se provee', async () => {
       mockPrisma.user.findFirst.mockResolvedValue({
-        id: 'u1', estado: 'activo', roles: [{ role: { name: 'ADMIN' } }]
+        id: 'u1',
+        estado: 'activo',
+        roles: [{ role: { name: 'ADMIN' } }],
       });
       mockPrisma.token_dispositivo.findFirst.mockResolvedValue(null);
       mockPrisma.token_dispositivo.create.mockResolvedValue({});
@@ -106,16 +148,26 @@ describe('LmsService (Blindaje Core - Final)', () => {
           id: 'cat-1',
           config: { peso: 40, nombre: 'A' },
           actividades: [
-            { puntajeMax: 100, notas: [{ nota: 100 }], esCalificable: true, estado: 'activo' }
-          ]
+            {
+              puntajeMax: 100,
+              notas: [{ nota: 100 }],
+              esCalificable: true,
+              estado: 'activo',
+            },
+          ],
         },
         {
           id: 'cat-2',
           config: { peso: 60, nombre: 'B' },
           actividades: [
-            { puntajeMax: 100, notas: [{ nota: 50 }], esCalificable: true, estado: 'activo' }
-          ]
-        }
+            {
+              puntajeMax: 100,
+              notas: [{ nota: 50 }],
+              esCalificable: true,
+              estado: 'activo',
+            },
+          ],
+        },
       ]);
       const result = await service.calculateModuloNotaTotal('u1', 'm1');
       // 40% de 100 = 40. 60% de 50 = 30. Total = 70.
@@ -135,9 +187,12 @@ describe('LmsService (Blindaje Core - Final)', () => {
 
   describe('getEstudiantesPorCurso', () => {
     it('debe hidratar nombreCompleto', async () => {
-      mockPrisma.programaModuloDos.findUnique.mockResolvedValue({ id: 'm1', programaDos: { id: 'p1' } });
+      mockPrisma.programaModuloDos.findUnique.mockResolvedValue({
+        id: 'm1',
+        programaDos: { id: 'p1' },
+      });
       mockPrisma.programaInscripcion.findMany.mockResolvedValue([
-        { persona: { id: 'p1', nombre: 'JUAN', apellidos: 'PEREZ' } }
+        { persona: { id: 'p1', nombre: 'JUAN', apellidos: 'PEREZ' } },
       ]);
       const result = await service.getEstudiantesPorCurso('m1', 'g');
       expect(result[0].persona.nombreCompleto).toBe('JUAN PEREZ');

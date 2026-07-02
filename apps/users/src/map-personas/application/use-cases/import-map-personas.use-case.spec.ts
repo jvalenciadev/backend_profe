@@ -16,11 +16,27 @@ describe('ImportMapPersonasUseCase (Blindaje Completo)', () => {
   const mockPrisma = {
     mapPersona: { findMany: jest.fn(), create: jest.fn(), update: jest.fn() },
     mapCargo: { findMany: jest.fn(), findUnique: jest.fn(), create: jest.fn() },
-    mapEspecialidad: { findMany: jest.fn(), findUnique: jest.fn(), create: jest.fn() },
-    mapCategoria: { findMany: jest.fn(), findUnique: jest.fn(), create: jest.fn() },
+    mapEspecialidad: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+    },
+    mapCategoria: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+    },
     mapNivel: { findMany: jest.fn(), findUnique: jest.fn(), create: jest.fn() },
-    mapSubsistema: { findMany: jest.fn(), findUnique: jest.fn(), create: jest.fn() },
-    mapGenero: { findMany: jest.fn(), findUnique: jest.fn(), create: jest.fn() },
+    mapSubsistema: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+    },
+    mapGenero: {
+      findMany: jest.fn(),
+      findUnique: jest.fn(),
+      create: jest.fn(),
+    },
     mapArea: { findMany: jest.fn(), findUnique: jest.fn(), create: jest.fn() },
   };
 
@@ -48,7 +64,10 @@ describe('ImportMapPersonasUseCase (Blindaje Completo)', () => {
   describe('cancelJob', () => {
     it('debe cancelar un job en procesamiento', async () => {
       const xlsx = require('xlsx');
-      xlsx.read.mockReturnValue({ SheetNames: ['Sheet1'], Sheets: { Sheet1: {} } });
+      xlsx.read.mockReturnValue({
+        SheetNames: ['Sheet1'],
+        Sheets: { Sheet1: {} },
+      });
       // Fila con CI inválido para que el job sea rápido
       xlsx.utils.sheet_to_json.mockReturnValue([{ CI: '12345678' }]);
 
@@ -64,7 +83,9 @@ describe('ImportMapPersonasUseCase (Blindaje Completo)', () => {
       await useCase.execute(Buffer.from('fake'), 'job-cancel-test');
       useCase.cancelJob('job-cancel-test');
       const status = useCase.getStatus('job-cancel-test');
-      expect(['cancelled', 'processing', 'completed']).toContain(status?.status);
+      expect(['cancelled', 'processing', 'completed']).toContain(
+        status?.status,
+      );
     });
 
     it('NO debe cambiar el estado si el job no existe', () => {
@@ -88,7 +109,9 @@ describe('ImportMapPersonasUseCase (Blindaje Completo)', () => {
 
       const emptyFindMany = jest.fn().mockResolvedValue([]);
       const emptyFind = jest.fn().mockResolvedValue(null);
-      const emptyCreate = jest.fn().mockResolvedValue({ id: 'new-id', nombre: 'TEST' });
+      const emptyCreate = jest
+        .fn()
+        .mockResolvedValue({ id: 'new-id', nombre: 'TEST' });
 
       Object.values(mockPrisma).forEach((m: any) => {
         if (m.findMany) m.findMany = emptyFindMany;
@@ -124,13 +147,55 @@ describe('ImportMapPersonasUseCase - Lógica de parsing', () => {
 
   const mockPrisma = {
     mapPersona: { findMany: jest.fn(), create: jest.fn(), update: jest.fn() },
-    mapCargo: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn().mockResolvedValue(null), create: jest.fn().mockImplementation(async d => ({ id: 'c-1', ...d.data })) },
-    mapEspecialidad: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn().mockResolvedValue(null), create: jest.fn().mockImplementation(async d => ({ id: 'e-1', ...d.data })) },
-    mapCategoria: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn().mockResolvedValue(null), create: jest.fn().mockImplementation(async d => ({ id: 'cat-1', ...d.data })) },
-    mapNivel: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn().mockResolvedValue(null), create: jest.fn().mockImplementation(async d => ({ id: 'n-1', ...d.data })) },
-    mapSubsistema: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn().mockResolvedValue(null), create: jest.fn().mockImplementation(async d => ({ id: 's-1', ...d.data })) },
-    mapGenero: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn().mockResolvedValue(null), create: jest.fn().mockImplementation(async d => ({ id: 'g-1', ...d.data })) },
-    mapArea: { findMany: jest.fn().mockResolvedValue([]), findUnique: jest.fn().mockResolvedValue(null), create: jest.fn().mockImplementation(async d => ({ id: 'a-1', ...d.data })) },
+    mapCargo: {
+      findMany: jest.fn().mockResolvedValue([]),
+      findUnique: jest.fn().mockResolvedValue(null),
+      create: jest
+        .fn()
+        .mockImplementation(async (d) => ({ id: 'c-1', ...d.data })),
+    },
+    mapEspecialidad: {
+      findMany: jest.fn().mockResolvedValue([]),
+      findUnique: jest.fn().mockResolvedValue(null),
+      create: jest
+        .fn()
+        .mockImplementation(async (d) => ({ id: 'e-1', ...d.data })),
+    },
+    mapCategoria: {
+      findMany: jest.fn().mockResolvedValue([]),
+      findUnique: jest.fn().mockResolvedValue(null),
+      create: jest
+        .fn()
+        .mockImplementation(async (d) => ({ id: 'cat-1', ...d.data })),
+    },
+    mapNivel: {
+      findMany: jest.fn().mockResolvedValue([]),
+      findUnique: jest.fn().mockResolvedValue(null),
+      create: jest
+        .fn()
+        .mockImplementation(async (d) => ({ id: 'n-1', ...d.data })),
+    },
+    mapSubsistema: {
+      findMany: jest.fn().mockResolvedValue([]),
+      findUnique: jest.fn().mockResolvedValue(null),
+      create: jest
+        .fn()
+        .mockImplementation(async (d) => ({ id: 's-1', ...d.data })),
+    },
+    mapGenero: {
+      findMany: jest.fn().mockResolvedValue([]),
+      findUnique: jest.fn().mockResolvedValue(null),
+      create: jest
+        .fn()
+        .mockImplementation(async (d) => ({ id: 'g-1', ...d.data })),
+    },
+    mapArea: {
+      findMany: jest.fn().mockResolvedValue([]),
+      findUnique: jest.fn().mockResolvedValue(null),
+      create: jest
+        .fn()
+        .mockImplementation(async (d) => ({ id: 'a-1', ...d.data })),
+    },
   };
 
   beforeEach(async () => {
@@ -179,7 +244,9 @@ describe('ImportMapPersonasUseCase - Lógica de parsing', () => {
     await new Promise((r) => setTimeout(r, 100));
     // Se debe haber llamado update
     // (el procesamiento es async, verificamos que no lanzó error)
-    expect(useCase.getStatus('job-update-persona')?.jobId).toBe('job-update-persona');
+    expect(useCase.getStatus('job-update-persona')?.jobId).toBe(
+      'job-update-persona',
+    );
   });
 
   it('debe registrar error para filas sin CI', async () => {

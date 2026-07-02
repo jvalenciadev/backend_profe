@@ -80,9 +80,9 @@ describe('CuestionarioAppService (Blindaje Completo)', () => {
   describe('getInfo', () => {
     it('debe lanzar NotFoundException si el cuestionario no existe', async () => {
       mockPrisma.mod_cuestionario.findFirst.mockResolvedValue(null);
-      await expect(service.getInfo('cue-inexistente', 'user-1')).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.getInfo('cue-inexistente', 'user-1'),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('debe retornar info del cuestionario sin intentos', async () => {
@@ -103,22 +103,48 @@ describe('CuestionarioAppService (Blindaje Completo)', () => {
       const iniciadoEn = new Date(Date.now() - 10 * 60 * 1000); // hace 10 min
       mockPrisma.mod_cuestionario.findFirst.mockResolvedValue(mockCuestionario);
       mockPrisma.mod_intento.findMany.mockResolvedValue([
-        { id: 'int-1', estado: 'en_progreso', iniciadoEn, puntajeTotal: 0, respuestas: [] },
+        {
+          id: 'int-1',
+          estado: 'en_progreso',
+          iniciadoEn,
+          puntajeTotal: 0,
+          respuestas: [],
+        },
       ]);
 
       const result = await service.getInfo('cue-1', 'user-1');
       expect(result.estadoUsuario.intentoEnProgreso).not.toBeNull();
       expect(result.estadoUsuario.intentoEnProgreso?.id).toBe('int-1');
       // 60 min - 10 min = 50 min restantes → > 0
-      expect(result.estadoUsuario.intentoEnProgreso?.tiempoRestanteMs).toBeGreaterThan(0);
+      expect(
+        result.estadoUsuario.intentoEnProgreso?.tiempoRestanteMs,
+      ).toBeGreaterThan(0);
     });
 
     it('debe calcular la mejor puntuación correctamente', async () => {
       mockPrisma.mod_cuestionario.findFirst.mockResolvedValue(mockCuestionario);
       mockPrisma.mod_intento.findMany.mockResolvedValue([
-        { id: 'int-1', estado: 'finalizado', iniciadoEn: new Date(), puntajeTotal: 60, respuestas: [] },
-        { id: 'int-2', estado: 'finalizado', iniciadoEn: new Date(), puntajeTotal: 85, respuestas: [] },
-        { id: 'int-3', estado: 'finalizado', iniciadoEn: new Date(), puntajeTotal: 70, respuestas: [] },
+        {
+          id: 'int-1',
+          estado: 'finalizado',
+          iniciadoEn: new Date(),
+          puntajeTotal: 60,
+          respuestas: [],
+        },
+        {
+          id: 'int-2',
+          estado: 'finalizado',
+          iniciadoEn: new Date(),
+          puntajeTotal: 85,
+          respuestas: [],
+        },
+        {
+          id: 'int-3',
+          estado: 'finalizado',
+          iniciadoEn: new Date(),
+          puntajeTotal: 70,
+          respuestas: [],
+        },
       ]);
 
       const result = await service.getInfo('cue-1', 'user-1');
@@ -150,7 +176,9 @@ describe('CuestionarioAppService (Blindaje Completo)', () => {
         numero: 1,
         iniciadoEn: new Date(),
         estado: 'en_progreso',
-        respuestas: [{ preguntaId: 'preg-1', opcionId: null, textoLibre: null }],
+        respuestas: [
+          { preguntaId: 'preg-1', opcionId: null, textoLibre: null },
+        ],
       };
       mockPrisma.mod_cuestionario.findFirst.mockResolvedValue(mockCuestionario);
       mockPrisma.mod_intento.count.mockResolvedValue(1);
@@ -170,7 +198,9 @@ describe('CuestionarioAppService (Blindaje Completo)', () => {
         numero: 1,
         iniciadoEn: new Date(),
         estado: 'en_progreso',
-        respuestas: [{ preguntaId: 'preg-1', opcionId: null, textoLibre: null }],
+        respuestas: [
+          { preguntaId: 'preg-1', opcionId: null, textoLibre: null },
+        ],
       });
 
       const result = await service.iniciarIntento('cue-1', 'user-1');
@@ -187,7 +217,9 @@ describe('CuestionarioAppService (Blindaje Completo)', () => {
         numero: 1,
         iniciadoEn: new Date(),
         estado: 'en_progreso',
-        respuestas: [{ preguntaId: 'preg-1', opcionId: null, textoLibre: null }],
+        respuestas: [
+          { preguntaId: 'preg-1', opcionId: null, textoLibre: null },
+        ],
       });
 
       const result = await service.iniciarIntento('cue-1', 'user-1');
@@ -250,9 +282,9 @@ describe('CuestionarioAppService (Blindaje Completo)', () => {
   describe('finalizarIntento', () => {
     it('debe lanzar UnauthorizedException si el intento no existe', async () => {
       mockPrisma.mod_intento.findUnique.mockResolvedValue(null);
-      await expect(
-        service.finalizarIntento('int-x', 'user-1'),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.finalizarIntento('int-x', 'user-1')).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('debe lanzar UnauthorizedException si el intento no pertenece al usuario', async () => {
@@ -270,7 +302,12 @@ describe('CuestionarioAppService (Blindaje Completo)', () => {
       mockPrisma.mod_intento.findUnique.mockResolvedValue({
         id: 'int-1',
         userId: 'user-1',
-        cuestionario: { id: 'cue-1', actividadId: 'act-1', mostrarNota: false, retroInmediata: false },
+        cuestionario: {
+          id: 'cue-1',
+          actividadId: 'act-1',
+          mostrarNota: false,
+          retroInmediata: false,
+        },
       });
 
       const result = await service.finalizarIntento('int-1', 'user-1');
@@ -283,7 +320,12 @@ describe('CuestionarioAppService (Blindaje Completo)', () => {
       mockPrisma.mod_intento.findUnique.mockResolvedValue({
         id: 'int-1',
         userId: 'user-1',
-        cuestionario: { id: 'cue-1', actividadId: 'act-1', mostrarNota: true, retroInmediata: false },
+        cuestionario: {
+          id: 'cue-1',
+          actividadId: 'act-1',
+          mostrarNota: true,
+          retroInmediata: false,
+        },
       });
       mockPrisma.mod_nota_actividad.findUnique.mockResolvedValue({ nota: 85 });
 
@@ -296,11 +338,20 @@ describe('CuestionarioAppService (Blindaje Completo)', () => {
       mockPrisma.mod_intento.findUnique.mockResolvedValue({
         id: 'int-1',
         userId: 'user-1',
-        cuestionario: { id: 'cue-1', actividadId: 'act-1', mostrarNota: false, retroInmediata: false },
+        cuestionario: {
+          id: 'cue-1',
+          actividadId: 'act-1',
+          mostrarNota: false,
+          retroInmediata: false,
+        },
       });
       mockPrisma.mod_intento.update.mockResolvedValue({});
 
-      await service.finalizarIntento('int-1', 'user-1', 'Cambio de pestaña detectado');
+      await service.finalizarIntento(
+        'int-1',
+        'user-1',
+        'Cambio de pestaña detectado',
+      );
       expect(mockPrisma.mod_intento.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: { motivoBloqueo: 'Cambio de pestaña detectado' },

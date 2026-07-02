@@ -1,18 +1,36 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EventViewsController } from './event-views.controller';
 import { PrismaService } from '@app/database';
-import { NotFoundException, BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
+import {
+  NotFoundException,
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+} from '@nestjs/common';
 
 describe('EventViewsController (Blindaje Completo - 752 líneas)', () => {
   let controller: EventViewsController;
 
   const mockPrisma = {
     evento: { findFirst: jest.fn(), update: jest.fn() },
-    eventoPersona: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
-    eventoInscripcion: { findFirst: jest.fn(), create: jest.fn(), update: jest.fn() },
+    eventoPersona: {
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    eventoInscripcion: {
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
     eventoCuestionario: { findFirst: jest.fn(), findMany: jest.fn() },
     eventoCuestionarioIntento: { findFirst: jest.fn(), upsert: jest.fn() },
-    evento_respuestas: { findFirst: jest.fn(), findMany: jest.fn(), createMany: jest.fn(), deleteMany: jest.fn() },
+    evento_respuestas: {
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+      createMany: jest.fn(),
+      deleteMany: jest.fn(),
+    },
   };
 
   const mockPersona = {
@@ -44,9 +62,7 @@ describe('EventViewsController (Blindaje Completo - 752 líneas)', () => {
     jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       controllers: [EventViewsController],
-      providers: [
-        { provide: PrismaService, useValue: mockPrisma },
-      ],
+      providers: [{ provide: PrismaService, useValue: mockPrisma }],
     }).compile();
 
     controller = module.get<EventViewsController>(EventViewsController);
@@ -56,38 +72,53 @@ describe('EventViewsController (Blindaje Completo - 752 líneas)', () => {
   describe('getEvento', () => {
     it('debería lanzar NotFoundException si el evento no existe', async () => {
       mockPrisma.evento.findFirst.mockResolvedValue(null);
-      await expect(controller.getEvento('codigo-invalido'))
-        .rejects.toThrow(NotFoundException);
+      await expect(controller.getEvento('codigo-invalido')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('debería retornar el evento con cuestionarios sanitizados (sin esCorrecta)', async () => {
       const eventoConCuestionario = {
         ...mockEvento,
-        cuestionarios: [{
-          id: 'cues-1',
-          titulo: 'Test',
-          preguntas: [{
-            id: 'preg-1',
-            texto: '¿Qué es?',
-            opciones: [{ id: 'opc-1', texto: 'Respuesta', esCorrecta: true }],
-          }],
-        }],
+        cuestionarios: [
+          {
+            id: 'cues-1',
+            titulo: 'Test',
+            preguntas: [
+              {
+                id: 'preg-1',
+                texto: '¿Qué es?',
+                opciones: [
+                  { id: 'opc-1', texto: 'Respuesta', esCorrecta: true },
+                ],
+              },
+            ],
+          },
+        ],
       };
       mockPrisma.evento.findFirst.mockResolvedValue(eventoConCuestionario);
 
       const result = await controller.getEvento('codigo-evento');
       // La opción NO debe tener el campo esCorrecta
-      expect(result.cuestionarios[0].preguntas[0].opciones[0]).not.toHaveProperty('esCorrecta');
+      expect(
+        result.cuestionarios[0].preguntas[0].opciones[0],
+      ).not.toHaveProperty('esCorrecta');
     });
 
     it('debería aceptar búsqueda por UUID además de por código', async () => {
-      mockPrisma.evento.findFirst.mockResolvedValue({ ...mockEvento, cuestionarios: [], camposExtras: [] });
+      mockPrisma.evento.findFirst.mockResolvedValue({
+        ...mockEvento,
+        cuestionarios: [],
+        camposExtras: [],
+      });
       const uuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
       await controller.getEvento(uuid);
       expect(mockPrisma.evento.findFirst).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ OR: expect.arrayContaining([{ id: uuid }]) })
-        })
+          where: expect.objectContaining({
+            OR: expect.arrayContaining([{ id: uuid }]),
+          }),
+        }),
       );
     });
   });
@@ -95,19 +126,26 @@ describe('EventViewsController (Blindaje Completo - 752 líneas)', () => {
   // ─── buscarPersona ────────────────────────────────────────────────
   describe('buscarPersona', () => {
     it('debería lanzar BadRequestException si faltan CI o fechaNacimiento', async () => {
-      await expect(controller.buscarPersona({ ci: '', fechaNacimiento: '' }))
-        .rejects.toThrow(BadRequestException);
+      await expect(
+        controller.buscarPersona({ ci: '', fechaNacimiento: '' }),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('debería retornar found=false si la persona no está en el padrón del evento', async () => {
       mockPrisma.eventoPersona.findFirst.mockResolvedValue(null);
-      const result = await controller.buscarPersona({ ci: '1234567', fechaNacimiento: '1990-01-01' });
+      const result = await controller.buscarPersona({
+        ci: '1234567',
+        fechaNacimiento: '1990-01-01',
+      });
       expect(result.found).toBe(false);
     });
 
     it('debería retornar la persona con CI convertida a string', async () => {
       mockPrisma.eventoPersona.findFirst.mockResolvedValue(mockPersona);
-      const result = await controller.buscarPersona({ ci: '1234567', fechaNacimiento: '1990-01-01' });
+      const result = await controller.buscarPersona({
+        ci: '1234567',
+        fechaNacimiento: '1990-01-01',
+      });
       expect(result.found).toBe(true);
       expect((result as any).persona.ci).toBe('1234567');
     });
@@ -116,22 +154,31 @@ describe('EventViewsController (Blindaje Completo - 752 líneas)', () => {
   // ─── inscribirse ──────────────────────────────────────────────────
   describe('inscribirse', () => {
     const inscripcionBody = {
-      ci: '1234567', fechaNacimiento: '1990-01-01',
-      nombre1: 'Juan', apellido1: 'Perez',
-      correo: 'juan@test.com', celular: '70000000',
-      departamentoId: 'dep-1', modalidadId: 'mod-1',
+      ci: '1234567',
+      fechaNacimiento: '1990-01-01',
+      nombre1: 'Juan',
+      apellido1: 'Perez',
+      correo: 'juan@test.com',
+      celular: '70000000',
+      departamentoId: 'dep-1',
+      modalidadId: 'mod-1',
     };
 
     it('debería lanzar NotFoundException si el evento no existe', async () => {
       mockPrisma.evento.findFirst.mockResolvedValue(null);
-      await expect(controller.inscribirse('evt-999', inscripcionBody))
-        .rejects.toThrow(NotFoundException);
+      await expect(
+        controller.inscribirse('evt-999', inscripcionBody),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('debería lanzar ForbiddenException si inscripción está cerrada', async () => {
-      mockPrisma.evento.findFirst.mockResolvedValue({ ...mockEvento, inscripcionAbierta: false });
-      await expect(controller.inscribirse('evt-1', inscripcionBody))
-        .rejects.toThrow(ForbiddenException);
+      mockPrisma.evento.findFirst.mockResolvedValue({
+        ...mockEvento,
+        inscripcionAbierta: false,
+      });
+      await expect(
+        controller.inscribirse('evt-1', inscripcionBody),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('debería lanzar ConflictException si ya está inscrito', async () => {
@@ -139,8 +186,9 @@ describe('EventViewsController (Blindaje Completo - 752 líneas)', () => {
       mockPrisma.eventoPersona.findFirst.mockResolvedValue(mockPersona);
       mockPrisma.eventoPersona.update.mockResolvedValue(mockPersona); // Añadido
       mockPrisma.eventoInscripcion.findFirst.mockResolvedValue({ id: 'ins-1' });
-      await expect(controller.inscribirse('evt-1', inscripcionBody))
-        .rejects.toThrow(ConflictException);
+      await expect(
+        controller.inscribirse('evt-1', inscripcionBody),
+      ).rejects.toThrow(ConflictException);
     });
 
     it('debería crear persona nueva y completar inscripción exitosamente', async () => {
@@ -171,7 +219,11 @@ describe('EventViewsController (Blindaje Completo - 752 líneas)', () => {
     });
 
     it('debería permitir actualizar datos si inscripción está cerrada (isEditingProfile es true) pero el evento no está finalizado', async () => {
-      mockPrisma.evento.findFirst.mockResolvedValue({ ...mockEvento, inscripcionAbierta: false, estado: 'activo' });
+      mockPrisma.evento.findFirst.mockResolvedValue({
+        ...mockEvento,
+        inscripcionAbierta: false,
+        estado: 'activo',
+      });
       mockPrisma.eventoPersona.findFirst.mockResolvedValue(mockPersona);
       mockPrisma.eventoPersona.update.mockResolvedValue(mockPersona);
       mockPrisma.eventoInscripcion.findFirst.mockResolvedValue({
@@ -193,7 +245,10 @@ describe('EventViewsController (Blindaje Completo - 752 líneas)', () => {
     });
 
     it('debería lanzar ForbiddenException al intentar editar perfil si el evento está finalizado', async () => {
-      mockPrisma.evento.findFirst.mockResolvedValue({ ...mockEvento, estado: 'finalizado' });
+      mockPrisma.evento.findFirst.mockResolvedValue({
+        ...mockEvento,
+        estado: 'finalizado',
+      });
       mockPrisma.eventoPersona.findFirst.mockResolvedValue(mockPersona);
 
       await expect(
@@ -205,7 +260,10 @@ describe('EventViewsController (Blindaje Completo - 752 líneas)', () => {
     });
 
     it('debería lanzar ForbiddenException al intentar una nueva inscripción si el evento está finalizado', async () => {
-      mockPrisma.evento.findFirst.mockResolvedValue({ ...mockEvento, estado: 'finalizado' });
+      mockPrisma.evento.findFirst.mockResolvedValue({
+        ...mockEvento,
+        estado: 'finalizado',
+      });
 
       await expect(
         controller.inscribirse('evt-1', {
@@ -220,39 +278,58 @@ describe('EventViewsController (Blindaje Completo - 752 líneas)', () => {
   describe('verificarInscripcion', () => {
     it('debería retornar inscrito=false si persona no encontrada', async () => {
       mockPrisma.eventoPersona.findFirst.mockResolvedValue(null);
-      const result = await controller.verificarInscripcion('evt-1', { ci: '0', fechaNacimiento: '2000-01-01' });
+      const result = await controller.verificarInscripcion('evt-1', {
+        ci: '0',
+        fechaNacimiento: '2000-01-01',
+      });
       expect(result.inscrito).toBe(false);
     });
 
     it('debería retornar inscrito=true con datos de inscripción', async () => {
       mockPrisma.eventoPersona.findFirst.mockResolvedValue(mockPersona);
-      mockPrisma.eventoInscripcion.findFirst.mockResolvedValue({ id: 'ins-1', asistencia: false, evento: mockEvento });
-      const result = await controller.verificarInscripcion('evt-1', { ci: '1234567', fechaNacimiento: '1990-01-01' });
+      mockPrisma.eventoInscripcion.findFirst.mockResolvedValue({
+        id: 'ins-1',
+        asistencia: false,
+        evento: mockEvento,
+      });
+      const result = await controller.verificarInscripcion('evt-1', {
+        ci: '1234567',
+        fechaNacimiento: '1990-01-01',
+      });
       expect(result.inscrito).toBe(true);
     });
   });
 
   // ─── registrarAsistencia ──────────────────────────────────────────
   describe('registrarAsistencia', () => {
-    const asistBody = { ci: '1234567', fechaNacimiento: '1990-01-01', codigoAsistencia: 'ABC123' };
+    const asistBody = {
+      ci: '1234567',
+      fechaNacimiento: '1990-01-01',
+      codigoAsistencia: 'ABC123',
+    };
 
     it('debería lanzar NotFoundException si el evento no existe', async () => {
       mockPrisma.evento.findFirst.mockResolvedValue(null);
-      await expect(controller.registrarAsistencia('evt-999', asistBody))
-        .rejects.toThrow(NotFoundException);
+      await expect(
+        controller.registrarAsistencia('evt-999', asistBody),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('debería lanzar ForbiddenException si el código de asistencia es incorrecto', async () => {
       mockPrisma.evento.findFirst.mockResolvedValue(mockEvento);
       const wrongBody = { ...asistBody, codigoAsistencia: 'WRONG' };
-      await expect(controller.registrarAsistencia('evt-1', wrongBody))
-        .rejects.toThrow(ForbiddenException);
+      await expect(
+        controller.registrarAsistencia('evt-1', wrongBody),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('debería retornar yaRegistrada=true si ya tenía asistencia', async () => {
       mockPrisma.evento.findFirst.mockResolvedValue(mockEvento);
       mockPrisma.eventoPersona.findFirst.mockResolvedValue(mockPersona);
-      mockPrisma.eventoInscripcion.findFirst.mockResolvedValue({ id: 'ins-1', asistencia: true });
+      mockPrisma.eventoInscripcion.findFirst.mockResolvedValue({
+        id: 'ins-1',
+        asistencia: true,
+      });
 
       const result = await controller.registrarAsistencia('evt-1', asistBody);
       expect(result.yaRegistrada).toBe(true);
@@ -261,14 +338,17 @@ describe('EventViewsController (Blindaje Completo - 752 líneas)', () => {
     it('debería registrar asistencia nueva exitosamente', async () => {
       mockPrisma.evento.findFirst.mockResolvedValue(mockEvento);
       mockPrisma.eventoPersona.findFirst.mockResolvedValue(mockPersona);
-      mockPrisma.eventoInscripcion.findFirst.mockResolvedValue({ id: 'ins-1', asistencia: false });
+      mockPrisma.eventoInscripcion.findFirst.mockResolvedValue({
+        id: 'ins-1',
+        asistencia: false,
+      });
       mockPrisma.eventoInscripcion.update.mockResolvedValue({});
 
       const result = await controller.registrarAsistencia('evt-1', asistBody);
       expect(result.success).toBe(true);
       expect(result.yaRegistrada).toBe(false);
       expect(mockPrisma.eventoInscripcion.update).toHaveBeenCalledWith(
-        expect.objectContaining({ data: { asistencia: true } })
+        expect.objectContaining({ data: { asistencia: true } }),
       );
     });
   });
@@ -277,18 +357,25 @@ describe('EventViewsController (Blindaje Completo - 752 líneas)', () => {
   describe('marcarVideoVisto', () => {
     it('debería lanzar NotFoundException si la persona no existe', async () => {
       mockPrisma.eventoPersona.findFirst.mockResolvedValue(null);
-      await expect(controller.marcarVideoVisto('evt-1', 'cues-1', { ci: '0', fechaNacimiento: '2000-01-01' }))
-        .rejects.toThrow(NotFoundException);
+      await expect(
+        controller.marcarVideoVisto('evt-1', 'cues-1', {
+          ci: '0',
+          fechaNacimiento: '2000-01-01',
+        }),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('debería registrar el video como visto exitosamente', async () => {
       mockPrisma.eventoPersona.findFirst.mockResolvedValue(mockPersona);
       mockPrisma.eventoCuestionarioIntento.upsert.mockResolvedValue({});
 
-      const result = await controller.marcarVideoVisto('evt-1', 'cues-1', { ci: '1234567', fechaNacimiento: '1990-01-01' });
+      const result = await controller.marcarVideoVisto('evt-1', 'cues-1', {
+        ci: '1234567',
+        fechaNacimiento: '1990-01-01',
+      });
       expect(result.success).toBe(true);
       expect(mockPrisma.eventoCuestionarioIntento.upsert).toHaveBeenCalledWith(
-        expect.objectContaining({ update: { videoCompletado: true } })
+        expect.objectContaining({ update: { videoCompletado: true } }),
       );
     });
   });
@@ -300,28 +387,54 @@ describe('EventViewsController (Blindaje Completo - 752 líneas)', () => {
     const future = new Date(now.getTime() + 100000);
 
     const mockCuestionario = {
-      id: 'cues-1', titulo: 'Test', esEvaluativo: false, urlVideo: null,
-      fechaInicio: past, fechaFin: future,
-      limiteIntentos: null, puntosMaximos: null, cantidadPreguntas: null,
+      id: 'cues-1',
+      titulo: 'Test',
+      esEvaluativo: false,
+      urlVideo: null,
+      fechaInicio: past,
+      fechaFin: future,
+      limiteIntentos: null,
+      puntosMaximos: null,
+      cantidadPreguntas: null,
       preguntas: [
-        { id: 'preg-1', tipo: 'SINGLE', puntos: 10, opciones: [{ id: 'opc-1', texto: 'A', esCorrecta: true }] },
+        {
+          id: 'preg-1',
+          tipo: 'SINGLE',
+          puntos: 10,
+          opciones: [{ id: 'opc-1', texto: 'A', esCorrecta: true }],
+        },
       ],
     };
 
     it('debería lanzar NotFoundException si el cuestionario no existe', async () => {
       mockPrisma.eventoCuestionario.findFirst.mockResolvedValue(null);
-      await expect(controller.responderCuestionario('evt-1', 'cues-999', { ci: '1', fechaNacimiento: '2000-01-01', respuestas: [] }))
-        .rejects.toThrow(NotFoundException);
+      await expect(
+        controller.responderCuestionario('evt-1', 'cues-999', {
+          ci: '1',
+          fechaNacimiento: '2000-01-01',
+          respuestas: [],
+        }),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('debería lanzar ForbiddenException si el cuestionario aún no ha comenzado', async () => {
-      mockPrisma.eventoCuestionario.findFirst.mockResolvedValue({ ...mockCuestionario, fechaInicio: future });
-      await expect(controller.responderCuestionario('evt-1', 'cues-1', { ci: '1', fechaNacimiento: '2000-01-01', respuestas: [] }))
-        .rejects.toThrow(ForbiddenException);
+      mockPrisma.eventoCuestionario.findFirst.mockResolvedValue({
+        ...mockCuestionario,
+        fechaInicio: future,
+      });
+      await expect(
+        controller.responderCuestionario('evt-1', 'cues-1', {
+          ci: '1',
+          fechaNacimiento: '2000-01-01',
+          respuestas: [],
+        }),
+      ).rejects.toThrow(ForbiddenException);
     });
 
     it('debería completar un formulario no evaluativo exitosamente', async () => {
-      mockPrisma.eventoCuestionario.findFirst.mockResolvedValue(mockCuestionario);
+      mockPrisma.eventoCuestionario.findFirst.mockResolvedValue(
+        mockCuestionario,
+      );
       mockPrisma.eventoPersona.findFirst.mockResolvedValue(mockPersona);
       mockPrisma.eventoCuestionarioIntento.findFirst.mockResolvedValue(null);
       mockPrisma.evento_respuestas.findFirst.mockResolvedValue(null);
@@ -329,7 +442,8 @@ describe('EventViewsController (Blindaje Completo - 752 líneas)', () => {
       mockPrisma.eventoCuestionarioIntento.upsert.mockResolvedValue({});
 
       const result = await controller.responderCuestionario('evt-1', 'cues-1', {
-        ci: '1234567', fechaNacimiento: '1990-01-01',
+        ci: '1234567',
+        fechaNacimiento: '1990-01-01',
         respuestas: [{ preguntaId: 'preg-1', opcionId: 'opc-1' }],
       });
 
@@ -338,7 +452,11 @@ describe('EventViewsController (Blindaje Completo - 752 líneas)', () => {
     });
 
     it('debería calcular la nota correctamente para cuestionario evaluativo', async () => {
-      const evalCuest = { ...mockCuestionario, esEvaluativo: true, puntosMaximos: 10 };
+      const evalCuest = {
+        ...mockCuestionario,
+        esEvaluativo: true,
+        puntosMaximos: 10,
+      };
       mockPrisma.eventoCuestionario.findFirst.mockResolvedValue(evalCuest);
       mockPrisma.eventoPersona.findFirst.mockResolvedValue(mockPersona);
       mockPrisma.eventoCuestionarioIntento.findFirst.mockResolvedValue(null);
@@ -347,7 +465,8 @@ describe('EventViewsController (Blindaje Completo - 752 líneas)', () => {
       mockPrisma.eventoCuestionarioIntento.upsert.mockResolvedValue({});
 
       const result = await controller.responderCuestionario('evt-1', 'cues-1', {
-        ci: '1234567', fechaNacimiento: '1990-01-01',
+        ci: '1234567',
+        fechaNacimiento: '1990-01-01',
         respuestas: [{ preguntaId: 'preg-1', opcionId: 'opc-1' }], // Respuesta correcta
       });
 

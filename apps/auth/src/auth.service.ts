@@ -11,7 +11,7 @@ export class AuthService {
     private jwtService: JwtService,
     private abilityFactory: CaslAbilityFactory,
     private mailService: MailService,
-  ) { }
+  ) {}
 
   async forgotPassword(email: string) {
     const user = await this.prisma.user.findUnique({
@@ -172,7 +172,8 @@ export class AuthService {
           data: {
             token: tokenDispositivo,
             userId: user.id,
-            tipo_usuario: user.roles?.map((ur: any) => ur.role?.name).join(',') || '',
+            tipo_usuario:
+              user.roles?.map((ur: any) => ur.role?.name).join(',') || '',
           },
         });
       } else if (existingToken.userId !== user.id) {

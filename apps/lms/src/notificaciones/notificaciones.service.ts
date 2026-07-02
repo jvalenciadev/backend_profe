@@ -8,17 +8,22 @@ import * as path from 'path';
 if (!admin.apps.length) {
   try {
     const serviceAccountPath = process.env.GOOGLE_APPLICATION_CREDENTIALS;
-    
-    if (serviceAccountPath && fs.existsSync(path.resolve(process.cwd(), serviceAccountPath))) {
+
+    if (
+      serviceAccountPath &&
+      fs.existsSync(path.resolve(process.cwd(), serviceAccountPath))
+    ) {
       const fullPath = path.resolve(process.cwd(), serviceAccountPath);
       console.log('[FCM Backend] Usando credenciales de: ' + fullPath);
       const serviceAccount = JSON.parse(fs.readFileSync(fullPath, 'utf8'));
-      
+
       admin.initializeApp({
         credential: admin.credential.cert(serviceAccount),
       });
     } else {
-      console.log('[FCM Backend] No se encontró GOOGLE_APPLICATION_CREDENTIALS. Usando default.');
+      console.log(
+        '[FCM Backend] No se encontró GOOGLE_APPLICATION_CREDENTIALS. Usando default.',
+      );
       admin.initializeApp({
         credential: admin.credential.applicationDefault(),
       });
@@ -99,7 +104,9 @@ export class NotificacionesService {
             linkRef: data.linkRef || '',
           },
         });
-        console.log(`[FCM] Notification sent to ${response.successCount} devices for user ${data.userId} (${response.failureCount} failed)`);
+        console.log(
+          `[FCM] Notification sent to ${response.successCount} devices for user ${data.userId} (${response.failureCount} failed)`,
+        );
       }
     } catch (e) {
       console.error('[FCM] Error enviando notificacion PUSH multicontrol:', e);
@@ -143,19 +150,22 @@ export class NotificacionesService {
         const chunkSize = 500;
         for (let i = 0; i < tokens.length; i += chunkSize) {
           const tokenChunk = tokens.slice(i, i + chunkSize);
-          await admin.messaging().sendEachForMulticast({
-            tokens: tokenChunk,
-            notification: {
-              title: data.titulo,
-              body: data.mensaje,
-            },
-            data: {
-              tipo: data.tipo,
-              linkRef: data.linkRef || '',
-            },
-          }).catch((err) => {
-            console.error('[FCM] Error en lote multicast de emitBulk:', err);
-          });
+          await admin
+            .messaging()
+            .sendEachForMulticast({
+              tokens: tokenChunk,
+              notification: {
+                title: data.titulo,
+                body: data.mensaje,
+              },
+              data: {
+                tipo: data.tipo,
+                linkRef: data.linkRef || '',
+              },
+            })
+            .catch((err) => {
+              console.error('[FCM] Error en lote multicast de emitBulk:', err);
+            });
         }
       }
     } catch (e) {

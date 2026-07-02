@@ -48,7 +48,11 @@ export class CuestionarioController {
   }
 
   @Post(':id/iniciar')
-  async iniciar(@Param('id') id: string, @Request() req: any, @Body() body: any) {
+  async iniciar(
+    @Param('id') id: string,
+    @Request() req: any,
+    @Body() body: any,
+  ) {
     return this.cuestionarioService.iniciarIntento(req.user.id, id, body);
   }
 
@@ -72,12 +76,19 @@ export class CuestionarioController {
   @Post(':id/verificar-facilitador')
   async verificarFacilitador(@Param('id') id: string, @Body() body: any) {
     console.log('DEBUG: Verificando facilitador para cuestionario', id);
-    const isAuthorized = await this.cuestionarioService.verificarFacilitadorPassword(id, body.password);
+    const isAuthorized =
+      await this.cuestionarioService.verificarFacilitadorPassword(
+        id,
+        body.password,
+      );
     return { isAuthorized };
   }
 
   @Post('intento/:intentoId/reset')
-  async resetIntento(@Param('intentoId') intentoId: string, @Request() req: any) {
+  async resetIntento(
+    @Param('intentoId') intentoId: string,
+    @Request() req: any,
+  ) {
     return this.cuestionarioService.resetearIntento(intentoId, req.user.id);
   }
 }

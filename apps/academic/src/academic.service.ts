@@ -3,7 +3,7 @@ import { PrismaService } from '@app/database';
 
 @Injectable()
 export class AcademicService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Crea una versión operativa (ProgramaDos) a partir de un maestro (Programa)
@@ -60,8 +60,8 @@ export class AcademicService {
           create: (modulos && modulos.length > 0
             ? modulos
             : master.modulos.sort(
-              (a: any, b: any) => (a.orden || 0) - (b.orden || 0),
-            )
+                (a: any, b: any) => (a.orden || 0) - (b.orden || 0),
+              )
           )
             .filter((m: any) => !m.esGlobal)
             .map((m: any) => ({
@@ -81,14 +81,14 @@ export class AcademicService {
         turnos:
           turnos && turnos.length > 0
             ? {
-              create: turnos.map((t: any) => ({
-                turnoId: t.turnoIds || t.turnoId || t.id,
-                cupo: Number(t.cupo),
-                cupoPre: Number(t.cupoPre) || 0,
-                estado: t.estado || 'activo',
-                createdBy: user?.id || null,
-              })),
-            }
+                create: turnos.map((t: any) => ({
+                  turnoId: t.turnoIds || t.turnoId || t.id,
+                  cupo: Number(t.cupo),
+                  cupoPre: Number(t.cupoPre) || 0,
+                  estado: t.estado || 'activo',
+                  createdBy: user?.id || null,
+                })),
+              }
             : undefined,
       },
       include: { modulos: true, turnos: true },

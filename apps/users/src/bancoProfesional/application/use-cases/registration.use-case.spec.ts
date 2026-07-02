@@ -16,7 +16,7 @@ describe('RegistrationUseCase (Fase 4: Alta de Usuarios - Final)', () => {
   let useCase: RegistrationUseCase;
 
   const mockPrisma = {
-    user: { 
+    user: {
       findMany: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
@@ -46,7 +46,11 @@ describe('RegistrationUseCase (Fase 4: Alta de Usuarios - Final)', () => {
     mockVerification.verifyCode.mockReturnValue(true);
     mockPrisma.user.findMany.mockResolvedValue([]);
     mockPrisma.role.findFirst.mockResolvedValue({ id: 'r1' });
-    mockPrisma.user.create.mockResolvedValue({ id: 'u1', username: '123', correo: 't@t.com' });
+    mockPrisma.user.create.mockResolvedValue({
+      id: 'u1',
+      username: '123',
+      correo: 't@t.com',
+    });
 
     const res = await useCase.execute({
       correo: 't@t.com',
@@ -54,7 +58,7 @@ describe('RegistrationUseCase (Fase 4: Alta de Usuarios - Final)', () => {
       ci: '123',
       nombre: 'n',
       apellidos: 'a',
-      password: 'p'
+      password: 'p',
     });
 
     expect(res.id).toBe('u1');
@@ -63,9 +67,12 @@ describe('RegistrationUseCase (Fase 4: Alta de Usuarios - Final)', () => {
 
   it('debería fallar si el CI ya existe', async () => {
     mockVerification.verifyCode.mockReturnValue(true);
-    mockPrisma.user.findMany.mockResolvedValue([{ id: 'u2', ci: BigInt(123), estado: 'activo' }]);
+    mockPrisma.user.findMany.mockResolvedValue([
+      { id: 'u2', ci: BigInt(123), estado: 'activo' },
+    ]);
 
-    await expect(useCase.execute({ ci: '123', correo: 't@t.com', verificationCode: '1' }))
-      .rejects.toThrow(ConflictException);
+    await expect(
+      useCase.execute({ ci: '123', correo: 't@t.com', verificationCode: '1' }),
+    ).rejects.toThrow(ConflictException);
   });
 });

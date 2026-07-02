@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, Inject, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Inject,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '@app/database';
 
 @Injectable()
@@ -21,7 +26,9 @@ export class CreateAcademicVersionUseCase {
 
     // Validación de versión automática y secuencial
     if (!rest.versionId) {
-      throw new BadRequestException('Debe seleccionar una versión o gestión de referencia');
+      throw new BadRequestException(
+        'Debe seleccionar una versión o gestión de referencia',
+      );
     }
 
     const selectedVersion = await this.prisma.programaVersion.findUnique({
@@ -29,7 +36,9 @@ export class CreateAcademicVersionUseCase {
     });
 
     if (!selectedVersion) {
-      throw new NotFoundException('La versión de referencia seleccionada no existe');
+      throw new NotFoundException(
+        'La versión de referencia seleccionada no existe',
+      );
     }
 
     const gestion = selectedVersion.gestion;

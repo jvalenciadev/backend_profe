@@ -1,6 +1,13 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { PrismaService } from '@app/database';
-import { CreateCorrespondenciaDto, CorTipoDocumento } from './dto/create-correspondencia.dto';
+import {
+  CreateCorrespondenciaDto,
+  CorTipoDocumento,
+} from './dto/create-correspondencia.dto';
 
 const PREFIJOS: Record<CorTipoDocumento, string> = {
   INFORME: 'INF',
@@ -11,13 +18,18 @@ const PREFIJOS: Record<CorTipoDocumento, string> = {
 
 @Injectable()
 export class CorrespondenciaService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   private async generarCite(
     tx: any,
     tipo: CorTipoDocumento,
     tenantId?: string | null,
-  ): Promise<{ cite: string; hr: string; correlativo: number; gestion: number }> {
+  ): Promise<{
+    cite: string;
+    hr: string;
+    correlativo: number;
+    gestion: number;
+  }> {
     const gestion = new Date().getFullYear();
 
     // 1. Lógica CITE (Segmentada por Tipo y Departamento)
@@ -58,25 +70,45 @@ export class CorrespondenciaService {
   }
 
   async create(dto: CreateCorrespondenciaDto, creatorId: string) {
-    const esDestinatarioPropio = dto.destinatarios.some(p => p.userId === creatorId);
-    const esViaPropia = (dto.vias ?? []).some(p => p.userId === creatorId);
+    const esDestinatarioPropio = dto.destinatarios.some(
+      (p) => p.userId === creatorId,
+    );
+    const esViaPropia = (dto.vias ?? []).some((p) => p.userId === creatorId);
     if (esDestinatarioPropio || esViaPropia) {
-      throw new BadRequestException('No puede agregarse a sí mismo como destinatario o vía');
+      throw new BadRequestException(
+        'No puede agregarse a sí mismo como destinatario o vía',
+      );
     }
     return this.prisma.$transaction(async (tx) => {
       // 1. Obtener tenantId y contexto del creador
       const user = await tx.user.findUnique({
         where: { id: creatorId },
-        select: { tenantId: true }
+        select: { tenantId: true },
       });
 
       const tenantId = user?.tenantId;
-      const { cite, hr, correlativo, gestion } = await this.generarCite(tx, dto.tipo, tenantId);
+      const { cite, hr, correlativo, gestion } = await this.generarCite(
+        tx,
+        dto.tipo,
+        tenantId,
+      );
 
       const participantes = [
-        ...dto.destinatarios.map((p) => ({ userId: p.userId, cargoLiteral: p.cargoLiteral, rol: 'DESTINATARIO' })),
-        ...(dto.vias ?? []).map((p) => ({ userId: p.userId, cargoLiteral: p.cargoLiteral, rol: 'VIA' })),
-        ...dto.remitentes.map((p) => ({ userId: p.userId, cargoLiteral: p.cargoLiteral, rol: 'REMITENTE' })),
+        ...dto.destinatarios.map((p) => ({
+          userId: p.userId,
+          cargoLiteral: p.cargoLiteral,
+          rol: 'DESTINATARIO',
+        })),
+        ...(dto.vias ?? []).map((p) => ({
+          userId: p.userId,
+          cargoLiteral: p.cargoLiteral,
+          rol: 'VIA',
+        })),
+        ...dto.remitentes.map((p) => ({
+          userId: p.userId,
+          cargoLiteral: p.cargoLiteral,
+          rol: 'REMITENTE',
+        })),
       ];
 
       return (tx.corDocumento as any).create({
@@ -102,7 +134,14 @@ export class CorrespondenciaService {
         include: {
           participantes: {
             include: {
-              usuario: { select: { id: true, nombre: true, apellidos: true, cargoStr: true } },
+              usuario: {
+                select: {
+                  id: true,
+                  nombre: true,
+                  apellidos: true,
+                  cargoStr: true,
+                },
+              },
             },
           },
           seguimientos: {
@@ -125,24 +164,48 @@ export class CorrespondenciaService {
         OR: [
           { cite: { contains: query, mode: 'insensitive' } },
           { hr: { contains: query, mode: 'insensitive' } },
-        ]
+        ],
       },
       include: {
         participantes: {
           include: {
-            usuario: { select: { id: true, nombre: true, apellidos: true, cargoStr: true } },
+            usuario: {
+              select: {
+                id: true,
+                nombre: true,
+                apellidos: true,
+                cargoStr: true,
+              },
+            },
           },
         },
         seguimientos: {
           orderBy: { fecha: 'asc' },
           include: {
-            usuario: { select: { id: true, nombre: true, apellidos: true, cargoStr: true } },
-            destinatario: { select: { id: true, nombre: true, apellidos: true, cargoStr: true } },
+            usuario: {
+              select: {
+                id: true,
+                nombre: true,
+                apellidos: true,
+                cargoStr: true,
+              },
+            },
+            destinatario: {
+              select: {
+                id: true,
+                nombre: true,
+                apellidos: true,
+                cargoStr: true,
+              },
+            },
           },
         },
       },
     });
-    if (!doc) throw new NotFoundException(`No se encontró ningún documento con CITE o HR: "${query}"`);
+    if (!doc)
+      throw new NotFoundException(
+        `No se encontró ningún documento con CITE o HR: "${query}"`,
+      );
     return doc;
   }
 
@@ -155,15 +218,30 @@ export class CorrespondenciaService {
       include: {
         participantes: {
           include: {
-            usuario: { select: { id: true, nombre: true, apellidos: true, cargoStr: true, imagen: true } },
+            usuario: {
+              select: {
+                id: true,
+                nombre: true,
+                apellidos: true,
+                cargoStr: true,
+                imagen: true,
+              },
+            },
           },
         },
         seguimientos: {
           orderBy: { fecha: 'desc' },
           include: {
             usuario: { select: { id: true, nombre: true, apellidos: true } },
-            destinatario: { select: { id: true, nombre: true, apellidos: true, cargoStr: true } },
-          }
+            destinatario: {
+              select: {
+                id: true,
+                nombre: true,
+                apellidos: true,
+                cargoStr: true,
+              },
+            },
+          },
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -171,29 +249,47 @@ export class CorrespondenciaService {
 
     const ahora = new Date();
 
-    const mapearConAlerta = (docs: any[]) => docs.map(d => {
-      // Calcular días desde el último movimiento
-      const ultimoMovimiento = d.seguimientos[0]?.fecha || d.createdAt;
-      const diasTranscurridos = Math.floor((ahora.getTime() - new Date(ultimoMovimiento).getTime()) / (1000 * 60 * 60 * 24));
+    const mapearConAlerta = (docs: any[]) =>
+      docs.map((d) => {
+        // Calcular días desde el último movimiento
+        const ultimoMovimiento = d.seguimientos[0]?.fecha || d.createdAt;
+        const diasTranscurridos = Math.floor(
+          (ahora.getTime() - new Date(ultimoMovimiento).getTime()) /
+            (1000 * 60 * 60 * 24),
+        );
 
-      return {
-        ...d,
-        diasMora: diasTranscurridos,
-        alerta: diasTranscurridos > 10,
-        nivelAlerta: diasTranscurridos > 15 ? 'CRITICO' : (diasTranscurridos > 10 ? 'MORA' : 'NORMAL')
-      };
-    });
+        return {
+          ...d,
+          diasMora: diasTranscurridos,
+          alerta: diasTranscurridos > 10,
+          nivelAlerta:
+            diasTranscurridos > 15
+              ? 'CRITICO'
+              : diasTranscurridos > 10
+                ? 'MORA'
+                : 'NORMAL',
+        };
+      });
 
     // Recibidos: documentos que están en la bandeja de entrada del usuario
     // Excluye: ELABORACION (borrador), ARCHIVADO (finalizado), CANCELADO/DEVUELTO (no activos)
-    const recibidosPrev = todos.filter(d => {
-      if (d.estado === 'ELABORACION' || d.estado === 'ARCHIVADO' || d.estado === 'CANCELADO' || d.estado === 'DEVUELTO') return false;
+    const recibidosPrev = todos.filter((d) => {
+      if (
+        d.estado === 'ELABORACION' ||
+        d.estado === 'ARCHIVADO' ||
+        d.estado === 'CANCELADO' ||
+        d.estado === 'DEVUELTO'
+      )
+        return false;
 
       const s0 = d.seguimientos[0];
       if (!s0) return false;
 
       // Caso A: Se le envió/derivó el documento al usuario y aún no lo ha recibido
-      if ((s0.accion === 'ENVIO' || s0.accion === 'DERIVACION') && s0.destinatarioId === userId) {
+      if (
+        (s0.accion === 'ENVIO' || s0.accion === 'DERIVACION') &&
+        s0.destinatarioId === userId
+      ) {
         return true;
       }
 
@@ -208,25 +304,37 @@ export class CorrespondenciaService {
     return {
       recibidos: mapearConAlerta(recibidosPrev),
       // Enviados: documentos activos en curso que el remitente o una VÍA envió/derivó
-      enviados: todos.filter(d =>
-        d.estado !== 'ELABORACION' &&
-        d.estado !== 'ARCHIVADO' &&
-        d.estado !== 'CANCELADO' &&
-        d.estado !== 'DEVUELTO' &&
-        (
+      enviados: todos.filter(
+        (d) =>
+          d.estado !== 'ELABORACION' &&
+          d.estado !== 'ARCHIVADO' &&
+          d.estado !== 'CANCELADO' &&
+          d.estado !== 'DEVUELTO' &&
           // Documentos en curso del remitente
-          d.participantes.some(p => p.userId === userId && p.rol === 'REMITENTE') ||
-          // VÍAs que ya derivaron
-          (d.participantes.some(p => p.userId === userId && p.rol === 'VIA') &&
-            d.seguimientos.some(s => s.usuarioId === userId && (s.accion === 'DERIVACION' || s.accion === 'ENVIO')))
-        )
+          (d.participantes.some(
+            (p) => p.userId === userId && p.rol === 'REMITENTE',
+          ) ||
+            // VÍAs que ya derivaron
+            (d.participantes.some(
+              (p) => p.userId === userId && p.rol === 'VIA',
+            ) &&
+              d.seguimientos.some(
+                (s) =>
+                  s.usuarioId === userId &&
+                  (s.accion === 'DERIVACION' || s.accion === 'ENVIO'),
+              ))),
       ),
       // En Proceso (Borradores): documentos en ELABORACION, CANCELADO o DEVUELTO del remitente
-      enProceso: todos.filter(d =>
-        (d.estado === 'ELABORACION' || d.estado === 'CANCELADO' || d.estado === 'DEVUELTO') &&
-        d.participantes.some(p => p.userId === userId && p.rol === 'REMITENTE')
+      enProceso: todos.filter(
+        (d) =>
+          (d.estado === 'ELABORACION' ||
+            d.estado === 'CANCELADO' ||
+            d.estado === 'DEVUELTO') &&
+          d.participantes.some(
+            (p) => p.userId === userId && p.rol === 'REMITENTE',
+          ),
       ),
-      archivados: todos.filter(d => d.estado === 'ARCHIVADO'),
+      archivados: todos.filter((d) => d.estado === 'ARCHIVADO'),
     };
   }
 
@@ -239,7 +347,14 @@ export class CorrespondenciaService {
       include: {
         participantes: {
           include: {
-            usuario: { select: { id: true, nombre: true, apellidos: true, cargoStr: true } },
+            usuario: {
+              select: {
+                id: true,
+                nombre: true,
+                apellidos: true,
+                cargoStr: true,
+              },
+            },
           },
         },
         seguimientos: { orderBy: { fecha: 'desc' }, take: 1 },
@@ -264,68 +379,112 @@ export class CorrespondenciaService {
 
     // Lógica Senior: Inmutabilidad
     if (doc.estado === 'ARCHIVADO') {
-      throw new BadRequestException('El documento ya está archivado y no puede ser modificado');
+      throw new BadRequestException(
+        'El documento ya está archivado y no puede ser modificado',
+      );
     }
 
     // Lógica de validación para envío, cancelación o devolución
     if (accion === 'ENVIO') {
-      if (doc.estado !== 'ELABORACION' && doc.estado !== 'CANCELADO' && doc.estado !== 'DEVUELTO') {
-        throw new BadRequestException('Solo se pueden enviar documentos que estén en Elaboración, Cancelados o Devueltos');
+      if (
+        doc.estado !== 'ELABORACION' &&
+        doc.estado !== 'CANCELADO' &&
+        doc.estado !== 'DEVUELTO'
+      ) {
+        throw new BadRequestException(
+          'Solo se pueden enviar documentos que estén en Elaboración, Cancelados o Devueltos',
+        );
       }
       // Al reenviar desde CANCELADO o DEVUELTO, solo el remitente puede hacerlo
       if (doc.estado === 'CANCELADO' || doc.estado === 'DEVUELTO') {
-        const esRemitente = doc.participantes.some(p => p.userId === usuarioId && p.rol === 'REMITENTE');
+        const esRemitente = doc.participantes.some(
+          (p) => p.userId === usuarioId && p.rol === 'REMITENTE',
+        );
         if (!esRemitente) {
-          throw new BadRequestException('Solo el remitente original puede reenviar el documento');
+          throw new BadRequestException(
+            'Solo el remitente original puede reenviar el documento',
+          );
         }
       }
     }
 
     if (accion === 'CANCELAR') {
       if (doc.estado !== 'ENVIADO') {
-        throw new BadRequestException('Solo se pueden cancelar documentos en estado ENVIADO (que aún no han sido recibidos)');
+        throw new BadRequestException(
+          'Solo se pueden cancelar documentos en estado ENVIADO (que aún no han sido recibidos)',
+        );
       }
-      const esRemitente = doc.participantes.some(p => p.userId === usuarioId && p.rol === 'REMITENTE');
+      const esRemitente = doc.participantes.some(
+        (p) => p.userId === usuarioId && p.rol === 'REMITENTE',
+      );
       if (!esRemitente) {
-        throw new BadRequestException('Solo el remitente original puede cancelar el envío del documento');
+        throw new BadRequestException(
+          'Solo el remitente original puede cancelar el envío del documento',
+        );
       }
-      const yaCirculo = doc.seguimientos.some(s =>
-        s.accion === 'RECEPCION' ||
-        s.accion === 'DERIVACION' ||
-        s.accion === 'DEVOLUCION'
+      const yaCirculo = doc.seguimientos.some(
+        (s) =>
+          s.accion === 'RECEPCION' ||
+          s.accion === 'DERIVACION' ||
+          s.accion === 'DEVOLUCION',
       );
       if (yaCirculo) {
-        throw new BadRequestException('No se puede cancelar el envío porque el documento ya ha ingresado en trámite anteriormente');
+        throw new BadRequestException(
+          'No se puede cancelar el envío porque el documento ya ha ingresado en trámite anteriormente',
+        );
       }
     }
 
     if (accion === 'DEVOLUCION') {
-      if (doc.estado !== 'ENVIADO' && doc.estado !== 'EN_TRAMITE' && doc.estado !== 'RECIBIDO') {
-        throw new BadRequestException('Solo se pueden devolver documentos en estado ENVIADO, EN_TRAMITE o RECIBIDO');
+      if (
+        doc.estado !== 'ENVIADO' &&
+        doc.estado !== 'EN_TRAMITE' &&
+        doc.estado !== 'RECIBIDO'
+      ) {
+        throw new BadRequestException(
+          'Solo se pueden devolver documentos en estado ENVIADO, EN_TRAMITE o RECIBIDO',
+        );
       }
     }
 
-    if (accion === 'DERIVACION' || (accion === 'RECEPCION' && nuevoDestinatarioId)) {
+    if (
+      accion === 'DERIVACION' ||
+      (accion === 'RECEPCION' && nuevoDestinatarioId)
+    ) {
       if (nuevoDestinatarioId === usuarioId) {
-        throw new BadRequestException('No puede derivar el documento a sí mismo');
+        throw new BadRequestException(
+          'No puede derivar el documento a sí mismo',
+        );
       }
     }
 
     // Lógica de Custodia General:
     // El usuario debe tener la custodia del documento para recibir, derivar, devolver o archivar.
-    if (accion === 'RECEPCION' || accion === 'DERIVACION' || accion === 'DEVOLUCION' || accion === 'ARCHIVADO') {
-      const sortedSegs = [...doc.seguimientos].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime());
+    if (
+      accion === 'RECEPCION' ||
+      accion === 'DERIVACION' ||
+      accion === 'DEVOLUCION' ||
+      accion === 'ARCHIVADO'
+    ) {
+      const sortedSegs = [...doc.seguimientos].sort(
+        (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
+      );
       const s0 = sortedSegs[0];
       let tieneCustodia = false;
       if (s0) {
         if (s0.accion === 'RECEPCION' && s0.usuarioId === usuarioId) {
           tieneCustodia = true;
-        } else if ((s0.accion === 'ENVIO' || s0.accion === 'DERIVACION') && s0.destinatarioId === usuarioId) {
+        } else if (
+          (s0.accion === 'ENVIO' || s0.accion === 'DERIVACION') &&
+          s0.destinatarioId === usuarioId
+        ) {
           tieneCustodia = true;
         }
       }
       if (!tieneCustodia) {
-        throw new BadRequestException('No tienes la custodia actual de este documento para realizar esta acción');
+        throw new BadRequestException(
+          'No tienes la custodia actual de este documento para realizar esta acción',
+        );
       }
     }
 
@@ -336,7 +495,9 @@ export class CorrespondenciaService {
     );
 
     if (!esParticipanteActivo) {
-      throw new BadRequestException('No tienes permisos para operar sobre este documento');
+      throw new BadRequestException(
+        'No tienes permisos para operar sobre este documento',
+      );
     }
 
     const estadoMap: Record<string, string> = {
@@ -351,10 +512,16 @@ export class CorrespondenciaService {
     return this.prisma.$transaction(async (tx) => {
       // 1. Si hay un nuevo destinatario dinámico, lo inyectamos en participantes
       if (nuevoDestinatarioId) {
-        const existe = doc.participantes.some(p => p.userId === nuevoDestinatarioId);
+        const existe = doc.participantes.some(
+          (p) => p.userId === nuevoDestinatarioId,
+        );
         if (!existe) {
           await tx.corParticipante.create({
-            data: { documentoId, userId: nuevoDestinatarioId, rol: 'DESTINATARIO' }
+            data: {
+              documentoId,
+              userId: nuevoDestinatarioId,
+              rol: 'DESTINATARIO',
+            },
           });
         }
       }
@@ -367,8 +534,12 @@ export class CorrespondenciaService {
           destinatarioId = nuevoDestinatarioId;
         } else {
           // Envio estándar: primero busca VIAs, si no hay, va al DESTINATARIO
-          const vias = doc.participantes.filter(p => p.rol === 'VIA' && p.userId !== usuarioId);
-          const destinatarios = doc.participantes.filter(p => p.rol === 'DESTINATARIO');
+          const vias = doc.participantes.filter(
+            (p) => p.rol === 'VIA' && p.userId !== usuarioId,
+          );
+          const destinatarios = doc.participantes.filter(
+            (p) => p.rol === 'DESTINATARIO',
+          );
           const siguiente = vias.length > 0 ? vias[0] : destinatarios[0];
           destinatarioId = siguiente?.userId ?? null;
         }
@@ -416,7 +587,13 @@ export class CorrespondenciaService {
         ],
         deletedAt: null,
       },
-      select: { id: true, nombre: true, apellidos: true, cargoStr: true, imagen: true },
+      select: {
+        id: true,
+        nombre: true,
+        apellidos: true,
+        cargoStr: true,
+        imagen: true,
+      },
       take: 10,
     });
   }
@@ -428,9 +605,16 @@ export class CorrespondenciaService {
         seguimientos: {
           include: {
             usuario: true,
-            destinatario: { select: { id: true, nombre: true, apellidos: true, cargoStr: true } },
+            destinatario: {
+              select: {
+                id: true,
+                nombre: true,
+                apellidos: true,
+                cargoStr: true,
+              },
+            },
           },
-          orderBy: { fecha: 'desc' }
+          orderBy: { fecha: 'desc' },
         },
       },
     });

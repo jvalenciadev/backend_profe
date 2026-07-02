@@ -7,7 +7,8 @@ import { PermissionsCrudModule as PermissionModule } from './permissions-crud/pe
 import { ProfeModule } from './profe/profe.module';
 import { CargosModule } from './cargos/cargos.module';
 import { EvaluationsModule } from './evaluations/evaluations.module';
-import { CaslModule, MailModule } from '@app/common';
+import { CaslModule, MailModule, AuditInterceptor } from '@app/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { DatabaseModule } from '@app/database';
 
 // 🚀 Módulos con Clean Architecture Completa (Nuevos/Migrados)
@@ -65,6 +66,10 @@ import { CamposExtraService } from './campos-extra/campos-extra.service';
     RequestEmailVerificationUseCase,
     ChangePasswordUseCase,
     CamposExtraService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditInterceptor,
+    },
   ],
 })
 export class UsersModule {}

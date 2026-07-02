@@ -19,7 +19,7 @@ export class LmsService {
     private readonly jwtService: JwtService,
     private readonly notiService: NotificacionesService,
     private readonly mailService: MailService,
-  ) { }
+  ) {}
 
   /**
    * Login exclusivo para el Aula Virtual (LMS)
@@ -58,7 +58,8 @@ export class LmsService {
           data: {
             token: tokenDispositivo,
             userId: user.id,
-            tipo_usuario: user.roles?.map((ur: any) => ur.role?.name).join(',') || '',
+            tipo_usuario:
+              user.roles?.map((ur: any) => ur.role?.name).join(',') || '',
           },
         });
       } else if (existingToken.userId !== user.id) {
@@ -71,21 +72,27 @@ export class LmsService {
 
     // Solo roles permitidos en el aula
     const roles = user.roles.map((ur) => ur.role.name);
-    const ALLOWED_ROLES = ['PARTICIPANTE', 'FACILITADOR', 'ADMIN', 'SUPER_ADMIN', 'ADMINISTRADOR'];
-    let canAccess = roles.some((r) =>
-      ALLOWED_ROLES.includes(r.toUpperCase()),
-    );
+    const ALLOWED_ROLES = [
+      'PARTICIPANTE',
+      'FACILITADOR',
+      'ADMIN',
+      'SUPER_ADMIN',
+      'ADMINISTRADOR',
+    ];
+    let canAccess = roles.some((r) => ALLOWED_ROLES.includes(r.toUpperCase()));
 
     // Fallback: si no tiene rol, verificar si tiene inscripción activa y auto-asignar rol PARTICIPANTE
     if (!canAccess) {
       const INSCRITO_ID = '89da2cd1-ac47-41fb-9f48-5850128d78db';
       const CONFIRMADO_ID = 'adfbbf09-a486-4b79-8fe0-04cf85d83cae';
-      const inscripcionActiva = await this.prisma.programaInscripcion.findFirst({
-        where: {
-          personaId: user.id,
-          estadoInscripcionId: { in: [INSCRITO_ID, CONFIRMADO_ID] },
+      const inscripcionActiva = await this.prisma.programaInscripcion.findFirst(
+        {
+          where: {
+            personaId: user.id,
+            estadoInscripcionId: { in: [INSCRITO_ID, CONFIRMADO_ID] },
+          },
         },
-      });
+      );
       if (inscripcionActiva) {
         // Auto-asignar el rol PARTICIPANTE (corrección retroactiva)
         const rolePart = await this.prisma.role.findFirst({
@@ -305,7 +312,9 @@ export class LmsService {
                   inscripciones: {
                     where: {
                       estado: { in: ['activo', 'aprobado'] },
-                      estadoInscripcion: { nombre: { in: ['INSCRITO', 'CONFIRMADO'] } },
+                      estadoInscripcion: {
+                        nombre: { in: ['INSCRITO', 'CONFIRMADO'] },
+                      },
                       ...(d.turnoId ? { turnoId: d.turnoId } : {}),
                     },
                     select: { id: true },
@@ -333,7 +342,9 @@ export class LmsService {
                   where: {
                     programa: { programaId: master.programaId },
                     estado: { in: ['activo', 'aprobado'] },
-                    estadoInscripcion: { nombre: { in: ['INSCRITO', 'CONFIRMADO'] } },
+                    estadoInscripcion: {
+                      nombre: { in: ['INSCRITO', 'CONFIRMADO'] },
+                    },
                   },
                 });
               studentCount = totalInscritos;
@@ -368,11 +379,11 @@ export class LmsService {
           // Turno
           const turno = d.turnoId
             ? await this.prisma.programaDosTurno
-              .findUnique({
-                where: { id: d.turnoId },
-                include: { turnoConfig: true },
-              })
-              .catch(() => null)
+                .findUnique({
+                  where: { id: d.turnoId },
+                  include: { turnoConfig: true },
+                })
+                .catch(() => null)
             : null;
 
           return { ...d, programaDos, modulo, turno, studentCount };
@@ -662,7 +673,9 @@ export class LmsService {
         where: {
           personaId: userId,
           estado: 'activo',
-          estadoInscripcion: { nombre: { in: ['INSCRITO', 'CONFIRMADO', 'PREINSCRITO'] } },
+          estadoInscripcion: {
+            nombre: { in: ['INSCRITO', 'CONFIRMADO', 'PREINSCRITO'] },
+          },
         },
         include: {
           programa: {
@@ -719,54 +732,54 @@ export class LmsService {
           try {
             const programaDos = d.programaDosId
               ? await this.prisma.programaDos
-                .findUnique({
-                  where: { id: d.programaDosId },
-                  include: {
-                    tipo: true,
-                    version: true,
-                    sede: true,
-                    inscripciones: {
-                      where: { estado: 'activo' },
-                      select: { id: true },
-                    },
-                  },
-                })
-                .catch(() => null)
-              : null;
-
-            const modulo = d.moduloId
-              ? await this.prisma.programaModuloDos
-                .findUnique({
-                  where: { id: d.moduloId },
-                  include: {
-                    mod_unidades: {
-                      include: { _count: { select: { actividades: true } } },
-                    },
-                  },
-                })
-                .catch(() => null)
-              : d.moduloMaestroId
-                ? await this.prisma.programaModulo
                   .findUnique({
-                    where: { id: d.moduloMaestroId },
+                    where: { id: d.programaDosId },
                     include: {
-                      mod_unidades: {
-                        include: {
-                          _count: { select: { actividades: true } },
-                        },
+                      tipo: true,
+                      version: true,
+                      sede: true,
+                      inscripciones: {
+                        where: { estado: 'activo' },
+                        select: { id: true },
                       },
                     },
                   })
                   .catch(() => null)
+              : null;
+
+            const modulo = d.moduloId
+              ? await this.prisma.programaModuloDos
+                  .findUnique({
+                    where: { id: d.moduloId },
+                    include: {
+                      mod_unidades: {
+                        include: { _count: { select: { actividades: true } } },
+                      },
+                    },
+                  })
+                  .catch(() => null)
+              : d.moduloMaestroId
+                ? await this.prisma.programaModulo
+                    .findUnique({
+                      where: { id: d.moduloMaestroId },
+                      include: {
+                        mod_unidades: {
+                          include: {
+                            _count: { select: { actividades: true } },
+                          },
+                        },
+                      },
+                    })
+                    .catch(() => null)
                 : null;
 
             const turno = d.turnoId
               ? await this.prisma.programaDosTurno
-                .findUnique({
-                  where: { id: d.turnoId },
-                  include: { turnoConfig: true },
-                })
-                .catch(() => null)
+                  .findUnique({
+                    where: { id: d.turnoId },
+                    include: { turnoConfig: true },
+                  })
+                  .catch(() => null)
               : null;
 
             return { ...d, programaDos, modulo, turno };
@@ -894,7 +907,11 @@ export class LmsService {
               });
 
             const totalMod = await this.prisma.mod_actividad.count({
-              where: { unidad: { moduloId: m.id }, estado: 'activo', tipo: { not: 'ASISTENCIA' } },
+              where: {
+                unidad: { moduloId: m.id },
+                estado: 'activo',
+                tipo: { not: 'ASISTENCIA' },
+              },
             });
             const compMod = await this.prisma.mod_actividad.count({
               where: {
@@ -950,7 +967,11 @@ export class LmsService {
             .sort((a: any, b: any) => (a.orden || 0) - (b.orden || 0));
           for (const m of regularMasters) {
             const totalMod = await this.prisma.mod_actividad.count({
-              where: { unidad: { moduloId: m.id }, estado: 'activo', tipo: { not: 'ASISTENCIA' } },
+              where: {
+                unidad: { moduloId: m.id },
+                estado: 'activo',
+                tipo: { not: 'ASISTENCIA' },
+              },
             });
             const compMod = await this.prisma.mod_actividad.count({
               where: {
@@ -1004,9 +1025,12 @@ export class LmsService {
           id: progDos.id,
           nombre: progDos.nombre,
           tipo: progDos.tipo?.nombre || 'Programa',
-          version: progDos.version?.numero ? `VERSIÓN ${progDos.version.numero} (${progDos.version.gestion})` : '1',
+          version: progDos.version?.numero
+            ? `VERSIÓN ${progDos.version.numero} (${progDos.version.gestion})`
+            : '1',
           sede: progDos.sede?.nombre,
-          departamento: progDos.sede?.departamento?.nombre || (progDos.sede as any)?.dep?.nombre,
+          departamento:
+            progDos.sede?.departamento?.nombre || progDos.sede?.dep?.nombre,
           programaInscripcionId: i.id,
           inscripcionId: i.id,
           estadoInscripcion: i.estadoInscripcion?.nombre,
@@ -1694,7 +1718,8 @@ export class LmsService {
         where: { unidadId: data.unidadId, estado: { not: 'eliminado' } },
         _max: { orden: true },
       });
-      const nextOrden = Math.max(maxRecurso._max.orden || 0, maxActividad._max.orden || 0) + 1;
+      const nextOrden =
+        Math.max(maxRecurso._max.orden || 0, maxActividad._max.orden || 0) + 1;
 
       const act = await tx.mod_actividad.create({
         data: {
@@ -1784,23 +1809,29 @@ export class LmsService {
     }
 
     // Buscamos los alumnos inscritos y enviamos notificaciones en segundo plano asíncronamente en lote
-    this.prisma.programaInscripcion.findMany({
-      where: whereInscritos,
-      select: { personaId: true },
-    }).then(async (inscritos) => {
-      const userIds = Array.from(new Set(inscritos.map((i) => i.personaId)));
-      if (userIds.length > 0) {
-        await this.notiService.emitBulk({
-          userIds,
-          titulo: `Nueva Actividad: ${actividad.titulo}`,
-          mensaje: `Se ha publicado una nueva actividad en el módulo ${modName}.`,
-          tipo: 'NUEVA_ACTIVIDAD',
-          linkRef: `/aula/curso/${modId}/actividad/${actividad.id}`,
-        });
-      }
-    }).catch((err) => {
-      console.error(`[ERROR] Failed to fetch enrolled students for notifications:`, err);
-    });
+    this.prisma.programaInscripcion
+      .findMany({
+        where: whereInscritos,
+        select: { personaId: true },
+      })
+      .then(async (inscritos) => {
+        const userIds = Array.from(new Set(inscritos.map((i) => i.personaId)));
+        if (userIds.length > 0) {
+          await this.notiService.emitBulk({
+            userIds,
+            titulo: `Nueva Actividad: ${actividad.titulo}`,
+            mensaje: `Se ha publicado una nueva actividad en el módulo ${modName}.`,
+            tipo: 'NUEVA_ACTIVIDAD',
+            linkRef: `/aula/curso/${modId}/actividad/${actividad.id}`,
+          });
+        }
+      })
+      .catch((err) => {
+        console.error(
+          `[ERROR] Failed to fetch enrolled students for notifications:`,
+          err,
+        );
+      });
 
     return actividad;
   }
@@ -2420,7 +2451,8 @@ export class LmsService {
       where: { unidadId: data.unidadId, estado: { not: 'eliminado' } },
       _max: { orden: true },
     });
-    const nextOrden = Math.max(maxRecurso._max.orden || 0, maxActividad._max.orden || 0) + 1;
+    const nextOrden =
+      Math.max(maxRecurso._max.orden || 0, maxActividad._max.orden || 0) + 1;
 
     return this.prisma.mod_recurso.create({
       data: {
@@ -2434,8 +2466,6 @@ export class LmsService {
       },
     });
   }
-
-
 
   async deleteRecurso(userId: string, id: string) {
     return this.prisma.mod_recurso.update({
@@ -2544,7 +2574,13 @@ export class LmsService {
       const roles = user?.roles?.map((ur) => ur.role.name.toUpperCase()) || [];
       if (
         roles.some((r) =>
-          ['ADMIN', 'SUPER_ADMIN', 'ADMINISTRADOR', 'FACILITADOR', 'DOCENTE'].includes(r),
+          [
+            'ADMIN',
+            'SUPER_ADMIN',
+            'ADMINISTRADOR',
+            'FACILITADOR',
+            'DOCENTE',
+          ].includes(r),
         )
       ) {
         isFacilitador = true;
@@ -2650,7 +2686,13 @@ export class LmsService {
       const roles = user?.roles?.map((ur) => ur.role.name.toUpperCase()) || [];
       if (
         roles.some((r) =>
-          ['ADMIN', 'SUPER_ADMIN', 'ADMINISTRADOR', 'FACILITADOR', 'DOCENTE'].includes(r),
+          [
+            'ADMIN',
+            'SUPER_ADMIN',
+            'ADMINISTRADOR',
+            'FACILITADOR',
+            'DOCENTE',
+          ].includes(r),
         )
       ) {
         isFacReal = true;
@@ -2865,35 +2907,42 @@ export class LmsService {
 
     // 2. Obtener tipo de programa para traer la configuración académica (mod_tipo_calificacion_config)
     let tipoId: string | null = null;
-    const modDos = await this.prisma.programaModuloDos.findUnique({
-      where: { id: moduloId },
-      include: { programaDos: true }
-    }).catch(() => null);
+    const modDos = await this.prisma.programaModuloDos
+      .findUnique({
+        where: { id: moduloId },
+        include: { programaDos: true },
+      })
+      .catch(() => null);
 
     if (modDos) {
       tipoId = modDos.programaDos.tipoId;
     } else {
-      const modMaestro = await this.prisma.programaModulo.findUnique({
-        where: { id: moduloId },
-        include: { programa: true }
-      }).catch(() => null);
+      const modMaestro = await this.prisma.programaModulo
+        .findUnique({
+          where: { id: moduloId },
+          include: { programa: true },
+        })
+        .catch(() => null);
       if (modMaestro) tipoId = modMaestro.programa.tipoId;
     }
 
     // 3. Obtener categorías configuradas (fuente de verdad del programa académico)
-    const configCategorias = tipoId ? await this.prisma.mod_tipo_calificacion_config.findMany({
-      where: { tipoProgramaId: tipoId, estado: 'activo' },
-      orderBy: { orden: 'asc' }
-    }) : [];
+    const configCategorias = tipoId
+      ? await this.prisma.mod_tipo_calificacion_config.findMany({
+          where: { tipoProgramaId: tipoId, estado: 'activo' },
+          orderBy: { orden: 'asc' },
+        })
+      : [];
 
     // 4. Obtener las instancias reales del módulo (para saber si hay actividades en categorías extras o diferentes)
-    const instanciasCategorias = await this.prisma.mod_categoria_calificacion.findMany({
-      where: {
-        OR: [{ moduloId }, { moduloMaestroId: moduloId }],
-        estado: 'activo'
-      },
-      include: { config: true }
-    });
+    const instanciasCategorias =
+      await this.prisma.mod_categoria_calificacion.findMany({
+        where: {
+          OR: [{ moduloId }, { moduloMaestroId: moduloId }],
+          estado: 'activo',
+        },
+        include: { config: true },
+      });
 
     // 5. Obtener actividades calificables
     const actividades = await this.prisma.mod_actividad.findMany({
@@ -2910,7 +2959,10 @@ export class LmsService {
     });
 
     // 6. Obtener estudiantes
-    const estudiantes = await this.getEstudiantesPorCurso(moduloId, turnoId as any);
+    const estudiantes = await this.getEstudiantesPorCurso(
+      moduloId,
+      turnoId as any,
+    );
 
     // 7. Obtener todas las notas
     const todasLasNotas = await this.prisma.mod_nota_actividad.findMany({
@@ -2928,43 +2980,48 @@ export class LmsService {
           {
             OR: [
               { actividadId: null },
-              { actividad: { estado: { not: 'eliminado' } } }
-            ]
-          }
-        ]
+              { actividad: { estado: { not: 'eliminado' } } },
+            ],
+          },
+        ],
       },
     });
-    const asistenciasEntregadas = await this.prisma.mod_asistencia_reg.findMany({
-      where: {
-        asistenciaId: { in: sesiones.map((s) => s.id) },
-        userId: { in: estudiantes.map((e) => e.personaId) },
+    const asistenciasEntregadas = await this.prisma.mod_asistencia_reg.findMany(
+      {
+        where: {
+          asistenciaId: { in: sesiones.map((s) => s.id) },
+          userId: { in: estudiantes.map((e) => e.personaId) },
+        },
       },
-    });
+    );
 
     // 9. Construir mapa de categorías (ConfigId -> Actividades)
-    const catMap = new Map<string, {
-      configId: string | null;
-      nombre: string;
-      peso: number;
-      orden: number;
-      esEvalFinal: boolean;
-      actividades: any[];
-    }>();
+    const catMap = new Map<
+      string,
+      {
+        configId: string | null;
+        nombre: string;
+        peso: number;
+        orden: number;
+        esEvalFinal: boolean;
+        actividades: any[];
+      }
+    >();
 
     // Primero poblar con la configuración oficial del programa
-    configCategorias.forEach(cfg => {
+    configCategorias.forEach((cfg) => {
       catMap.set(cfg.id, {
         configId: cfg.id,
         nombre: cfg.nombre,
         peso: cfg.peso || 0,
         orden: cfg.orden || 99,
         esEvalFinal: cfg.esEvalFinal || false,
-        actividades: []
+        actividades: [],
       });
     });
 
     // Repartir actividades en las categorías
-    actividades.forEach(act => {
+    actividades.forEach((act) => {
       const configId = (act.categoria as any)?.configId;
       if (configId && catMap.has(configId)) {
         catMap.get(configId)!.actividades.push(act);
@@ -2974,18 +3031,26 @@ export class LmsService {
         if (!catMap.has(orphanKey)) {
           catMap.set(orphanKey, {
             configId: null,
-            nombre: (act.categoria as any)?.config?.nombre || (act.categoria as any)?.nombre || 'General',
-            peso: (act.categoria as any)?.config?.peso || (act.categoria as any)?.peso || 0,
+            nombre:
+              (act.categoria as any)?.config?.nombre ||
+              (act.categoria as any)?.nombre ||
+              'General',
+            peso:
+              (act.categoria as any)?.config?.peso ||
+              (act.categoria as any)?.peso ||
+              0,
             orden: 100,
             esEvalFinal: false,
-            actividades: []
+            actividades: [],
           });
         }
         catMap.get(orphanKey)!.actividades.push(act);
       }
     });
 
-    const categoriasSorted = Array.from(catMap.values()).sort((a, b) => a.orden - b.orden);
+    const categoriasSorted = Array.from(catMap.values()).sort(
+      (a, b) => a.orden - b.orden,
+    );
 
     // 10. Armar reporte por estudiante
     const reportData = estudiantes.map((est) => {
@@ -2994,33 +3059,42 @@ export class LmsService {
 
       const fila: any = {
         userId: est.personaId,
-        nombre: apellidos ? `${apellidos.toUpperCase()}, ${nombres}` : (est.persona.nombreCompleto || 'Estudiante'),
+        nombre: apellidos
+          ? `${apellidos.toUpperCase()}, ${nombres}`
+          : est.persona.nombreCompleto || 'Estudiante',
         scores: {},
         desglose: [],
         total: 0,
-        asistencia: 0
+        asistencia: 0,
       };
 
       // Asistencia %
-      const misAsis = asistenciasEntregadas.filter(a => a.userId === est.personaId);
+      const misAsis = asistenciasEntregadas.filter(
+        (a) => a.userId === est.personaId,
+      );
       if (sesiones.length > 0) {
-        const presentes = misAsis.filter(a => a.estado === 'P' || a.estado === 'T').length;
+        const presentes = misAsis.filter(
+          (a) => a.estado === 'P' || a.estado === 'T',
+        ).length;
         fila.asistencia = Math.round((presentes / sesiones.length) * 100);
       }
 
       let totalPonderado = 0;
 
-      categoriasSorted.forEach(cat => {
+      categoriasSorted.forEach((cat) => {
         const actsInCat = cat.actividades;
         let promedioCat = 0;
 
         if (actsInCat.length > 0) {
           const sumaNormalizada = actsInCat.reduce((sum, act) => {
-            const n = todasLasNotas.find(nota => nota.actividadId === act.id && nota.userId === est.personaId);
+            const n = todasLasNotas.find(
+              (nota) =>
+                nota.actividadId === act.id && nota.userId === est.personaId,
+            );
             const notaObtenida = n ? n.nota : 0;
             const maxAct = act.puntajeMax || 100;
             fila.scores[act.id] = notaObtenida;
-            return sum + ((notaObtenida / maxAct) * 100);
+            return sum + (notaObtenida / maxAct) * 100;
           }, 0);
           promedioCat = sumaNormalizada / actsInCat.length;
         }
@@ -3032,7 +3106,7 @@ export class LmsService {
           nombre: cat.nombre,
           peso: cat.peso,
           promedio: Math.round(promedioCat * 10) / 10,
-          aporte: Math.round(aporte * 10) / 10
+          aporte: Math.round(aporte * 10) / 10,
         });
       });
 
@@ -3046,23 +3120,27 @@ export class LmsService {
 
     const finalReport = {
       notaMaxima: (modDos?.programaDos as any)?.tipo?.notaMaxima || 100,
-      notaReprobacion: (modDos?.programaDos as any)?.tipo?.notaReprobacion || 60,
-      categorias: categoriasSorted.map(c => ({
+      notaReprobacion:
+        (modDos?.programaDos as any)?.tipo?.notaReprobacion || 60,
+      categorias: categoriasSorted.map((c) => ({
         configId: c.configId,
         nombre: c.nombre,
         peso: c.peso,
         esEvalFinal: c.esEvalFinal || false,
-        orden: c.orden || 0
+        orden: c.orden || 0,
       })),
-      headers: actividades.map(act => ({
+      headers: actividades.map((act) => ({
         id: act.id,
         titulo: act.titulo,
         tipo: act.tipo,
         puntajeMax: act.puntajeMax ?? 100,
         categoriaId: (act.categoria as any)?.configId || null,
-        categoriaNombre: (act.categoria as any)?.config?.nombre || (act.categoria as any)?.nombre || 'General'
+        categoriaNombre:
+          (act.categoria as any)?.config?.nombre ||
+          (act.categoria as any)?.nombre ||
+          'General',
       })),
-      estudiantes: reportData.sort((a, b) => a.nombre.localeCompare(b.nombre))
+      estudiantes: reportData.sort((a, b) => a.nombre.localeCompare(b.nombre)),
     };
 
     return finalReport;
@@ -3080,7 +3158,7 @@ export class LmsService {
           data: { userId, insigniaId: ins.id },
         });
       }
-    } catch (e) { }
+    } catch (e) {}
   }
 
   private async persistNotaFinal(
@@ -3209,7 +3287,7 @@ export class LmsService {
         resetPasswordToken: true,
         resetPasswordExpires: true,
         roles: { include: { role: true } },
-      }
+      },
     });
 
     if (!user) throw new NotFoundException('Usuario no encontrado');
@@ -3268,7 +3346,8 @@ export class LmsService {
               data: {
                 token,
                 userId: userId,
-                tipo_usuario: user.roles?.map((ur: any) => ur.role?.name).join(',') || '',
+                tipo_usuario:
+                  user.roles?.map((ur: any) => ur.role?.name).join(',') || '',
               },
             });
           } else if (existingToken.userId !== userId) {
@@ -3348,7 +3427,7 @@ export class LmsService {
       }
       throw new BadRequestException(
         'Error al actualizar el perfil institucional: ' +
-        (e.message || 'Error desconocido'),
+          (e.message || 'Error desconocido'),
       );
     }
   }
@@ -3359,9 +3438,13 @@ export class LmsService {
 
     // Verificar si el correo ya existe para OTRO usuario
     if (email && email !== user.correo) {
-      const emailExists = await this.prisma.user.findUnique({ where: { correo: email } });
+      const emailExists = await this.prisma.user.findUnique({
+        where: { correo: email },
+      });
       if (emailExists) {
-        throw new BadRequestException('Este correo electrónico ya se encuentra registrado en el sistema por otro usuario');
+        throw new BadRequestException(
+          'Este correo electrónico ya se encuentra registrado en el sistema por otro usuario',
+        );
       }
     }
 
@@ -3381,10 +3464,16 @@ export class LmsService {
     await this.mailService
       .sendPasswordResetEmail(email || user.correo, token, user.nombre)
       .catch((err) => {
-        console.error('[LmsService] Error enviando email de verificación:', err);
+        console.error(
+          '[LmsService] Error enviando email de verificación:',
+          err,
+        );
       });
 
-    return { success: true, message: 'Código de verificación enviado correctamente.' };
+    return {
+      success: true,
+      message: 'Código de verificación enviado correctamente.',
+    };
   }
 
   async testPush(userId: string, tipo?: string) {
@@ -3420,10 +3509,7 @@ export class LmsService {
     const isFac = await this.prisma.programaDosFacilitador.findFirst({
       where: {
         facilitadorId: userId,
-        OR: [
-          { moduloId },
-          { moduloMaestroId: moduloId },
-        ],
+        OR: [{ moduloId }, { moduloMaestroId: moduloId }],
         estado: 'activo',
       },
     });
@@ -3441,10 +3527,7 @@ export class LmsService {
 
     const unidades = await this.prisma.mod_unidad_tematica.findMany({
       where: {
-        OR: [
-          { moduloId },
-          { moduloMaestroId: moduloId },
-        ],
+        OR: [{ moduloId }, { moduloMaestroId: moduloId }],
         turnoId: turnoId || null,
         estado: 'activo',
       },
@@ -3503,38 +3586,44 @@ export class LmsService {
         fechaFin: a.fechaFin,
         orden: a.orden,
         categoriaNombre: a.categoria?.config?.nombre || null,
-        foro: a.foro ? {
-          permitirFiles: a.foro.permitirFiles,
-          maxArchivos: a.foro.maxArchivos,
-        } : null,
-        tarea: a.tarea ? {
-          allowFiles: a.tarea.allowFiles,
-          allowText: a.tarea.allowText,
-          maxArchivos: a.tarea.maxArchivos,
-          tiposArch: a.tarea.tiposArch,
-        } : null,
-        cuestionario: a.cuestionario ? {
-          duracion: a.cuestionario.duracion,
-          maxIntentos: a.cuestionario.maxIntentos,
-          aleatorizar: a.cuestionario.aleatorizar,
-          randomCount: a.cuestionario.randomCount,
-          mostrarNota: a.cuestionario.mostrarNota,
-          retroInmediata: a.cuestionario.retroInmediata,
-          soloMobile: a.cuestionario.soloMobile,
-          bloquearCopia: a.cuestionario.bloquearCopia,
-          preguntas: a.cuestionario.preguntas.map((p) => ({
-            texto: p.texto,
-            tipo: p.tipo,
-            puntaje: p.puntaje,
-            imagen: p.imagen,
-            orden: p.orden,
-            opciones: p.opciones.map((o) => ({
-              texto: o.texto,
-              esCorrecta: o.esCorrecta,
-              orden: o.orden,
-            })),
-          })),
-        } : null,
+        foro: a.foro
+          ? {
+              permitirFiles: a.foro.permitirFiles,
+              maxArchivos: a.foro.maxArchivos,
+            }
+          : null,
+        tarea: a.tarea
+          ? {
+              allowFiles: a.tarea.allowFiles,
+              allowText: a.tarea.allowText,
+              maxArchivos: a.tarea.maxArchivos,
+              tiposArch: a.tarea.tiposArch,
+            }
+          : null,
+        cuestionario: a.cuestionario
+          ? {
+              duracion: a.cuestionario.duracion,
+              maxIntentos: a.cuestionario.maxIntentos,
+              aleatorizar: a.cuestionario.aleatorizar,
+              randomCount: a.cuestionario.randomCount,
+              mostrarNota: a.cuestionario.mostrarNota,
+              retroInmediata: a.cuestionario.retroInmediata,
+              soloMobile: a.cuestionario.soloMobile,
+              bloquearCopia: a.cuestionario.bloquearCopia,
+              preguntas: a.cuestionario.preguntas.map((p) => ({
+                texto: p.texto,
+                tipo: p.tipo,
+                puntaje: p.puntaje,
+                imagen: p.imagen,
+                orden: p.orden,
+                opciones: p.opciones.map((o) => ({
+                  texto: o.texto,
+                  esCorrecta: o.esCorrecta,
+                  orden: o.orden,
+                })),
+              })),
+            }
+          : null,
       })),
     }));
 
@@ -3556,10 +3645,7 @@ export class LmsService {
     const isFac = await this.prisma.programaDosFacilitador.findFirst({
       where: {
         facilitadorId: userId,
-        OR: [
-          { moduloId },
-          { moduloMaestroId: moduloId },
-        ],
+        OR: [{ moduloId }, { moduloMaestroId: moduloId }],
         estado: 'activo',
       },
     });
@@ -3576,7 +3662,9 @@ export class LmsService {
     }
 
     if (!importData || !Array.isArray(importData.unidades)) {
-      throw new BadRequestException('El formato del archivo de importación es inválido');
+      throw new BadRequestException(
+        'El formato del archivo de importación es inválido',
+      );
     }
 
     const isModuloNormal = await this.prisma.programaModuloDos.findUnique({
@@ -3585,19 +3673,17 @@ export class LmsService {
     const targetModuloId = isModuloNormal ? moduloId : null;
     const targetModuloMaestroId = isModuloNormal ? null : moduloId;
 
-    const categoriasDestino = await this.prisma.mod_categoria_calificacion.findMany({
-      where: {
-        OR: [
-          { moduloId },
-          { moduloMaestroId: moduloId },
-        ],
-        turnoId: turnoId || null,
-        estado: 'activo',
-      },
-      include: {
-        config: true,
-      },
-    });
+    const categoriasDestino =
+      await this.prisma.mod_categoria_calificacion.findMany({
+        where: {
+          OR: [{ moduloId }, { moduloMaestroId: moduloId }],
+          turnoId: turnoId || null,
+          estado: 'activo',
+        },
+        include: {
+          config: true,
+        },
+      });
 
     const catMap = new Map<string, string>();
     categoriasDestino.forEach((c) => {
@@ -3705,10 +3791,14 @@ export class LmsService {
                   allowFiles: a.tarea.allowFiles ?? true,
                   allowText: a.tarea.allowText ?? true,
                   maxArchivos: a.tarea.maxArchivos || 1,
-                  tiposArch: a.tarea.tiposArch || 'pdf,doc,docx,jpg,png,zip,rar',
+                  tiposArch:
+                    a.tarea.tiposArch || 'pdf,doc,docx,jpg,png,zip,rar',
                 },
               });
-            } else if ((a.tipo === 'CUESTIONARIO' || a.tipo === 'FORMULARIO') && a.cuestionario) {
+            } else if (
+              (a.tipo === 'CUESTIONARIO' || a.tipo === 'FORMULARIO') &&
+              a.cuestionario
+            ) {
               const nuevoCuestionario = await tx.mod_cuestionario.create({
                 data: {
                   actividadId: nuevaActividad.id,
@@ -3752,7 +3842,8 @@ export class LmsService {
                 }
               }
             } else if (a.tipo === 'ASISTENCIA') {
-              const esPresencial = a.esPresencial ?? a.mod_asi_presencial ?? true;
+              const esPresencial =
+                a.esPresencial ?? a.mod_asi_presencial ?? true;
               await tx.mod_asistencia.create({
                 data: {
                   actividadId: nuevaActividad.id,
@@ -3769,6 +3860,9 @@ export class LmsService {
       }
     });
 
-    return { success: true, message: 'La estructura académica ha sido importada exitosamente' };
+    return {
+      success: true,
+      message: 'La estructura académica ha sido importada exitosamente',
+    };
   }
 }

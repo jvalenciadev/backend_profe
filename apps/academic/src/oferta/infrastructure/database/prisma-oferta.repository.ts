@@ -35,6 +35,17 @@ export class PrismaOfertaRepository implements IOfertaRepository {
         },
         modulos: true,
         version: true,
+        inscripciones: {
+          select: {
+            id: true,
+            turnoId: true,
+            estadoInscripcion: {
+              select: {
+                nombre: true,
+              },
+            },
+          },
+        },
       },
     });
     return data ? new Oferta(data) : null;
@@ -64,6 +75,17 @@ export class PrismaOfertaRepository implements IOfertaRepository {
         },
         modulos: true,
         version: true,
+        inscripciones: {
+          select: {
+            id: true,
+            turnoId: true,
+            estadoInscripcion: {
+              select: {
+                nombre: true,
+              },
+            },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
     });
@@ -86,6 +108,17 @@ export class PrismaOfertaRepository implements IOfertaRepository {
         },
         modulos: true,
         version: true,
+        inscripciones: {
+          select: {
+            id: true,
+            turnoId: true,
+            estadoInscripcion: {
+              select: {
+                nombre: true,
+              },
+            },
+          },
+        },
       },
     });
     return new Oferta(updated);

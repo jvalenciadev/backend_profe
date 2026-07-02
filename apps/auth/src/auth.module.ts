@@ -7,7 +7,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { CommonModule, UploadModule } from '@app/common';
+import { CommonModule, UploadModule, AuditInterceptor } from '@app/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -28,6 +29,13 @@ import { CommonModule, UploadModule } from '@app/common';
     }),
   ],
   controllers: [AuthController, UploadController],
-  providers: [AuthService, JwtStrategy],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditInterceptor,
+    },
+  ],
 })
 export class AuthModule {}

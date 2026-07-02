@@ -31,7 +31,10 @@ describe('GetMapCatalogsUseCase (Blindaje Completo)', () => {
   it('debe obtener cargos activos ordenados', async () => {
     await useCase.getCargos();
     expect(mockPrisma.mapCargo.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { estado: 'activo' }, orderBy: { nombre: 'asc' } })
+      expect.objectContaining({
+        where: { estado: 'activo' },
+        orderBy: { nombre: 'asc' },
+      }),
     );
   });
 
@@ -68,10 +71,10 @@ describe('GetMapCatalogsUseCase (Blindaje Completo)', () => {
   it('debe hidratar nombres en las estadísticas correctamente', async () => {
     mockPrisma.mapPersona.count.mockResolvedValue(10);
     mockPrisma.mapPersona.groupBy.mockResolvedValue([
-      { carId: 'c1', _count: { _all: 5 } }
+      { carId: 'c1', _count: { _all: 5 } },
     ]);
     mockPrisma.mapCargo.findMany.mockResolvedValue([
-      { id: 'c1', nombre: 'DIRECTOR' }
+      { id: 'c1', nombre: 'DIRECTOR' },
     ]);
     mockPrisma.mapEspecialidad.findMany.mockResolvedValue([]);
     mockPrisma.mapCategoria.findMany.mockResolvedValue([]);
@@ -88,7 +91,7 @@ describe('GetMapCatalogsUseCase (Blindaje Completo)', () => {
   it('debe manejar IDs nulos en las estadísticas (SIN CARGO, etc)', async () => {
     mockPrisma.mapPersona.count.mockResolvedValue(10);
     mockPrisma.mapPersona.groupBy.mockResolvedValue([
-      { carId: null, _count: { _all: 2 } }
+      { carId: null, _count: { _all: 2 } },
     ]);
     mockPrisma.mapCargo.findMany.mockResolvedValue([]);
     mockPrisma.mapEspecialidad.findMany.mockResolvedValue([]);

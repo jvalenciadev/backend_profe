@@ -10,7 +10,7 @@ export class PrismaEventoRepository implements IEventoRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly caslPrisma: CaslPrismaService,
-  ) { }
+  ) {}
 
   async findAll(filter: any = {}, ability?: any): Promise<Evento[]> {
     const { tenantId, ...rest } = filter;
@@ -78,7 +78,9 @@ export class PrismaEventoRepository implements IEventoRepository {
             preguntas: {
               where: { estado: { not: 'eliminado' }, deletedAt: null },
               include: {
-                opciones: { where: { estado: { not: 'eliminado' }, deletedAt: null } },
+                opciones: {
+                  where: { estado: { not: 'eliminado' }, deletedAt: null },
+                },
               },
             },
           },
@@ -113,14 +115,14 @@ export class PrismaEventoRepository implements IEventoRepository {
         createdBy: userId,
         camposExtras: camposExtras
           ? {
-            create: camposExtras.map((f: any) => ({
-              label: f.label,
-              tipo: f.tipo,
-              esObligatorio: f.esObligatorio,
-              orden: f.orden,
-              opciones: f.opciones || null,
-            })),
-          }
+              create: camposExtras.map((f: any) => ({
+                label: f.label,
+                tipo: f.tipo,
+                esObligatorio: f.esObligatorio,
+                orden: f.orden,
+                opciones: f.opciones || null,
+              })),
+            }
           : undefined,
       },
       include: { tipo: true, tenant: true, camposExtras: true },
@@ -150,15 +152,15 @@ export class PrismaEventoRepository implements IEventoRepository {
         // Eliminar los que no vienen (soft delete)
         ...(toDeleteIds.length > 0
           ? [
-            (this.prisma as any).eventoCampoExtra.updateMany({
-              where: { id: { in: toDeleteIds } },
-              data: {
-                estado: 'eliminado',
-                deletedAt: new Date(),
-                deletedBy: userId,
-              },
-            }),
-          ]
+              (this.prisma as any).eventoCampoExtra.updateMany({
+                where: { id: { in: toDeleteIds } },
+                data: {
+                  estado: 'eliminado',
+                  deletedAt: new Date(),
+                  deletedBy: userId,
+                },
+              }),
+            ]
           : []),
         // Actualizar existentes
         ...toUpdate.map((f: any) =>
@@ -176,15 +178,15 @@ export class PrismaEventoRepository implements IEventoRepository {
         // Crear nuevos
         ...(toCreate.length > 0
           ? [
-            (this.prisma as any).eventoCampoExtra.createMany({
-              data: toCreate.map((f: any) => ({
-                ...f,
-                eventoId: id,
-                opciones: f.opciones || null,
-                estado: 'activo',
-              })),
-            }),
-          ]
+              (this.prisma as any).eventoCampoExtra.createMany({
+                data: toCreate.map((f: any) => ({
+                  ...f,
+                  eventoId: id,
+                  opciones: f.opciones || null,
+                  estado: 'activo',
+                })),
+              }),
+            ]
           : []),
       ]);
     }

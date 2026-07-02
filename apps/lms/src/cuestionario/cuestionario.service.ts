@@ -8,7 +8,7 @@ import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class CuestionarioService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async getCuestionario(id: string) {
     return this.prisma.mod_cuestionario.findUnique({
@@ -121,7 +121,9 @@ export class CuestionarioService {
       select: { id: true },
     });
     const currentDBIds = currentDBPreguntas.map((p) => p.id);
-    const incomingIds = preguntas.map((p) => p.id).filter((id) => id && typeof id === 'string');
+    const incomingIds = preguntas
+      .map((p) => p.id)
+      .filter((id) => id && typeof id === 'string');
 
     // 2. Desactivar preguntas que NO vienen en el array (Soft Delete)
     const idsToDelete = currentDBIds.filter((id) => !incomingIds.includes(id));
@@ -196,12 +198,12 @@ export class CuestionarioService {
 
     const cue = await this.prisma.mod_cuestionario.findUnique({
       where: { id: cuestionarioId },
-      include: { 
-        actividad: true, 
-        preguntas: { 
+      include: {
+        actividad: true,
+        preguntas: {
           where: { estado: 'activo' },
-          orderBy: { orden: 'asc' }
-        } 
+          orderBy: { orden: 'asc' },
+        },
       },
     });
     if (!cue) throw new NotFoundException('Cuestionario no encontrado');
@@ -215,34 +217,40 @@ export class CuestionarioService {
 
     return {
       cuestionario: cue,
-      intentosConsumidos: intentos.filter((i) => i.estado !== 'eliminado').length,
+      intentosConsumidos: intentos.filter((i) => i.estado !== 'eliminado')
+        .length,
       intentosRestantes: Math.max(
         0,
-        cue.maxIntentos - intentos.filter((i) => i.estado !== 'eliminado').length,
+        cue.maxIntentos -
+          intentos.filter((i) => i.estado !== 'eliminado').length,
       ),
       intentoEnProgreso: enProgreso,
       mejorPuntaje:
         intentos.filter((i) => i.estado !== 'eliminado').length > 0
           ? Math.max(
-            ...intentos
-              .filter((i) => i.estado !== 'eliminado')
-              .map((i) => i.puntajeTotal || 0),
-          )
+              ...intentos
+                .filter((i) => i.estado !== 'eliminado')
+                .map((i) => i.puntajeTotal || 0),
+            )
           : 0,
     };
   }
 
   // ─── INTENTOS ───────────────────────────────────────────────
 
-  async iniciarIntento(userId: string, cuestionarioId: string, config: any = {}) {
+  async iniciarIntento(
+    userId: string,
+    cuestionarioId: string,
+    config: any = {},
+  ) {
     const cue = await this.prisma.mod_cuestionario.findUnique({
       where: { id: cuestionarioId },
       include: {
         preguntas: {
           where: { estado: 'activo' },
           orderBy: { orden: 'asc' },
-          include: { opciones: { orderBy: { orden: 'asc' } } }
-        }
+          include: { opciones: { orderBy: { orden: 'asc' } } },
+        },
       },
     });
     if (!cue) throw new NotFoundException('Cuestionario no encontrado');
@@ -259,10 +267,19 @@ export class CuestionarioService {
 
     if (intentoEnProgreso) {
       // Calcular tiempo restante en SERVIDOR para reconexión
-      const extraTime = intentoEnProgreso.motivoBloqueo === 'persona_discapacidad' ? 900 : 0;
-      const tiempoRestanteSegundos = cue.duracion > 0
-        ? Math.max(0, (cue.duracion * 60 + extraTime) - Math.floor((Date.now() - intentoEnProgreso.iniciadoEn.getTime()) / 1000))
-        : null;
+      const extraTime =
+        intentoEnProgreso.motivoBloqueo === 'persona_discapacidad' ? 900 : 0;
+      const tiempoRestanteSegundos =
+        cue.duracion > 0
+          ? Math.max(
+              0,
+              cue.duracion * 60 +
+                extraTime -
+                Math.floor(
+                  (Date.now() - intentoEnProgreso.iniciadoEn.getTime()) / 1000,
+                ),
+            )
+          : null;
       return { ...intentoEnProgreso, tiempoRestanteSegundos };
     }
 
@@ -275,12 +292,19 @@ export class CuestionarioService {
     // ─── VERIFICACIÓN DE FACILITADOR PARA DISCAPACIDAD ───────────
     if (config.discapacidad) {
       if (!config.password) {
-        throw new UnauthorizedException('Se requiere la contraseña del facilitador para activar este modo');
+        throw new UnauthorizedException(
+          'Se requiere la contraseña del facilitador para activar este modo',
+        );
       }
 
-      const isAuthorized = await this.verificarFacilitadorPassword(cuestionarioId, config.password);
+      const isAuthorized = await this.verificarFacilitadorPassword(
+        cuestionarioId,
+        config.password,
+      );
       if (!isAuthorized) {
-        throw new UnauthorizedException('La contraseña del facilitador es incorrecta o no está autorizado para este módulo');
+        throw new UnauthorizedException(
+          'La contraseña del facilitador es incorrecta o no está autorizado para este módulo',
+        );
       }
     }
 
@@ -333,9 +357,17 @@ export class CuestionarioService {
 
     // Calcular tiempo restante en el SERVIDOR para evitar manipulación por reloj del cliente
     const extraTime = config.discapacidad ? 900 : 0;
-    const tiempoRestanteSegundos = cue.duracion > 0
-      ? Math.max(0, (cue.duracion * 60 + extraTime) - Math.floor((Date.now() - nuevoIntento.iniciadoEn.getTime()) / 1000))
-      : null;
+    const tiempoRestanteSegundos =
+      cue.duracion > 0
+        ? Math.max(
+            0,
+            cue.duracion * 60 +
+              extraTime -
+              Math.floor(
+                (Date.now() - nuevoIntento.iniciadoEn.getTime()) / 1000,
+              ),
+          )
+        : null;
 
     return { ...nuevoIntento, tiempoRestanteSegundos };
   }
@@ -542,7 +574,7 @@ export class CuestionarioService {
     if (/^\\d+$/.test(ci)) {
       try {
         searchConditions.push({ ci: BigInt(ci) });
-      } catch (e) { }
+      } catch (e) {}
     }
 
     const user = await this.prisma.user.findFirst({
@@ -550,10 +582,7 @@ export class CuestionarioService {
         OR: searchConditions,
         deletedAt: null,
       },
-      orderBy: [
-        { estado: 'asc' },
-        { createdAt: 'desc' }
-      ]
+      orderBy: [{ estado: 'asc' }, { createdAt: 'desc' }],
     });
 
     if (!user) return [];
@@ -566,7 +595,13 @@ export class CuestionarioService {
       },
       include: {
         user: {
-          select: { id: true, nombre: true, apellidos: true, correo: true, ci: true },
+          select: {
+            id: true,
+            nombre: true,
+            apellidos: true,
+            correo: true,
+            ci: true,
+          },
         },
       },
       orderBy: { iniciadoEn: 'desc' },
@@ -576,7 +611,7 @@ export class CuestionarioService {
   async resetearIntento(intentoId: string, facilitadorId: string) {
     const intento = await this.prisma.mod_intento.findUnique({
       where: { id: intentoId },
-      include: { user: true }
+      include: { user: true },
     });
 
     if (!intento) throw new NotFoundException('Intento no encontrado');
@@ -617,18 +652,21 @@ export class CuestionarioService {
     return { success: true, message: 'Intento reseteado correctamente' };
   }
 
-  async verificarFacilitadorPassword(cuestionarioId: string, password: string): Promise<boolean> {
+  async verificarFacilitadorPassword(
+    cuestionarioId: string,
+    password: string,
+  ): Promise<boolean> {
     const cue = await this.prisma.mod_cuestionario.findUnique({
       where: { id: cuestionarioId },
       include: {
         actividad: {
           include: {
             unidad: {
-              select: { moduloId: true, moduloMaestroId: true }
-            }
-          }
-        }
-      }
+              select: { moduloId: true, moduloMaestroId: true },
+            },
+          },
+        },
+      },
     });
 
     if (!cue) return false;
@@ -638,11 +676,14 @@ export class CuestionarioService {
 
     const facilitadores = await this.prisma.programaDosFacilitador.findMany({
       where: { OR: [{ moduloId }, { moduloId: moduloMaestroId }] },
-      include: { facilitador: true }
+      include: { facilitador: true },
     });
 
     for (const f of facilitadores) {
-      if (f.facilitador && await bcrypt.compare(password, f.facilitador.password)) {
+      if (
+        f.facilitador &&
+        (await bcrypt.compare(password, f.facilitador.password))
+      ) {
         return true;
       }
     }

@@ -19,5 +19,5 @@ export class Evento {
     public asistidos: number = 0,
     public camposExtras: any[] = [],
     public cuestionarios: any[] = [],
-  ) { }
+  ) {}
 }

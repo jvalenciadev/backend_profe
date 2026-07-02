@@ -3,7 +3,7 @@ import { PrismaService } from '@app/database';
 
 @Injectable()
 export class AppService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   getHello(): string {
     return 'Backend Operativo - PROFE';
@@ -62,13 +62,16 @@ export class AppService {
     });
 
     // 2. Gráfico de "Estado de Inscripciones"
-    const estadosInscripcionGrp = await this.prisma.programaInscripcion.groupBy({
-      by: ['estadoInscripcionId'],
-      _count: true,
-      where: { estado: 'activo' },
-    });
+    const estadosInscripcionGrp = await this.prisma.programaInscripcion.groupBy(
+      {
+        by: ['estadoInscripcionId'],
+        _count: true,
+        where: { estado: 'activo' },
+      },
+    );
 
-    const estadosCatalogo = await this.prisma.programa_inscripcion_estado.findMany();
+    const estadosCatalogo =
+      await this.prisma.programa_inscripcion_estado.findMany();
     const mapEstados = new Map(estadosCatalogo.map((e) => [e.id, e.nombre]));
 
     const estadosData = estadosInscripcionGrp.map((g) => ({
@@ -99,19 +102,36 @@ export class AppService {
     seisMesesAtras.setDate(1);
     seisMesesAtras.setHours(0, 0, 0, 0);
 
-    const inscripcionesRecientes = await this.prisma.programaInscripcion.findMany({
-      where: {
-        estado: 'activo',
-        createdAt: { gte: seisMesesAtras },
-      },
-      select: {
-        createdAt: true,
-        estadoInscripcion: { select: { nombre: true } },
-      },
-    });
+    const inscripcionesRecientes =
+      await this.prisma.programaInscripcion.findMany({
+        where: {
+          estado: 'activo',
+          createdAt: { gte: seisMesesAtras },
+        },
+        select: {
+          createdAt: true,
+          estadoInscripcion: { select: { nombre: true } },
+        },
+      });
 
-    const nombresMeses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-    const mesesMap = new Map<string, { mes: string; inscritos: number; egresados: number }>();
+    const nombresMeses = [
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic',
+    ];
+    const mesesMap = new Map<
+      string,
+      { mes: string; inscritos: number; egresados: number }
+    >();
 
     for (let i = 5; i >= 0; i--) {
       const d = new Date();
@@ -129,7 +149,10 @@ export class AppService {
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       const monthData = mesesMap.get(key);
       if (monthData) {
-        const esPre = ins.estadoInscripcion?.nombre?.toUpperCase().includes('PREINSCRITO') ||
+        const esPre =
+          ins.estadoInscripcion?.nombre
+            ?.toUpperCase()
+            .includes('PREINSCRITO') ||
           ins.estadoInscripcion?.nombre?.toUpperCase().includes('PENDIENTE');
         if (esPre) {
           monthData.egresados += 1; // Usado como preinscritos/egresados comparador
@@ -157,13 +180,18 @@ export class AppService {
       },
     });
 
-    const departamentosData = departamentosRaw.map((dep) => {
-      const totalInscritos = dep.sedes.reduce((acc, s) => acc + (s._count?.inscripciones || 0), 0);
-      return {
-        name: dep.nombre,
-        valor: totalInscritos,
-      };
-    }).filter((d) => d.valor > 0);
+    const departamentosData = departamentosRaw
+      .map((dep) => {
+        const totalInscritos = dep.sedes.reduce(
+          (acc, s) => acc + (s._count?.inscripciones || 0),
+          0,
+        );
+        return {
+          name: dep.nombre,
+          valor: totalInscritos,
+        };
+      })
+      .filter((d) => d.valor > 0);
 
     // 6. Actividad Semanal (Usuarios registrados e inscripciones de la semana)
     const hoy = new Date();
@@ -191,7 +219,10 @@ export class AppService {
     ]);
 
     const diasSemanaNombres = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-    const actividadSemanalMap = new Map<number, { dia: string; usuarios: number; eventos: number }>();
+    const actividadSemanalMap = new Map<
+      number,
+      { dia: string; usuarios: number; eventos: number }
+    >();
 
     for (let i = 1; i <= 7; i++) {
       const dayNum = i === 7 ? 0 : i;
@@ -215,7 +246,9 @@ export class AppService {
     });
 
     const orderedDays = [1, 2, 3, 4, 5, 6, 0];
-    const actividadSemanalData = orderedDays.map((dNum) => actividadSemanalMap.get(dNum)!);
+    const actividadSemanalData = orderedDays.map(
+      (dNum) => actividadSemanalMap.get(dNum)!,
+    );
 
     // 7. Actividad Reciente (Últimas inscripciones y registros)
     const [ultimasInscripciones, ultimosUsuarios] = await Promise.all([
@@ -283,20 +316,26 @@ export class AppService {
     inicioHoy.setHours(0, 0, 0, 0);
 
     const [comunicadosHoy, inscripcionesHoy] = await Promise.all([
-      this.prisma.comunicado.count({ where: { createdAt: { gte: inicioHoy } } }),
-      this.prisma.programaInscripcion.count({ where: { createdAt: { gte: inicioHoy } } }),
+      this.prisma.comunicado.count({
+        where: { createdAt: { gte: inicioHoy } },
+      }),
+      this.prisma.programaInscripcion.count({
+        where: { createdAt: { gte: inicioHoy } },
+      }),
     ]);
 
     // --- NUEVOS DATOS FINANCIEROS ---
-    const totalRecaudadoAggregate = await this.prisma.programaBaucher.aggregate({
-      where: {
-        confirmado: true,
-        estado: 'activo',
+    const totalRecaudadoAggregate = await this.prisma.programaBaucher.aggregate(
+      {
+        where: {
+          confirmado: true,
+          estado: 'activo',
+        },
+        _sum: {
+          monto: true,
+        },
       },
-      _sum: {
-        monto: true,
-      },
-    });
+    );
     const totalRecaudado = totalRecaudadoAggregate._sum?.monto || 0;
 
     const pagosPendientes = await this.prisma.programaBaucher.count({
@@ -306,15 +345,17 @@ export class AppService {
       },
     });
 
-    const montoPendienteAggregate = await this.prisma.programaBaucher.aggregate({
-      where: {
-        confirmado: null,
-        estado: 'activo',
+    const montoPendienteAggregate = await this.prisma.programaBaucher.aggregate(
+      {
+        where: {
+          confirmado: null,
+          estado: 'activo',
+        },
+        _sum: {
+          monto: true,
+        },
       },
-      _sum: {
-        monto: true,
-      },
-    });
+    );
     const montoPendiente = montoPendienteAggregate._sum?.monto || 0;
 
     const pagosRechazados = await this.prisma.programaBaucher.count({
@@ -350,13 +391,31 @@ export class AppService {
         const date = new Date(b.fecha);
         const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
         if (recaudacionMensualMap.has(key)) {
-          recaudacionMensualMap.set(key, (recaudacionMensualMap.get(key) || 0) + b.monto);
+          recaudacionMensualMap.set(
+            key,
+            (recaudacionMensualMap.get(key) || 0) + b.monto,
+          );
         }
       }
     });
 
-    const nombresMesesCorta = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
-    const ingresosMensualesData = Array.from(recaudacionMensualMap.entries()).map(([key, val]) => {
+    const nombresMesesCorta = [
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic',
+    ];
+    const ingresosMensualesData = Array.from(
+      recaudacionMensualMap.entries(),
+    ).map(([key, val]) => {
       const [, month] = key.split('-');
       const monthIdx = parseInt(month, 10) - 1;
       return {
@@ -406,11 +465,15 @@ export class AppService {
     });
 
     const modalidadesCatalogo = await this.prisma.programaModalidad.findMany();
-    const mapModalidades = new Map(modalidadesCatalogo.map((m) => [m.id, m.nombre]));
-    const programasPorModalidad = programasPorModalidadRaw.map((g) => ({
-      modalidad: mapModalidades.get(g.modalidadId) || 'Desconocido',
-      cantidad: g._count,
-    })).filter((m) => m.cantidad > 0);
+    const mapModalidades = new Map(
+      modalidadesCatalogo.map((m) => [m.id, m.nombre]),
+    );
+    const programasPorModalidad = programasPorModalidadRaw
+      .map((g) => ({
+        modalidad: mapModalidades.get(g.modalidadId) || 'Desconocido',
+        cantidad: g._count,
+      }))
+      .filter((m) => m.cantidad > 0);
 
     // --- DISTRIBUCIÓN POR GÉNERO (DEMOGRAFÍA) ---
     const usuariosGeneroRaw = await this.prisma.user.groupBy({
@@ -424,27 +487,41 @@ export class AppService {
     }));
 
     // --- CALCULAR REALES KPIS ---
-    const totalVouchers = await this.prisma.programaBaucher.count({ where: { estado: 'activo' } });
+    const totalVouchers = await this.prisma.programaBaucher.count({
+      where: { estado: 'activo' },
+    });
     const totalConfirmadosVouchers = await this.prisma.programaBaucher.count({
       where: { estado: 'activo', confirmado: true },
     });
-    const tasaValidacionPagos = totalVouchers > 0 ? Math.round((totalConfirmadosVouchers / totalVouchers) * 100) : 0;
+    const tasaValidacionPagos =
+      totalVouchers > 0
+        ? Math.round((totalConfirmadosVouchers / totalVouchers) * 100)
+        : 0;
 
-    const tasaAsistenciaEventos = totalInscritosEventos > 0 ? Math.round((asistenciaTotalEventos / totalInscritosEventos) * 100) : 0;
+    const tasaAsistenciaEventos =
+      totalInscritosEventos > 0
+        ? Math.round((asistenciaTotalEventos / totalInscritosEventos) * 100)
+        : 0;
 
-    const totalInscripciones = await this.prisma.programaInscripcion.count({ where: { estado: 'activo' } });
-    const totalConfirmadasInscripciones = await this.prisma.programaInscripcion.count({
-      where: {
-        estado: 'activo',
-        estadoInscripcion: {
-          nombre: {
-            contains: 'CONFIRMADO',
-            mode: 'insensitive',
+    const totalInscripciones = await this.prisma.programaInscripcion.count({
+      where: { estado: 'activo' },
+    });
+    const totalConfirmadasInscripciones =
+      await this.prisma.programaInscripcion.count({
+        where: {
+          estado: 'activo',
+          estadoInscripcion: {
+            nombre: {
+              contains: 'CONFIRMADO',
+              mode: 'insensitive',
+            },
           },
         },
-      },
-    });
-    const tasaConfirmacionInscritos = totalInscripciones > 0 ? Math.round((totalConfirmadasInscripciones / totalInscripciones) * 100) : 0;
+      });
+    const tasaConfirmacionInscritos =
+      totalInscripciones > 0
+        ? Math.round((totalConfirmadasInscripciones / totalInscripciones) * 100)
+        : 0;
 
     return {
       stats: {
@@ -481,4 +558,3 @@ export class AppService {
     };
   }
 }
-

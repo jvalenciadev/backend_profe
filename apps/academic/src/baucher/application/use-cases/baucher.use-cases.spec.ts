@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { 
-  GetBauchersUseCase, 
-  GetBaucherByIdUseCase, 
-  CreateBaucherUseCase, 
-  UpdateBaucherUseCase, 
-  DeleteBaucherUseCase 
+import {
+  GetBauchersUseCase,
+  GetBaucherByIdUseCase,
+  CreateBaucherUseCase,
+  UpdateBaucherUseCase,
+  DeleteBaucherUseCase,
 } from './baucher.use-cases';
 import { BAUCHER_REPOSITORY } from '../../domain/repositories/baucher.repository.interface';
 import { NotFoundException } from '@nestjs/common';
@@ -41,7 +41,7 @@ describe('Baucher Use Cases (Blindaje Clean Architecture)', () => {
     create = module.get(CreateBaucherUseCase);
     update = module.get(UpdateBaucherUseCase);
     del = module.get(DeleteBaucherUseCase);
-    
+
     jest.clearAllMocks();
   });
 

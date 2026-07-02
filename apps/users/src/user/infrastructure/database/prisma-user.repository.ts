@@ -78,7 +78,10 @@ export class PrismaUserRepository implements IUserRepository {
             roles: {
               none: {
                 role: {
-                  name: { in: ['PARTICIPANTE', 'ESTUDIANTE'], mode: 'insensitive' },
+                  name: {
+                    in: ['PARTICIPANTE', 'ESTUDIANTE'],
+                    mode: 'insensitive',
+                  },
                 },
               },
             },

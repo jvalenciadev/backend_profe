@@ -15,8 +15,8 @@ import { UploadModule, MailModule } from '@app/common';
 import { UploadController } from '@app/common/upload/upload.controller';
 import { UploadConfigController } from '@app/common/upload/upload-config.controller';
 
-import { APP_GUARD } from '@nestjs/core';
-import { ApiKeyGuard } from '@app/common';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
+import { ApiKeyGuard, AuditInterceptor } from '@app/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { RecordatoriosModule } from './recordatorios/recordatorios.module';
 import { AppConfigModule } from './app-config/app-config.module';
@@ -56,6 +56,10 @@ import { AppConfigModule } from './app-config/app-config.module';
     {
       provide: APP_GUARD,
       useClass: ApiKeyGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditInterceptor,
     },
   ],
 })

@@ -63,7 +63,13 @@ describe('NotificacionesService (Blindaje Completo)', () => {
 
     it('debe limpiar tipo _1H a URGENTE', async () => {
       mockPrisma.mod_notificacion.findMany.mockResolvedValue([
-        { id: 'n1', tipo: 'ENTREGA_1H', titulo: 'Test', mensaje: 'Urgente', leida: false },
+        {
+          id: 'n1',
+          tipo: 'ENTREGA_1H',
+          titulo: 'Test',
+          mensaje: 'Urgente',
+          leida: false,
+        },
       ]);
       const result = await service.getNotificaciones('user-1');
       expect(result[0].tipo).toBe('URGENTE');
@@ -71,7 +77,13 @@ describe('NotificacionesService (Blindaje Completo)', () => {
 
     it('debe limpiar tipo _1D a ALERTA', async () => {
       mockPrisma.mod_notificacion.findMany.mockResolvedValue([
-        { id: 'n2', tipo: 'TAREA_1D', titulo: 'Alerta', mensaje: 'En 1 día', leida: false },
+        {
+          id: 'n2',
+          tipo: 'TAREA_1D',
+          titulo: 'Alerta',
+          mensaje: 'En 1 día',
+          leida: false,
+        },
       ]);
       const result = await service.getNotificaciones('user-1');
       expect(result[0].tipo).toBe('ALERTA');
@@ -79,7 +91,13 @@ describe('NotificacionesService (Blindaje Completo)', () => {
 
     it('debe limpiar tipo _5D a RECORDATORIO', async () => {
       mockPrisma.mod_notificacion.findMany.mockResolvedValue([
-        { id: 'n3', tipo: 'TAREA_5D', titulo: 'Recordatorio', mensaje: 'En 5 días', leida: false },
+        {
+          id: 'n3',
+          tipo: 'TAREA_5D',
+          titulo: 'Recordatorio',
+          mensaje: 'En 5 días',
+          leida: false,
+        },
       ]);
       const result = await service.getNotificaciones('user-1');
       expect(result[0].tipo).toBe('RECORDATORIO');
@@ -87,7 +105,13 @@ describe('NotificacionesService (Blindaje Completo)', () => {
 
     it('debe mantener tipo NUEVA_ACTIVIDAD sin cambios', async () => {
       mockPrisma.mod_notificacion.findMany.mockResolvedValue([
-        { id: 'n4', tipo: 'NUEVA_ACTIVIDAD', titulo: 'Nueva', mensaje: 'Actividad', leida: false },
+        {
+          id: 'n4',
+          tipo: 'NUEVA_ACTIVIDAD',
+          titulo: 'Nueva',
+          mensaje: 'Actividad',
+          leida: false,
+        },
       ]);
       const result = await service.getNotificaciones('user-1');
       expect(result[0].tipo).toBe('NUEVA_ACTIVIDAD');
@@ -95,7 +119,13 @@ describe('NotificacionesService (Blindaje Completo)', () => {
 
     it('debe mapear ENTREGA_CALIFICADA a ACTIVIDAD_CALIFICADA', async () => {
       mockPrisma.mod_notificacion.findMany.mockResolvedValue([
-        { id: 'n5', tipo: 'ENTREGA_CALIFICADA', titulo: 'Calificada', mensaje: 'Tu tarea fue calificada', leida: false },
+        {
+          id: 'n5',
+          tipo: 'ENTREGA_CALIFICADA',
+          titulo: 'Calificada',
+          mensaje: 'Tu tarea fue calificada',
+          leida: false,
+        },
       ]);
       const result = await service.getNotificaciones('user-1');
       expect(result[0].tipo).toBe('ACTIVIDAD_CALIFICADA');
@@ -132,7 +162,10 @@ describe('NotificacionesService (Blindaje Completo)', () => {
       expect(result.id).toBe('notif-1');
       expect(mockPrisma.mod_notificacion.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ userId: 'user-1', tipo: 'NUEVA_ACTIVIDAD' }),
+          data: expect.objectContaining({
+            userId: 'user-1',
+            tipo: 'NUEVA_ACTIVIDAD',
+          }),
         }),
       );
     });
@@ -163,7 +196,12 @@ describe('NotificacionesService (Blindaje Completo)', () => {
 
       // No debe lanzar error aunque los tokens sean inválidos
       await expect(
-        service.emit({ userId: 'u', titulo: 'T', mensaje: 'M', tipo: 'URGENTE' }),
+        service.emit({
+          userId: 'u',
+          titulo: 'T',
+          mensaje: 'M',
+          tipo: 'URGENTE',
+        }),
       ).resolves.not.toThrow();
     });
   });
@@ -196,8 +234,20 @@ describe('NotificacionesService (Blindaje Completo)', () => {
 
       expect(mockPrisma.mod_notificacion.createMany).toHaveBeenCalledWith({
         data: [
-          { userId: 'u1', titulo: 'Bulk Title', mensaje: 'Bulk Msg', tipo: 'BULK_TYPE', linkRef: '/link' },
-          { userId: 'u2', titulo: 'Bulk Title', mensaje: 'Bulk Msg', tipo: 'BULK_TYPE', linkRef: '/link' },
+          {
+            userId: 'u1',
+            titulo: 'Bulk Title',
+            mensaje: 'Bulk Msg',
+            tipo: 'BULK_TYPE',
+            linkRef: '/link',
+          },
+          {
+            userId: 'u2',
+            titulo: 'Bulk Title',
+            mensaje: 'Bulk Msg',
+            tipo: 'BULK_TYPE',
+            linkRef: '/link',
+          },
         ],
       });
 
@@ -210,7 +260,10 @@ describe('NotificacionesService (Blindaje Completo)', () => {
   // ─── markAsRead ─────────────────────────────────────────────────────
   describe('markAsRead', () => {
     it('debe marcar una notificación como leída', async () => {
-      mockPrisma.mod_notificacion.update.mockResolvedValue({ id: 'n1', leida: true });
+      mockPrisma.mod_notificacion.update.mockResolvedValue({
+        id: 'n1',
+        leida: true,
+      });
       const result = await service.markAsRead('n1');
       expect(mockPrisma.mod_notificacion.update).toHaveBeenCalledWith({
         where: { id: 'n1' },

@@ -1,4 +1,9 @@
-import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { INSCRIPCION_REPOSITORY } from '../../domain/repositories/inscripcion.repository.interface';
 import type { IInscripcionRepository } from '../../domain/repositories/inscripcion.repository.interface';
 
@@ -7,7 +12,7 @@ export class ConfirmInscripcionUseCase {
   constructor(
     @Inject(INSCRIPCION_REPOSITORY)
     private readonly repository: IInscripcionRepository,
-  ) { }
+  ) {}
 
   async execute(id: string, adminId: string) {
     const inscripcion = await this.repository.findById(id);
@@ -60,4 +65,3 @@ export class ConfirmInscripcionUseCase {
     return { success: true };
   }
 }
-

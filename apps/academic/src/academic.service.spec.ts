@@ -28,30 +28,40 @@ describe('AcademicService (Unit Tests)', () => {
   describe('crearVersionDesdeMaster', () => {
     it('debería lanzar NotFoundException si el programa maestro no existe', async () => {
       mockPrisma.programa.findUnique.mockResolvedValue(null);
-      await expect(service.crearVersionDesdeMaster('m1', {}, {}))
-        .rejects.toThrow(NotFoundException);
+      await expect(
+        service.crearVersionDesdeMaster('m1', {}, {}),
+      ).rejects.toThrow(NotFoundException);
     });
 
     it('debería realizar un snapshot de los datos del maestro y crear una versión operativa (ProgramaDos)', async () => {
       const mockMaster = {
         id: 'm1',
         nombre: 'Maestro Program',
-        modulos: [{ id: 'mod-m1', nombre: 'Modulo 1', esGlobal: false, orden: 1 }],
+        modulos: [
+          { id: 'mod-m1', nombre: 'Modulo 1', esGlobal: false, orden: 1 },
+        ],
         duracionId: 'd1',
         tipoId: 't1',
         modalidadId: 'mod1',
       };
       mockPrisma.programa.findUnique.mockResolvedValue(mockMaster);
-      mockPrisma.programaDos.create.mockResolvedValue({ id: 'v1', nombre: 'Maestro Program' });
+      mockPrisma.programaDos.create.mockResolvedValue({
+        id: 'v1',
+        nombre: 'Maestro Program',
+      });
 
       const versionData = {
         versionId: 'ver-2026',
         sedeId: 'sede-1',
-        turnos: [{ id: 't1', cupo: 30 }]
+        turnos: [{ id: 't1', cupo: 30 }],
       };
       const user = { id: 'admin-1' };
 
-      const result = await service.crearVersionDesdeMaster('m1', versionData, user);
+      const result = await service.crearVersionDesdeMaster(
+        'm1',
+        versionData,
+        user,
+      );
 
       expect(result.id).toBe('v1');
       expect(mockPrisma.programaDos.create).toHaveBeenCalledWith(
@@ -62,44 +72,61 @@ describe('AcademicService (Unit Tests)', () => {
             sedeId: 'sede-1',
             modulos: expect.objectContaining({
               create: expect.arrayContaining([
-                expect.objectContaining({ nombre: 'Modulo 1' })
-              ])
-            })
-          })
-        })
+                expect.objectContaining({ nombre: 'Modulo 1' }),
+              ]),
+            }),
+          }),
+        }),
       );
     });
   });
 
   describe('inscribir', () => {
     it('debería crear una inscripción con estado INSCRITO por defecto si no se provee', async () => {
-      mockPrisma.programa_inscripcion_estado.findFirst.mockResolvedValue({ id: 'est-inscrito' });
+      mockPrisma.programa_inscripcion_estado.findFirst.mockResolvedValue({
+        id: 'est-inscrito',
+      });
       mockPrisma.programaInscripcion.create.mockResolvedValue({ id: 'ins-1' });
 
-      const data = { programaId: 'v1', personaId: 'u1', sedeId: 's1', turnoId: 't1' };
+      const data = {
+        programaId: 'v1',
+        personaId: 'u1',
+        sedeId: 's1',
+        turnoId: 't1',
+      };
       const user = { id: 'admin-1' };
 
       const result = await service.inscribir(data, user);
 
       expect(result.id).toBe('ins-1');
-      expect(mockPrisma.programa_inscripcion_estado.findFirst).toHaveBeenCalled();
+      expect(
+        mockPrisma.programa_inscripcion_estado.findFirst,
+      ).toHaveBeenCalled();
       expect(mockPrisma.programaInscripcion.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ estadoInscripcionId: 'est-inscrito' })
-        })
+          data: expect.objectContaining({
+            estadoInscripcionId: 'est-inscrito',
+          }),
+        }),
       );
     });
 
     it('debería usar el estadoInscripcionId de los datos si se provee', async () => {
       mockPrisma.programaInscripcion.create.mockResolvedValue({ id: 'ins-2' });
 
-      const data = { programaId: 'v1', personaId: 'u1', estadoInscripcionId: 'est-confirmado' };
+      const data = {
+        programaId: 'v1',
+        personaId: 'u1',
+        estadoInscripcionId: 'est-confirmado',
+      };
       await service.inscribir(data, {});
 
       expect(mockPrisma.programaInscripcion.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ estadoInscripcionId: 'est-confirmado' })
-        })
+          data: expect.objectContaining({
+            estadoInscripcionId: 'est-confirmado',
+          }),
+        }),
       );
     });
   });

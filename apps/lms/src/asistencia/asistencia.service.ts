@@ -21,7 +21,7 @@ function signPayload(data: string): string {
 
 @Injectable()
 export class AsistenciaService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   // ──────────────────────────────────────────────────────────────────────────
   //  QR TOKEN  —  genera un token firmado para la sesión
@@ -219,17 +219,16 @@ export class AsistenciaService {
   //  MÉTODOS EXISTENTES
   // ──────────────────────────────────────────────────────────────────────────
   async getSesionesModulo(id: string, turnoId?: string) {
-    const cleanTurnoId = (turnoId === 'undefined' || turnoId === 'null') ? null : turnoId;
+    const cleanTurnoId =
+      turnoId === 'undefined' || turnoId === 'null' ? null : turnoId;
 
     const sesiones = await this.prisma.mod_asistencia.findMany({
       where: {
-        AND: [
-          { OR: [{ moduloId: id }, { moduloMaestroId: id }] },
-        ],
+        AND: [{ OR: [{ moduloId: id }, { moduloMaestroId: id }] }],
         ...(cleanTurnoId
           ? {
-            OR: [{ turnoId: cleanTurnoId }, { turnoId: null }],
-          }
+              OR: [{ turnoId: cleanTurnoId }, { turnoId: null }],
+            }
           : {}),
       },
       orderBy: { fecha: 'desc' },
@@ -239,7 +238,9 @@ export class AsistenciaService {
         },
         modulo: { select: { nombre: true, codigo: true } },
         moduloMaestro: { select: { nombre: true, codigo: true } },
-        actividad: { select: { id: true, titulo: true, puntajeMax: true, estado: true } },
+        actividad: {
+          select: { id: true, titulo: true, puntajeMax: true, estado: true },
+        },
       },
     });
 

@@ -27,7 +27,7 @@ export class LmsController {
   constructor(
     private readonly lmsService: LmsService,
     private readonly appConfigService: AppConfigService,
-  ) { }
+  ) {}
 
   @Post('auth/login')
   async login(@Body() body: any) {
@@ -302,12 +302,18 @@ export class LmsController {
 
   @UseGuards(JwtAuthGuard)
   @Post('request-email-verification')
-  async requestEmailVerification(@Request() req: any, @Body('email') email: string) {
+  async requestEmailVerification(
+    @Request() req: any,
+    @Body('email') email: string,
+  ) {
     return this.lmsService.requestEmailVerification(req.user.id, email);
   }
 
   @Get('test-push/:userId')
-  async testPush(@Param('userId') userId: string, @Query('tipo') tipo?: string) {
+  async testPush(
+    @Param('userId') userId: string,
+    @Query('tipo') tipo?: string,
+  ) {
     return this.lmsService.testPush(userId, tipo);
   }
 
@@ -337,7 +343,9 @@ export class LmsController {
     @Request() req: any,
   ) {
     if (!body || !body.data) {
-      throw new BadRequestException('Se requiere la estructura de datos para importar');
+      throw new BadRequestException(
+        'Se requiere la estructura de datos para importar',
+      );
     }
     return this.lmsService.importarModulo(
       req.user.id,

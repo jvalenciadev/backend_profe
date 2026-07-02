@@ -23,7 +23,7 @@ export class CaslPrismaService {
   private cleanCriteria(criteria: any, subject: string): any {
     const depIdSubjects = [
       'Sede',
-      'distrito',        // model distrito (snake_case en Prisma)
+      'distrito', // model distrito (snake_case en Prisma)
       'ProgramaDos',
       'EventoInscripcion',
       'UnidadEducativa',
@@ -59,22 +59,22 @@ export class CaslPrismaService {
       'MapPersona',
       'AreaTrabajo',
       'Genero',
-      'provincia',                    // model provincia (snake_case)
-      'unidad_educativa',             // model unidad_educativa (snake_case)
+      'provincia', // model provincia (snake_case)
+      'unidad_educativa', // model unidad_educativa (snake_case)
       'ActaConclusion',
       'Profe',
-      'programa_inscripcion_estado',  // model programa_inscripcion_estado (snake_case)
+      'programa_inscripcion_estado', // model programa_inscripcion_estado (snake_case)
       'ProgramaInscripcionEstado',
       'Baucher',
-      'programa_restriccion',         // model programa_restriccion (snake_case)
+      'programa_restriccion', // model programa_restriccion (snake_case)
       'CalificacionParticipante',
       'ProgramaCalificacion',
       'ProgramaTipoCalificacion',
-      'evento_restriccion',           // model evento_restriccion (snake_case)
+      'evento_restriccion', // model evento_restriccion (snake_case)
       'EventoCuestionario',
-      'evento_pregunta',              // model evento_pregunta (snake_case)
-      'evento_opciones',              // model evento_opciones (snake_case)
-      'evento_respuestas',            // model evento_respuestas (snake_case)
+      'evento_pregunta', // model evento_pregunta (snake_case)
+      'evento_opciones', // model evento_opciones (snake_case)
+      'evento_respuestas', // model evento_respuestas (snake_case)
       'Galeria',
       'AsignacionFacilitador',
       'AsignarFacilitador',
@@ -112,8 +112,6 @@ export class CaslPrismaService {
       'CorParticipante',
       'CorSeguimiento',
     ];
-
-
 
     const fieldsToRemove: string[] = [];
     const subj = subject.toLowerCase();

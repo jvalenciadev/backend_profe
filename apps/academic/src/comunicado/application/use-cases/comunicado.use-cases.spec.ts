@@ -1,6 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CreateComunicadoUseCase } from './create-comunicado.use-case';
-import { UpdateComunicadoUseCase, DeleteComunicadoUseCase } from './update-comunicado.use-case';
+import {
+  UpdateComunicadoUseCase,
+  DeleteComunicadoUseCase,
+} from './update-comunicado.use-case';
 import { GetComunicadosUseCase } from './get-comunicados.use-case';
 import { COMUNICADO_REPOSITORY } from '../../domain/repositories/comunicado.repository.interface';
 import { PrismaService } from '@app/database';
@@ -49,21 +52,29 @@ describe('Comunicado Use Cases (Blindaje Completo)', () => {
 
       const result = await useCase.execute(dto as any, 'u1', 't1');
       expect(result.id).toBe('c1');
-      expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({ tenantId: 't1' }));
+      expect(mockRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ tenantId: 't1' }),
+      );
     });
 
     it('debe disparar notificación administrativa si es Urgente', async () => {
-       const dto = { nombre: 'Urgente', tipo: 'ADMINISTRATIVO', importancia: 'URGENTE' };
-       mockRepo.create.mockResolvedValue({ id: 'c-u', ...dto });
-       
-       // El setImmediate es difícil de testear sincrónicamente pero podemos verificar la llamada al repo
-       await useCase.execute(dto as any);
-       expect(mockRepo.create).toHaveBeenCalled();
+      const dto = {
+        nombre: 'Urgente',
+        tipo: 'ADMINISTRATIVO',
+        importancia: 'URGENTE',
+      };
+      mockRepo.create.mockResolvedValue({ id: 'c-u', ...dto });
+
+      // El setImmediate es difícil de testear sincrónicamente pero podemos verificar la llamada al repo
+      await useCase.execute(dto as any);
+      expect(mockRepo.create).toHaveBeenCalled();
     });
 
     it('debe lanzar BadRequestException si el repositorio falla', async () => {
       mockRepo.create.mockRejectedValue(new Error('DB Fail'));
-      await expect(useCase.execute({} as any)).rejects.toThrow(BadRequestException);
+      await expect(useCase.execute({} as any)).rejects.toThrow(
+        BadRequestException,
+      );
     });
   });
 
@@ -82,7 +93,9 @@ describe('Comunicado Use Cases (Blindaje Completo)', () => {
 
     it('debe lanzar NotFoundException si no existe', async () => {
       mockRepo.findById.mockResolvedValue(null);
-      await expect(useCase.execute('none', {})).rejects.toThrow(NotFoundException);
+      await expect(useCase.execute('none', {})).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('debe actualizar exitosamente', async () => {

@@ -42,7 +42,9 @@ describe('PoliciesGuard (Fase 2: Seguridad Global)', () => {
   it('debería permitir acceso si la ruta es @Public()', async () => {
     mockReflector.getAllAndOverride.mockReturnValue(true); // isPublic = true
     const request = {};
-    (mockExecutionContext.switchToHttp().getRequest as jest.Mock).mockReturnValue(request);
+    (
+      mockExecutionContext.switchToHttp().getRequest as jest.Mock
+    ).mockReturnValue(request);
 
     const result = await guard.canActivate(mockExecutionContext);
     expect(result).toBe(true);
@@ -51,7 +53,9 @@ describe('PoliciesGuard (Fase 2: Seguridad Global)', () => {
   it('debería denegar acceso si no hay usuario en el request y no es pública', async () => {
     mockReflector.getAllAndOverride.mockReturnValue(false);
     const request = { user: null };
-    (mockExecutionContext.switchToHttp().getRequest as jest.Mock).mockReturnValue(request);
+    (
+      mockExecutionContext.switchToHttp().getRequest as jest.Mock
+    ).mockReturnValue(request);
 
     const result = await guard.canActivate(mockExecutionContext);
     expect(result).toBe(false);
@@ -60,20 +64,26 @@ describe('PoliciesGuard (Fase 2: Seguridad Global)', () => {
   it('debería lanzar ForbiddenException si el usuario no tiene permisos (CASL)', async () => {
     mockReflector.getAllAndOverride.mockReturnValue(false);
     mockReflector.get.mockReturnValue([(ability: any) => false]); // Handler que deniega
-    
+
     const request = { user: { id: 'user_1' } };
-    (mockExecutionContext.switchToHttp().getRequest as jest.Mock).mockReturnValue(request);
+    (
+      mockExecutionContext.switchToHttp().getRequest as jest.Mock
+    ).mockReturnValue(request);
     mockCaslAbilityFactory.createForUser.mockResolvedValue({ rules: [] });
 
-    await expect(guard.canActivate(mockExecutionContext)).rejects.toThrow(ForbiddenException);
+    await expect(guard.canActivate(mockExecutionContext)).rejects.toThrow(
+      ForbiddenException,
+    );
   });
 
   it('debería permitir el paso y adjuntar "ability" al request si todo es correcto', async () => {
     mockReflector.getAllAndOverride.mockReturnValue(false);
     mockReflector.get.mockReturnValue([(ability: any) => true]); // Handler que permite
-    
+
     const request: any = { user: { id: 'user_1' } };
-    (mockExecutionContext.switchToHttp().getRequest as jest.Mock).mockReturnValue(request);
+    (
+      mockExecutionContext.switchToHttp().getRequest as jest.Mock
+    ).mockReturnValue(request);
     const mockAbility = { rules: [{ action: 'manage', subject: 'all' }] };
     mockCaslAbilityFactory.createForUser.mockResolvedValue(mockAbility);
 

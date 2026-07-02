@@ -24,9 +24,7 @@ describe('AulaCategoriaController (Blindaje Completo)', () => {
     jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AulaCategoriaController],
-      providers: [
-        { provide: AulaCategoriaService, useValue: mockService },
-      ],
+      providers: [{ provide: AulaCategoriaService, useValue: mockService }],
     })
       .overrideGuard(require('@app/common').JwtAuthGuard)
       .useValue({ canActivate: () => true })

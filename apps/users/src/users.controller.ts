@@ -51,7 +51,11 @@ export class UsersController {
     @Query('global') global?: string,
   ) {
     const includeParticipants = global === 'true';
-    return this.findAllUsersUseCase.execute(req.ability, search, includeParticipants);
+    return this.findAllUsersUseCase.execute(
+      req.ability,
+      search,
+      includeParticipants,
+    );
   }
 
   @Get(':id')

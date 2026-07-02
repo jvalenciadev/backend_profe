@@ -29,7 +29,7 @@ export class BulkImportInscripcionUseCase {
     @Inject(INSCRIPCION_REPOSITORY)
     private readonly repository: IInscripcionRepository,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   async execute(dto: BulkImportDto, currentUserId?: string) {
     const results = {
@@ -51,13 +51,13 @@ export class BulkImportInscripcionUseCase {
     const hashedDefaultPassword = await bcrypt.hash(defaultPassword, salt);
 
     // Obtener el ID de estado de inscripción por defecto (Inscrito o Confirmado)
-    let estadoDefault = await this.prisma.programa_inscripcion_estado.findFirst({
-      where: {
-        OR: [
-          { nombre: { contains: 'INSCRITO', mode: 'insensitive' } },
-        ]
-      }
-    });
+    let estadoDefault = await this.prisma.programa_inscripcion_estado.findFirst(
+      {
+        where: {
+          OR: [{ nombre: { contains: 'INSCRITO', mode: 'insensitive' } }],
+        },
+      },
+    );
 
     if (!estadoDefault) {
       estadoDefault = await this.prisma.programa_inscripcion_estado.findFirst();
@@ -65,10 +65,12 @@ export class BulkImportInscripcionUseCase {
 
     const estadoInscripcionId = estadoDefault?.id;
     if (!estadoInscripcionId) {
-      throw new BadRequestException('No se encontraron estados de inscripción (programa_inscripcion_estado) en la base de datos.');
+      throw new BadRequestException(
+        'No se encontraron estados de inscripción (programa_inscripcion_estado) en la base de datos.',
+      );
     }
 
-    // Pre-fetch the role to avoid connect overhead if possible, 
+    // Pre-fetch the role to avoid connect overhead if possible,
     // though connect is usually fine, let's keep it simple.
 
     for (const p of dto.participantes) {
@@ -79,7 +81,7 @@ export class BulkImportInscripcionUseCase {
         // 1. Ensure User/Persona exists
         let user = await this.prisma.user.findFirst({
           where: { ci: BigInt(ciStr) },
-          select: { id: true, licenciatura: true }
+          select: { id: true, licenciatura: true },
         });
 
         if (!user) {
@@ -89,7 +91,9 @@ export class BulkImportInscripcionUseCase {
             ? await bcrypt.hash(customPassword, salt)
             : hashedDefaultPassword;
 
-          const email = p.correo ? String(p.correo).trim() : `${ciStr}@aulaprofe.com`;
+          const email = p.correo
+            ? String(p.correo).trim()
+            : `${ciStr}@aulaprofe.com`;
           const username = ciStr;
 
           const newUser = await this.prisma.user.create({
@@ -102,17 +106,19 @@ export class BulkImportInscripcionUseCase {
               username: username,
               password: hashedPassword,
               celular: p.celular ? String(p.celular).trim() : null,
-              licenciatura: p.licenciatura ? String(p.licenciatura).trim() : null,
+              licenciatura: p.licenciatura
+                ? String(p.licenciatura).trim()
+                : null,
               estado: 'activo',
               roles: {
                 create: {
                   role: {
-                    connect: { name: 'PARTICIPANTE' }
-                  }
-                }
-              }
+                    connect: { name: 'PARTICIPANTE' },
+                  },
+                },
+              },
             },
-            select: { id: true, licenciatura: true }
+            select: { id: true, licenciatura: true },
           });
           user = newUser;
         }

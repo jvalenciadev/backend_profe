@@ -8,7 +8,7 @@ export class RequestVerificationUseCase {
   constructor(
     private readonly mailService: MailService,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   async execute(email: string) {
     const normalizedEmail = String(email).trim().toLowerCase();

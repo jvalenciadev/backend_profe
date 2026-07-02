@@ -20,13 +20,13 @@ import { UploadConfigService } from './upload-config.service';
 @Controller('upload')
 @UseGuards(JwtAuthGuard)
 export class UploadController {
-  constructor(private readonly uploadConfig: UploadConfigService) { }
+  constructor(private readonly uploadConfig: UploadConfigService) {}
 
   @Post(':tableName')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
-      limits: { fileSize: 20 * 1024 * 1024 } // 20MB
+      limits: { fileSize: 20 * 1024 * 1024 }, // 20MB
     }),
   )
   async uploadFile(
@@ -36,7 +36,9 @@ export class UploadController {
     @Req() req: any,
   ) {
     if (!file) {
-      throw new BadRequestException('No se ha subido ningún archivo o el campo no se llama "file"');
+      throw new BadRequestException(
+        'No se ha subido ningún archivo o el campo no se llama "file"',
+      );
     }
 
     // Validar dinámicamente según BD

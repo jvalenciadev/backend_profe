@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { 
-  GetAsignacionFacilitadorsUseCase, 
-  GetAsignacionFacilitadorByIdUseCase, 
-  CreateAsignacionFacilitadorUseCase, 
-  UpdateAsignacionFacilitadorUseCase, 
-  DeleteAsignacionFacilitadorUseCase 
+import {
+  GetAsignacionFacilitadorsUseCase,
+  GetAsignacionFacilitadorByIdUseCase,
+  CreateAsignacionFacilitadorUseCase,
+  UpdateAsignacionFacilitadorUseCase,
+  DeleteAsignacionFacilitadorUseCase,
 } from './asignacion-facilitador.use-cases';
 import { ASIGNACIONFACILITADOR_REPOSITORY } from '../../domain/repositories/asignacion-facilitador.repository.interface';
 import { NotFoundException } from '@nestjs/common';
@@ -41,7 +41,7 @@ describe('AsignacionFacilitador Use Cases (Blindaje Clean Architecture)', () => 
     create = module.get(CreateAsignacionFacilitadorUseCase);
     update = module.get(UpdateAsignacionFacilitadorUseCase);
     del = module.get(DeleteAsignacionFacilitadorUseCase);
-    
+
     jest.clearAllMocks();
   });
 

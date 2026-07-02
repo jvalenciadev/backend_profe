@@ -13,3 +13,4 @@ export * from './upload/upload-config.service';
 export * from './upload/upload.controller';
 export * from './guards/api-key.guard';
 export * from './mail';
+export * from './interceptors/audit.interceptor';

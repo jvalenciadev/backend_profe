@@ -8,7 +8,7 @@ export class PrismaBaucherRepository implements IBaucherRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly caslPrisma: CaslPrismaService,
-  ) { }
+  ) {}
 
   async findAll(filter: any = {}, ability?: any): Promise<any[]> {
     const { tenantId, search, ...rest } = filter;
@@ -43,8 +43,13 @@ export class PrismaBaucherRepository implements IBaucherRepository {
     forcedTenantId?: string,
   ): Promise<any> {
     const preparedData = { ...data };
-    if (preparedData.nroDeposito !== undefined && preparedData.nroDeposito !== null) {
-      preparedData.nroDeposito = BigInt(String(preparedData.nroDeposito).replace(/\D/g, ''));
+    if (
+      preparedData.nroDeposito !== undefined &&
+      preparedData.nroDeposito !== null
+    ) {
+      preparedData.nroDeposito = BigInt(
+        String(preparedData.nroDeposito).replace(/\D/g, ''),
+      );
     }
     if (preparedData.monto !== undefined) {
       preparedData.monto = parseInt(String(preparedData.monto), 10);
@@ -77,8 +82,13 @@ export class PrismaBaucherRepository implements IBaucherRepository {
       );
 
     const preparedData = { ...data };
-    if (preparedData.nroDeposito !== undefined && preparedData.nroDeposito !== null) {
-      preparedData.nroDeposito = BigInt(String(preparedData.nroDeposito).replace(/\D/g, ''));
+    if (
+      preparedData.nroDeposito !== undefined &&
+      preparedData.nroDeposito !== null
+    ) {
+      preparedData.nroDeposito = BigInt(
+        String(preparedData.nroDeposito).replace(/\D/g, ''),
+      );
     }
     if (preparedData.monto !== undefined) {
       preparedData.monto = parseInt(String(preparedData.monto), 10);

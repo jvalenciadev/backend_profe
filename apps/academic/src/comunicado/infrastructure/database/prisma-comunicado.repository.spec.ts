@@ -30,13 +30,18 @@ describe('PrismaComunicadoRepository (Unit Tests)', () => {
       ],
     }).compile();
 
-    repository = module.get<PrismaComunicadoRepository>(PrismaComunicadoRepository);
+    repository = module.get<PrismaComunicadoRepository>(
+      PrismaComunicadoRepository,
+    );
     jest.clearAllMocks();
   });
 
   describe('findById', () => {
     it('debe retornar un comunicado si existe', async () => {
-      mockPrisma.comunicado.findFirst.mockResolvedValue({ id: 'c1', nombre: 'Test' });
+      mockPrisma.comunicado.findFirst.mockResolvedValue({
+        id: 'c1',
+        nombre: 'Test',
+      });
       const result = await repository.findById('c1');
       expect(result!.id).toBe('c1');
     });
@@ -55,8 +60,8 @@ describe('PrismaComunicadoRepository (Unit Tests)', () => {
       await repository.create(dto);
       expect(mockPrisma.comunicado.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          data: expect.objectContaining({ nombre: 'N' })
-        })
+          data: expect.objectContaining({ nombre: 'N' }),
+        }),
       );
     });
   });
@@ -67,8 +72,8 @@ describe('PrismaComunicadoRepository (Unit Tests)', () => {
       expect(mockPrisma.comunicado.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'c1' },
-          data: expect.objectContaining({ estado: 'eliminado' })
-        })
+          data: expect.objectContaining({ estado: 'eliminado' }),
+        }),
       );
     });
   });

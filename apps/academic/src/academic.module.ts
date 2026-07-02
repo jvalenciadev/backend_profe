@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '@app/database';
-import { CaslModule } from '@app/common';
+import { CaslModule, AuditInterceptor } from '@app/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 
 // ✅ Módulos con Clean Architecture Completa
 import { ComunicadoModule } from './comunicado/comunicado.module';
@@ -71,6 +72,12 @@ import { AcademicService } from './academic.service';
     CorrespondenciaModule,
   ],
   controllers: [AcademicController],
-  providers: [AcademicService],
+  providers: [
+    AcademicService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditInterceptor,
+    },
+  ],
 })
-export class AcademicModule { }
+export class AcademicModule {}

@@ -5,7 +5,7 @@ import { Inscripcion } from '../../domain/entities/inscripcion.entity';
 
 @Injectable()
 export class PrismaInscripcionRepository implements IInscripcionRepository {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async findById(id: string): Promise<Inscripcion | null> {
     const data = await this.prisma.programaInscripcion.findUnique({
@@ -22,10 +22,10 @@ export class PrismaInscripcionRepository implements IInscripcionRepository {
           include: {
             mod_campos_extra_regs: {
               include: {
-                campoExtra: true
-              }
-            }
-          }
+                campoExtra: true,
+              },
+            },
+          },
         },
         turno: {
           include: {
@@ -63,7 +63,7 @@ export class PrismaInscripcionRepository implements IInscripcionRepository {
       const ciValue = parseInt(search);
       if (!isNaN(ciValue)) {
         where.persona = {
-          ci: BigInt(ciValue)
+          ci: BigInt(ciValue),
         };
       } else {
         // Opcional: Búsqueda por nombre si no es CI
@@ -71,14 +71,14 @@ export class PrismaInscripcionRepository implements IInscripcionRepository {
           OR: [
             { nombre: { contains: search, mode: 'insensitive' } },
             { apellidos: { contains: search, mode: 'insensitive' } },
-          ]
+          ],
         };
       }
     }
 
     if (versionId) {
       where.programa = {
-        versionId: versionId
+        versionId: versionId,
       };
     }
 
@@ -96,10 +96,10 @@ export class PrismaInscripcionRepository implements IInscripcionRepository {
           include: {
             mod_campos_extra_regs: {
               include: {
-                campoExtra: true
-              }
-            }
-          }
+                campoExtra: true,
+              },
+            },
+          },
         },
         turno: {
           include: {
@@ -184,8 +184,7 @@ export class PrismaInscripcionRepository implements IInscripcionRepository {
         turnoId: data.turnoId,
         sedeId: data.sedeId,
         tenantId: data.tenantId,
-        estadoInscripcionId:
-          data.estadoInscripcionId, // No default hardcoded ID here to avoid FK errors
+        estadoInscripcionId: data.estadoInscripcionId, // No default hardcoded ID here to avoid FK errors
         observacion: data.observacion,
         createdBy: data.createdBy,
         documentoDigital: data.documentoDigital,

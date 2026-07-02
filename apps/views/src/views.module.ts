@@ -3,7 +3,8 @@ import { DatabaseModule } from '@app/database';
 import { ConfigModule } from '@nestjs/config';
 import { LandingViewsController } from './controllers/landing-views.controller';
 import { EventViewsController } from './controllers/event-views.controller';
-import { UploadModule, MailModule } from '@app/common';
+import { UploadModule, MailModule, AuditInterceptor } from '@app/common';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -13,6 +14,11 @@ import { UploadModule, MailModule } from '@app/common';
     MailModule,
   ],
   controllers: [LandingViewsController, EventViewsController],
-  providers: [],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AuditInterceptor,
+    },
+  ],
 })
 export class ViewsModule {}

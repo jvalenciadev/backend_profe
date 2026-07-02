@@ -7,7 +7,7 @@ export type AppAbility = PureAbility<[string, any], PrismaQuery>;
 
 @Injectable()
 export class CaslAbilityFactory {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async createForUser(user: any): Promise<AppAbility> {
     const { can, build } = new AbilityBuilder<AppAbility>(createPrismaAbility);
@@ -76,7 +76,6 @@ export class CaslAbilityFactory {
           'EvaluacionPuntaje',
           'CorDocumento',
         ];
-
 
         // Si tiene acceso 'all', aplicamos AMBOS filtros para evitar fuga de datos
         if (subject === 'all') {

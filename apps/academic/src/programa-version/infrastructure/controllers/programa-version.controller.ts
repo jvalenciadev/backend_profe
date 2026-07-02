@@ -34,7 +34,11 @@ export class ProgramaVersionController {
   @Get()
   @CheckPolicies((ability: any) => ability.can('read', 'ProgramaVersion'))
   findAll(@Query() query: any, @Req() req: any) {
-    return this.getProgramaVersionsUseCase.execute(query, req.ability, req.user);
+    return this.getProgramaVersionsUseCase.execute(
+      query,
+      req.ability,
+      req.user,
+    );
   }
 
   @Get(':id')

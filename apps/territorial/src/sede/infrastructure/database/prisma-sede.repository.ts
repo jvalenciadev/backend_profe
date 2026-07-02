@@ -13,7 +13,7 @@ export class PrismaSedeRepository implements ISedeRepository {
   constructor(
     private readonly prisma: PrismaService,
     private readonly caslPrisma: CaslPrismaService,
-  ) { }
+  ) {}
 
   private mapToDomain(record: any): Sede {
     return new Sede(
