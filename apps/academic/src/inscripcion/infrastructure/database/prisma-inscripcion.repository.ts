@@ -55,18 +55,18 @@ export class PrismaInscripcionRepository implements IInscripcionRepository {
     }
 
     // Apply User-Sedes/Tenant filtering if the user is not superadmin.
-    // Skip sedeId restriction when filtering by a specific programaId so that
-    // all inscriptions of that program are visible regardless of the user's assigned sedes.
+    // Skip sedeId and tenantId restrictions when filtering by a specific programaId so that
+    // all inscriptions of that program are visible.
     if (user && user.tenantId) {
       if (sedeId) {
         where.sedeId = sedeId;
       } else if (!programaId && user.sedes && user.sedes.length > 0) {
         where.sedeId = { in: user.sedes };
       }
-      where.OR = [
-        { tenantId: user.tenantId },
-        { tenantId: null }
-      ];
+
+      if (!programaId) {
+        where.tenantId = user.tenantId;
+      }
     }
 
     if (search) {
