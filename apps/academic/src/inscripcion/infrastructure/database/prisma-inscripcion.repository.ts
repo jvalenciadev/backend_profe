@@ -5,7 +5,7 @@ import { Inscripcion } from '../../domain/entities/inscripcion.entity';
 
 @Injectable()
 export class PrismaInscripcionRepository implements IInscripcionRepository {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async findById(id: string): Promise<Inscripcion | null> {
     const data = await this.prisma.programaInscripcion.findUnique({
@@ -63,7 +63,10 @@ export class PrismaInscripcionRepository implements IInscripcionRepository {
       } else if (!programaId && user.sedes && user.sedes.length > 0) {
         where.sedeId = { in: user.sedes };
       }
-      where.tenantId = user.tenantId;
+      where.OR = [
+        { tenantId: user.tenantId },
+        { tenantId: null }
+      ];
     }
 
     if (search) {
@@ -89,6 +92,7 @@ export class PrismaInscripcionRepository implements IInscripcionRepository {
         versionId: versionId,
       };
     }
+
 
     const data = await this.prisma.programaInscripcion.findMany({
       where,
