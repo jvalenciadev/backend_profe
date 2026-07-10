@@ -52,7 +52,23 @@ export class PrismaOfertaRepository implements IOfertaRepository {
   }
 
   async findAll(filter: any = {}, ability?: any): Promise<Oferta[]> {
-    let where: any = { ...filter, estado: { not: 'eliminado' } };
+    // Sanitizar: solo pasar campos válidos de ProgramaDos al where de Prisma.
+    // Los params HTTP (page, limit, search, etc.) NO deben llegar al where.
+    const VALID_FILTER_FIELDS = [
+      'versionId',
+      'sedeId',
+      'programaId',
+      'departamentoId',
+      'modalidad',
+    ];
+    const cleanFilter: any = {};
+    for (const key of VALID_FILTER_FIELDS) {
+      if (filter[key] !== undefined && filter[key] !== '') {
+        cleanFilter[key] = filter[key];
+      }
+    }
+
+    let where: any = { ...cleanFilter, estado: { not: 'eliminado' } };
 
     if (ability) {
       const caslWhere = this.caslPrisma.getWhere(
