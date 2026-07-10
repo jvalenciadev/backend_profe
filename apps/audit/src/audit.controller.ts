@@ -9,11 +9,23 @@ export class AuditController {
 
   @Get()
   @CheckPolicies((ability) => ability.can('read', 'AuditLog'))
-  findAll(@Query('tenantId') queryTenantId: string, @Req() req: any) {
+  findAll(
+    @Query('tenantId') queryTenantId: string,
+    @Query('action') action: string,
+    @Query('search') search: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Req() req: any,
+  ) {
     const user = req.user;
     // Enforce user's tenantId if they are restricted to a department/tenant
     const tenantId = user?.tenantId || queryTenantId;
-    return this.auditService.getLogs(tenantId);
+    return this.auditService.getLogs(tenantId, {
+      action,
+      search,
+      page: page ? Number(page) : 1,
+      limit: limit ? Number(limit) : 50,
+    });
   }
 
   @Get('versions/:resource/:id')

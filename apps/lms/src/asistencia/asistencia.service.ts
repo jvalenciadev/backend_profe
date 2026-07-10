@@ -446,7 +446,7 @@ export class AsistenciaService {
       where: whereInscripcion,
       include: {
         persona: {
-          select: { id: true, nombre: true, apellidos: true, imagen: true },
+          select: { id: true, nombre: true, apellidos: true, imagen: true, ci: true },
         },
       },
     });
@@ -471,6 +471,7 @@ export class AsistenciaService {
         userId: i.personaId,
         nombre: `${i.persona.nombre} ${i.persona.apellidos}`,
         imagen: i.persona.imagen,
+        ci: i.persona.ci ? i.persona.ci.toString() : 'S/N',
         estado: reg ? reg.estado : '',
         observacion: reg ? reg.observacion : '',
         registroId: reg ? reg.id : null,
