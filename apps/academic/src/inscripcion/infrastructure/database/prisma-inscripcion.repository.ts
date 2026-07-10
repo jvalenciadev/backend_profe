@@ -39,20 +39,28 @@ export class PrismaInscripcionRepository implements IInscripcionRepository {
   }
 
   async findAll(filter: any = {}, user?: any): Promise<Inscripcion[]> {
-    const { page = 1, limit = 50, search, versionId, sedeId, ...rest } = filter;
+    const { page = 1, limit = 50, search, versionId, sedeId, programaId, ...rest } = filter;
     const skip = (Number(page) - 1) * Number(limit);
     const take = Number(limit);
 
     const where: any = { ...rest, estado: { not: 'eliminado' } };
+
+    // If an explicit programaId filter is provided, add it directly
+    if (programaId) {
+      where.programaId = programaId;
+    }
+
     if (sedeId) {
       where.sedeId = sedeId;
     }
 
-    // Apply User-Sedes/Tenant filtering if the user is not superadmin
+    // Apply User-Sedes/Tenant filtering if the user is not superadmin.
+    // Skip sedeId restriction when filtering by a specific programaId so that
+    // all inscriptions of that program are visible regardless of the user's assigned sedes.
     if (user && user.tenantId) {
       if (sedeId) {
         where.sedeId = sedeId;
-      } else if (user.sedes && user.sedes.length > 0) {
+      } else if (!programaId && user.sedes && user.sedes.length > 0) {
         where.sedeId = { in: user.sedes };
       }
       where.tenantId = user.tenantId;
