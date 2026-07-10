@@ -38,7 +38,14 @@ export class CreateInscripcionUseCase {
       );
     }
 
-    // 3. Check for duplicate enrollment
+    // 3. Validate required estado
+    if (!dto.estadoInscripcionId) {
+      throw new BadRequestException(
+        'Debe seleccionar un estado de inscripción para continuar',
+      );
+    }
+
+    // 4. Check for duplicate enrollment
     const existing = await this.repository.findByPersonaAndPrograma(
       dto.personaId,
       dto.programaId,
