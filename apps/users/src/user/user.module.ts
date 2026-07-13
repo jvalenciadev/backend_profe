@@ -11,6 +11,7 @@ import {
   DeleteUserUseCase,
   ResetUserPasswordUseCase,
   RequestEmailVerificationUseCase,
+  BulkImportUsersUseCase,
 } from './application/use-cases/user.use-cases';
 
 @Module({
@@ -24,6 +25,7 @@ import {
     DeleteUserUseCase,
     ResetUserPasswordUseCase,
     RequestEmailVerificationUseCase,
+    BulkImportUsersUseCase,
   ],
   exports: [
     USER_REPOSITORY,
@@ -34,6 +36,7 @@ import {
     DeleteUserUseCase,
     ResetUserPasswordUseCase,
     RequestEmailVerificationUseCase,
+    BulkImportUsersUseCase,
   ],
 })
 export class UserModule {}

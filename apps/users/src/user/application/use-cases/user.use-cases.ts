@@ -65,7 +65,16 @@ function buildUserPayload(
       continue;
     }
     if (field === 'ci') {
-      payload['ci'] = value ? BigInt(value) : null;
+      const parsedValue = value ? String(value).trim() : '';
+      payload['ci'] = (parsedValue !== '' && !isNaN(Number(parsedValue))) ? BigInt(parsedValue) : null;
+      continue;
+    }
+    if (field === 'celular') {
+      if (value === 0 || value === '0' || value === '') {
+        payload['celular'] = null;
+      } else {
+        payload['celular'] = value ? String(value) : null;
+      }
       continue;
     }
     if (field !== 'verificationCode' && field !== 'mod_campos_extra_regs')
@@ -297,3 +306,6 @@ export class ChangePasswordUseCase {
     });
   }
 }
+
+export * from './bulk-import-users.use-case';
+

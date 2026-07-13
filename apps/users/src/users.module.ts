@@ -28,6 +28,7 @@ import {
   ResetUserPasswordUseCase,
   RequestEmailVerificationUseCase,
   ChangePasswordUseCase,
+  BulkImportUsersUseCase,
 } from './user/application/use-cases/user.use-cases';
 
 import { CamposExtraController } from './campos-extra/campos-extra.controller';
@@ -65,6 +66,7 @@ import { CamposExtraService } from './campos-extra/campos-extra.service';
     ResetUserPasswordUseCase,
     RequestEmailVerificationUseCase,
     ChangePasswordUseCase,
+    BulkImportUsersUseCase,
     CamposExtraService,
     {
       provide: APP_INTERCEPTOR,

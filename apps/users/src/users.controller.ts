@@ -21,6 +21,7 @@ import {
   ResetUserPasswordUseCase,
   RequestEmailVerificationUseCase,
   ChangePasswordUseCase,
+  BulkImportUsersUseCase,
 } from './user/application/use-cases/user.use-cases';
 
 @Controller('users')
@@ -35,12 +36,19 @@ export class UsersController {
     private readonly resetPasswordUseCase: ResetUserPasswordUseCase,
     private readonly requestVerificationUseCase: RequestEmailVerificationUseCase,
     private readonly changePasswordUseCase: ChangePasswordUseCase,
+    private readonly bulkImportUseCase: BulkImportUsersUseCase,
   ) {}
 
   @Post()
   @CheckPolicies((ability) => ability.can('create', 'User'))
   create(@Body() data: any, @Req() req: any) {
     return this.createUserUseCase.execute(data, req.user);
+  }
+
+  @Post('bulk-import')
+  @CheckPolicies((ability) => ability.can('create', 'User'))
+  bulkImport(@Body() data: any, @Req() req: any) {
+    return this.bulkImportUseCase.execute(data, req.user);
   }
 
   @Get()
