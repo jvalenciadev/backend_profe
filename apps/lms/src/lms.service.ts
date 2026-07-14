@@ -1518,7 +1518,7 @@ export class LmsService {
     });
     if (!actividad) throw new NotFoundException('Actividad no encontrada');
 
-    let facilitador = null;
+    let facilitador: string | null = null;
     if (actividad.unidad) {
       const assignment = await this.prisma.programaDosFacilitador.findFirst({
         where: {
