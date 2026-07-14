@@ -46,9 +46,11 @@ export class PrismaUserRepository implements IUserRepository {
     const { ability, search, includeParticipants, ...rest } = filter;
     let where: any = { ...rest, estado: { not: 'eliminado' } };
 
-    if (search) {
+    const hasSearch = search && search.trim() !== '';
+
+    if (hasSearch) {
       const ciCondition =
-        search && /^\d+$/.test(search.trim())
+        /^\d+$/.test(search.trim())
           ? { ci: BigInt(search.trim()) }
           : null;
 
@@ -70,7 +72,8 @@ export class PrismaUserRepository implements IUserRepository {
 
     // Excluir participantes y estudiantes solo en listados generales del dashboard.
     // Si includeParticipants=true, se incluyen todos los roles (búsqueda global).
-    if (!includeParticipants) {
+    // Si hasSearch=true, también se incluyen para poder encontrarlos al buscar por username, nombre, etc.
+    if (!includeParticipants && !hasSearch) {
       where = {
         AND: [
           where,

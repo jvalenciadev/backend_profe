@@ -19,7 +19,7 @@ export class LmsService {
     private readonly jwtService: JwtService,
     private readonly notiService: NotificacionesService,
     private readonly mailService: MailService,
-  ) {}
+  ) { }
 
   /**
    * Login exclusivo para el Aula Virtual (LMS)
@@ -379,11 +379,11 @@ export class LmsService {
           // Turno
           const turno = d.turnoId
             ? await this.prisma.programaDosTurno
-                .findUnique({
-                  where: { id: d.turnoId },
-                  include: { turnoConfig: true },
-                })
-                .catch(() => null)
+              .findUnique({
+                where: { id: d.turnoId },
+                include: { turnoConfig: true },
+              })
+              .catch(() => null)
             : null;
 
           return { ...d, programaDos, modulo, turno, studentCount };
@@ -732,54 +732,54 @@ export class LmsService {
           try {
             const programaDos = d.programaDosId
               ? await this.prisma.programaDos
-                  .findUnique({
-                    where: { id: d.programaDosId },
-                    include: {
-                      tipo: true,
-                      version: true,
-                      sede: true,
-                      inscripciones: {
-                        where: { estado: 'activo' },
-                        select: { id: true },
-                      },
+                .findUnique({
+                  where: { id: d.programaDosId },
+                  include: {
+                    tipo: true,
+                    version: true,
+                    sede: true,
+                    inscripciones: {
+                      where: { estado: 'activo' },
+                      select: { id: true },
                     },
-                  })
-                  .catch(() => null)
+                  },
+                })
+                .catch(() => null)
               : null;
 
             const modulo = d.moduloId
               ? await this.prisma.programaModuloDos
+                .findUnique({
+                  where: { id: d.moduloId },
+                  include: {
+                    mod_unidades: {
+                      include: { _count: { select: { actividades: true } } },
+                    },
+                  },
+                })
+                .catch(() => null)
+              : d.moduloMaestroId
+                ? await this.prisma.programaModulo
                   .findUnique({
-                    where: { id: d.moduloId },
+                    where: { id: d.moduloMaestroId },
                     include: {
                       mod_unidades: {
-                        include: { _count: { select: { actividades: true } } },
+                        include: {
+                          _count: { select: { actividades: true } },
+                        },
                       },
                     },
                   })
                   .catch(() => null)
-              : d.moduloMaestroId
-                ? await this.prisma.programaModulo
-                    .findUnique({
-                      where: { id: d.moduloMaestroId },
-                      include: {
-                        mod_unidades: {
-                          include: {
-                            _count: { select: { actividades: true } },
-                          },
-                        },
-                      },
-                    })
-                    .catch(() => null)
                 : null;
 
             const turno = d.turnoId
               ? await this.prisma.programaDosTurno
-                  .findUnique({
-                    where: { id: d.turnoId },
-                    include: { turnoConfig: true },
-                  })
-                  .catch(() => null)
+                .findUnique({
+                  where: { id: d.turnoId },
+                  include: { turnoConfig: true },
+                })
+                .catch(() => null)
               : null;
 
             return { ...d, programaDos, modulo, turno };
@@ -1513,10 +1513,37 @@ export class LmsService {
             config: true,
           },
         },
+        unidad: true,
       },
     });
     if (!actividad) throw new NotFoundException('Actividad no encontrada');
-    return actividad;
+
+    let facilitador = null;
+    if (actividad.unidad) {
+      const assignment = await this.prisma.programaDosFacilitador.findFirst({
+        where: {
+          OR: [
+            { moduloId: actividad.unidad.moduloId || undefined },
+            { moduloMaestroId: actividad.unidad.moduloMaestroId || undefined },
+          ],
+          turnoId: actividad.unidad.turnoId || undefined,
+          estado: 'activo',
+        },
+        include: {
+          facilitador: {
+            select: { nombre: true, apellidos: true },
+          },
+        },
+      });
+      if (assignment?.facilitador) {
+        facilitador = `${assignment.facilitador.nombre} ${assignment.facilitador.apellidos}`.trim();
+      }
+    }
+
+    return {
+      ...actividad,
+      facilitador,
+    };
   }
 
   async getForoPosts(foroId: string) {
@@ -2929,9 +2956,9 @@ export class LmsService {
     // 3. Obtener categorías configuradas (fuente de verdad del programa académico)
     const configCategorias = tipoId
       ? await this.prisma.mod_tipo_calificacion_config.findMany({
-          where: { tipoProgramaId: tipoId, estado: 'activo' },
-          orderBy: { orden: 'asc' },
-        })
+        where: { tipoProgramaId: tipoId, estado: 'activo' },
+        orderBy: { orden: 'asc' },
+      })
       : [];
 
     // 4. Obtener las instancias reales del módulo (para saber si hay actividades en categorías extras o diferentes)
@@ -3158,7 +3185,7 @@ export class LmsService {
           data: { userId, insigniaId: ins.id },
         });
       }
-    } catch (e) {}
+    } catch (e) { }
   }
 
   private async persistNotaFinal(
@@ -3427,7 +3454,7 @@ export class LmsService {
       }
       throw new BadRequestException(
         'Error al actualizar el perfil institucional: ' +
-          (e.message || 'Error desconocido'),
+        (e.message || 'Error desconocido'),
       );
     }
   }
@@ -3588,41 +3615,41 @@ export class LmsService {
         categoriaNombre: a.categoria?.config?.nombre || null,
         foro: a.foro
           ? {
-              permitirFiles: a.foro.permitirFiles,
-              maxArchivos: a.foro.maxArchivos,
-            }
+            permitirFiles: a.foro.permitirFiles,
+            maxArchivos: a.foro.maxArchivos,
+          }
           : null,
         tarea: a.tarea
           ? {
-              allowFiles: a.tarea.allowFiles,
-              allowText: a.tarea.allowText,
-              maxArchivos: a.tarea.maxArchivos,
-              tiposArch: a.tarea.tiposArch,
-            }
+            allowFiles: a.tarea.allowFiles,
+            allowText: a.tarea.allowText,
+            maxArchivos: a.tarea.maxArchivos,
+            tiposArch: a.tarea.tiposArch,
+          }
           : null,
         cuestionario: a.cuestionario
           ? {
-              duracion: a.cuestionario.duracion,
-              maxIntentos: a.cuestionario.maxIntentos,
-              aleatorizar: a.cuestionario.aleatorizar,
-              randomCount: a.cuestionario.randomCount,
-              mostrarNota: a.cuestionario.mostrarNota,
-              retroInmediata: a.cuestionario.retroInmediata,
-              soloMobile: a.cuestionario.soloMobile,
-              bloquearCopia: a.cuestionario.bloquearCopia,
-              preguntas: a.cuestionario.preguntas.map((p) => ({
-                texto: p.texto,
-                tipo: p.tipo,
-                puntaje: p.puntaje,
-                imagen: p.imagen,
-                orden: p.orden,
-                opciones: p.opciones.map((o) => ({
-                  texto: o.texto,
-                  esCorrecta: o.esCorrecta,
-                  orden: o.orden,
-                })),
+            duracion: a.cuestionario.duracion,
+            maxIntentos: a.cuestionario.maxIntentos,
+            aleatorizar: a.cuestionario.aleatorizar,
+            randomCount: a.cuestionario.randomCount,
+            mostrarNota: a.cuestionario.mostrarNota,
+            retroInmediata: a.cuestionario.retroInmediata,
+            soloMobile: a.cuestionario.soloMobile,
+            bloquearCopia: a.cuestionario.bloquearCopia,
+            preguntas: a.cuestionario.preguntas.map((p) => ({
+              texto: p.texto,
+              tipo: p.tipo,
+              puntaje: p.puntaje,
+              imagen: p.imagen,
+              orden: p.orden,
+              opciones: p.opciones.map((o) => ({
+                texto: o.texto,
+                esCorrecta: o.esCorrecta,
+                orden: o.orden,
               })),
-            }
+            })),
+          }
           : null,
       })),
     }));
