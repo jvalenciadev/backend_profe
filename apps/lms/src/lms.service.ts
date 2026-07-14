@@ -1480,8 +1480,34 @@ export class LmsService {
       },
     });
 
+    let facilitador: string | null = null;
+    let facilitadorId: string | null = null;
+    if (modulo) {
+      const assignment = await this.prisma.programaDosFacilitador.findFirst({
+        where: {
+          OR: [
+            { moduloId: modulo.id },
+            { moduloMaestroId: modulo.id },
+          ],
+          ...(turnoId ? { turnoId } : {}),
+          estado: 'activo',
+        },
+        include: {
+          facilitador: {
+            select: { id: true, nombre: true, apellidos: true },
+          },
+        },
+      });
+      if (assignment?.facilitador) {
+        facilitador = `${assignment.facilitador.nombre} ${assignment.facilitador.apellidos}`.trim();
+        facilitadorId = assignment.facilitador.id;
+      }
+    }
+
     return {
       ...modulo,
+      facilitador,
+      facilitadorId,
       participantes: participantes.map((p) => ({
         ...p,
         persona: {

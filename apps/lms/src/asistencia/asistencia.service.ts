@@ -643,4 +643,187 @@ export class AsistenciaService {
       esPresencial: s.esPresencial,
     }));
   }
+
+  async generarCodigoAsistencia(
+    userId: string,
+    sesionId: string,
+    expiraEnMinutos = 15,
+  ) {
+    const sesion = await this.prisma.mod_asistencia.findUnique({
+      where: { id: sesionId },
+      include: {
+        modulo: { include: { programaDos: true } },
+        moduloMaestro: { include: { programa: true } },
+      },
+    });
+    if (!sesion) throw new NotFoundException('Sesión no encontrada');
+
+    // Verificar que el solicitante sea facilitador de esta sesión (código reutilizado del QR)
+    let isFacilitador = await this.prisma.programaDosFacilitador.findFirst({
+      where: {
+        facilitadorId: userId,
+        estado: 'activo',
+        OR: [
+          { moduloId: sesion.moduloId || undefined },
+          { moduloMaestroId: sesion.moduloMaestroId || undefined },
+        ],
+      },
+    });
+
+    if (!isFacilitador && sesion.moduloMaestroId) {
+      const masterMod = await this.prisma.programaModulo.findUnique({
+        where: { id: sesion.moduloMaestroId },
+      });
+      if (masterMod?.facilitadorId === userId) {
+        isFacilitador = { id: 'direct' } as any;
+      } else if (masterMod) {
+        isFacilitador = (await this.prisma.programaDosFacilitador.findFirst({
+          where: {
+            facilitadorId: userId,
+            estado: 'activo',
+            programaDos: { programaId: masterMod.programaId },
+          },
+        })) as any;
+      }
+    }
+
+    if (!isFacilitador)
+      throw new ForbiddenException(
+        'No tienes permisos de facilitador para esta sesión',
+      );
+
+    // Generar código único de 6 caracteres (letras y números sin caracteres confusos como O, 0, I, 1)
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let codigo = '';
+    for (let i = 0; i < 6; i++) {
+      codigo += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+
+    const expiracion = new Date(Date.now() + expiraEnMinutos * 60 * 1000);
+
+    const updated = await this.prisma.mod_asistencia.update({
+      where: { id: sesionId },
+      data: {
+        codigoAcceso: codigo,
+        codigoExpiracion: expiracion,
+      },
+    });
+
+    return {
+      codigo: updated.codigoAcceso,
+      expiracion: updated.codigoExpiracion,
+    };
+  }
+
+  async marcarAsistenciaPorCodigo(
+    userId: string,
+    moduloId: string,
+    codigo: string,
+  ) {
+    const cleanCodigo = codigo.trim().toUpperCase();
+
+    // 1. Buscar la sesión de asistencia activa que coincida con el código y el módulo
+    // Puede ser módulo operativo o módulo maestro
+    const sesion = await this.prisma.mod_asistencia.findFirst({
+      where: {
+        codigoAcceso: cleanCodigo,
+        OR: [
+          { moduloId },
+          { moduloMaestroId: moduloId },
+        ],
+      },
+      include: {
+        modulo: { include: { programaDos: true } },
+      },
+    });
+
+    if (!sesion) {
+      throw new NotFoundException(
+        'Código inválido. Verifique el código e intente de nuevo.',
+      );
+    }
+
+    // 2. Verificar expiración del código
+    if (!sesion.codigoExpiracion || new Date() > sesion.codigoExpiracion) {
+      throw new BadRequestException(
+        'El código de asistencia ha expirado. Solicite uno nuevo al facilitador.',
+      );
+    }
+
+    // 3. Validar que el estudiante pertenece al turno y programa correspondiente (código reutilizado del QR)
+    const turnoId = sesion.turnoId;
+    const inscripcion = await this.prisma.programaInscripcion.findFirst({
+      where: {
+        personaId: userId,
+        estado: 'activo',
+        ...(turnoId ? { turnoId } : {}),
+        ...(sesion.moduloId
+          ? { programaId: sesion.modulo?.programaDos?.id || undefined }
+          : {}),
+      },
+    });
+
+    if (!inscripcion) {
+      throw new ForbiddenException(
+        'No estás inscrito en el programa, sede o turno correspondiente a esta sesión.',
+      );
+    }
+
+    // 4. Verificar si ya está registrado
+    const yaRegistrado = await this.prisma.mod_asistencia_reg.findFirst({
+      where: { asistenciaId: sesion.id, userId },
+    });
+
+    if (yaRegistrado) {
+      return {
+        success: true,
+        message: 'Tu asistencia ya estaba registrada.',
+        alreadyRegistered: true,
+      };
+    }
+
+    // 5. Registrar la asistencia como Presente (P)
+    await this.prisma.mod_asistencia_reg.create({
+      data: {
+        asistenciaId: sesion.id,
+        userId,
+        estado: 'P',
+        observacion: 'Registrado vía Código',
+      },
+    });
+
+    // 6. Sincronizar nota si tiene actividad asociada
+    if (sesion.actividadId) {
+      const act = await this.prisma.mod_actividad.findUnique({
+        where: { id: sesion.actividadId },
+        select: { puntajeMax: true },
+      });
+      await this.prisma.mod_nota_actividad.upsert({
+        where: {
+          actividadId_userId: {
+            actividadId: sesion.actividadId,
+            userId,
+          },
+        },
+        update: {
+          nota: act?.puntajeMax || 100,
+          observacion: 'Asistencia registrada vía Código',
+          fechaCalif: new Date(),
+        },
+        create: {
+          userId,
+          actividadId: sesion.actividadId,
+          nota: act?.puntajeMax || 100,
+          observacion: 'Asistencia registrada vía Código',
+          fechaCalif: new Date(),
+        },
+      });
+    }
+
+    return {
+      success: true,
+      message: '¡Asistencia registrada correctamente!',
+      alreadyRegistered: false,
+    };
+  }
 }

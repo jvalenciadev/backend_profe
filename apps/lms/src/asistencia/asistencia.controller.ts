@@ -65,4 +65,29 @@ export class AsistenciaController {
   async marcarQR(@Body() body: { token: string }, @Request() req: any) {
     return this.asistenciaService.marcarAsistenciaQR(req.user.id, body.token);
   }
+
+  @Post('sesion/:id/generar-codigo')
+  async generarCodigo(
+    @Param('id') id: string,
+    @Body() body: { expiraEnMinutos?: number },
+    @Request() req: any,
+  ) {
+    return this.asistenciaService.generarCodigoAsistencia(
+      req.user.id,
+      id,
+      body.expiraEnMinutos,
+    );
+  }
+
+  @Post('marcar-codigo')
+  async marcarCodigo(
+    @Body() body: { codigo: string; moduloId: string },
+    @Request() req: any,
+  ) {
+    return this.asistenciaService.marcarAsistenciaPorCodigo(
+      req.user.id,
+      body.moduloId,
+      body.codigo,
+    );
+  }
 }

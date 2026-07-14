@@ -1721,6 +1721,8 @@ model mod_asistencia {
   createdAt       DateTime @default(now()) @map("created_at")
   turnoId         String?  @map("pdt_id") @db.Uuid
   esPresencial    Boolean  @default(true) @map("mod_asi_presencial")
+  codigoAcceso     String?   @map("codigo_acceso") @db.VarChar(10)
+  codigoExpiracion DateTime? @map("codigo_expiracion")
 
   modulo        ProgramaModuloDos?   @relation(fields: [moduloId], references: [id])
   moduloMaestro ProgramaModulo?      @relation(fields: [moduloMaestroId], references: [id])
