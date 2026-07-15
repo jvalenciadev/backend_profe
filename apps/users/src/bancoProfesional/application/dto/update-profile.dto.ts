@@ -5,6 +5,7 @@ import {
   IsNumber,
   IsDateString,
   IsUUID,
+  ValidateIf,
 } from 'class-validator';
 
 export class UpdateProfileDto {
@@ -17,7 +18,8 @@ export class UpdateProfileDto {
   apellidos?: string;
 
   @IsOptional()
-  @IsDateString()
+  @ValidateIf((o) => o.fechaNac !== '' && o.fechaNac !== null && o.fechaNac !== undefined)
+  @IsDateString({}, { message: 'La fecha de nacimiento debe ser una fecha válida en formato AAAA-MM-DD.' })
   fechaNac?: string;
 
   @IsOptional()
