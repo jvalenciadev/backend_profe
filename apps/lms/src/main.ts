@@ -18,6 +18,12 @@ async function bootstrap() {
 
   app.useGlobalFilters(new AllExceptionsFilter());
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
+
+  // Aumentar límites de tamaño del body (necesario para importaciones masivas de cursos)
+  const express = require('express');
+  app.use(express.json({ limit: '100mb' }));
+  app.use(express.urlencoded({ limit: '100mb', extended: true }));
+
   app.enableCors();
   app.setGlobalPrefix('api/aula');
 
