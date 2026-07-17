@@ -388,15 +388,14 @@ export class CorrespondenciaService {
     if (accion === 'ENVIO') {
       if (
         doc.estado !== 'ELABORACION' &&
-        doc.estado !== 'CANCELADO' &&
         doc.estado !== 'DEVUELTO'
       ) {
         throw new BadRequestException(
-          'Solo se pueden enviar documentos que estén en Elaboración, Cancelados o Devueltos',
+          'Solo se pueden enviar documentos que estén en Elaboración o Devueltos',
         );
       }
-      // Al reenviar desde CANCELADO o DEVUELTO, solo el remitente puede hacerlo
-      if (doc.estado === 'CANCELADO' || doc.estado === 'DEVUELTO') {
+      // Al reenviar desde DEVUELTO, solo el remitente puede hacerlo
+      if (doc.estado === 'DEVUELTO') {
         const esRemitente = doc.participantes.some(
           (p) => p.userId === usuarioId && p.rol === 'REMITENTE',
         );
