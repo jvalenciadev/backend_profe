@@ -429,6 +429,18 @@ export class CorrespondenciaService {
             estado: true,
             tenantId: true,
             createdAt: true,
+            participantes: {
+              include: {
+                usuario: {
+                  select: {
+                    id: true,
+                    nombre: true,
+                    apellidos: true,
+                    cargoStr: true,
+                  },
+                },
+              },
+            },
           },
         },
         usuario: {
@@ -467,8 +479,27 @@ export class CorrespondenciaService {
       const siglaCiteMatch = s.documento?.cite?.match(/PROFE\/([A-Z]+)\b/i);
       const siglaCite = siglaCiteMatch ? siglaCiteMatch[1].toUpperCase() : 'NAC';
 
+      const remitentePart = (s.documento as any)?.participantes?.find((p: any) => p.rol === 'REMITENTE');
+      const creador = remitentePart?.usuario ? {
+        id: remitentePart.usuario.id,
+        nombre: remitentePart.usuario.nombre,
+        apellidos: remitentePart.usuario.apellidos,
+        cargoStr: remitentePart.usuario.cargoStr || remitentePart.cargoLiteral,
+      } : null;
+
       return {
         ...s,
+        documento: {
+          id: s.documento.id,
+          cite: s.documento.cite,
+          hr: s.documento.hr,
+          tipo: s.documento.tipo,
+          referencia: s.documento.referencia,
+          estado: s.documento.estado,
+          tenantId: s.documento.tenantId,
+          createdAt: s.documento.createdAt,
+          creador,
+        },
         docTenant: docTenant || { id: s.documento?.tenantId || siglaCite, nombre: `Departamento ${siglaCite}`, abreviacion: siglaCite },
         userTenant: userTenant || { id: s.usuario?.tenantId || siglaCite, nombre: `Departamento ${siglaCite}`, abreviacion: siglaCite },
         destTenant: destTenant || (s.destinatario ? { id: s.destinatario.tenantId || 'GLOBAL', nombre: 'Destino Externo', abreviacion: 'EXT' } : null),
