@@ -815,7 +815,7 @@ export class CorrespondenciaService {
       where: {
         deletedAt: null,
         OR: [
-          { userRoles: { some: { roleId: { in: allowedRoleIds } } } },
+          { roles: { some: { roleId: { in: allowedRoleIds } } } },
           { cargoStr: { contains: 'FACILITADOR', mode: 'insensitive' } },
           { cargoStr: { contains: 'RESPONSABLE', mode: 'insensitive' } },
           { cargoStr: { contains: 'TECNICO', mode: 'insensitive' } },
