@@ -409,17 +409,9 @@ export class CorrespondenciaService {
       };
     }
 
-    // Filtrar por el usuario autenticado (seg_destinatario_id / usuarioId / participante de la hoja de ruta)
+    // Filtrar estrictamente por seg_destinatario_id = id_usuario_logeado
     if (currentUserId) {
-      whereClause.AND = [
-        {
-          OR: [
-            { destinatarioId: currentUserId },
-            { usuarioId: currentUserId },
-            { documento: { participantes: { some: { userId: currentUserId } } } },
-          ],
-        },
-      ];
+      whereClause.destinatarioId = currentUserId;
     }
 
     const seguimientos = await this.prisma.corSeguimiento.findMany({
