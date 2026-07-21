@@ -761,6 +761,19 @@ export class CorrespondenciaService {
         }
       }
 
+      // DEVOLUCION: siempre se devuelve al creador/remitente original del documento
+      if (accion === 'DEVOLUCION') {
+        const remitenteParticipante = doc.participantes.find(
+          (p) => p.rol === 'REMITENTE',
+        );
+        if (!remitenteParticipante) {
+          throw new BadRequestException(
+            'No se encontró un remitente original para devolver el documento',
+          );
+        }
+        destinatarioId = remitenteParticipante.userId;
+      }
+
       // 3. Crear el registro de seguimiento con el archivo adjunto y el destinatario
       const seg = await tx.corSeguimiento.create({
         data: {
