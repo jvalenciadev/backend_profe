@@ -295,21 +295,19 @@ export class CorrespondenciaService {
         };
       });
 
-    // Recibidos: documentos que están en la bandeja de entrada del usuario
-    // Excluye: ELABORACION (borrador), ARCHIVADO (finalizado), CANCELADO/DEVUELTO (no activos)
+    // Recibidos: documentos en la bandeja del usuario (envíos, derivaciones, recepciones y devoluciones)
     const recibidosPrev = todos.filter((d) => {
       if (
         d.estado === 'ELABORACION' ||
         d.estado === 'ARCHIVADO' ||
-        d.estado === 'CANCELADO' ||
-        d.estado === 'DEVUELTO'
+        d.estado === 'CANCELADO'
       )
         return false;
 
       const s0 = d.seguimientos[0];
       if (!s0) return false;
 
-      // Caso A: Se le envió/derivó el documento al usuario y aún no lo ha recibido
+      // Caso A: Se le envió/derivó el documento al usuario
       if (
         (s0.accion === 'ENVIO' || s0.accion === 'DERIVACION') &&
         s0.destinatarioId === userId
@@ -317,8 +315,18 @@ export class CorrespondenciaService {
         return true;
       }
 
-      // Caso B: El usuario recibió el documento y aún no lo ha derivado/devuelto/archivado
+      // Caso B: El usuario recibió el documento y aún no lo ha derivado/archivado
       if (s0.accion === 'RECEPCION' && s0.usuarioId === userId) {
+        return true;
+      }
+
+      // Caso C: El documento fue DEVUELTO y le corresponde al remitente o destinatario devuelto
+      if (
+        d.estado === 'DEVUELTO' &&
+        (s0.destinatarioId === userId ||
+          s0.accion === 'DEVOLUCION' ||
+          d.participantes.some((p) => p.userId === userId && p.rol === 'REMITENTE'))
+      ) {
         return true;
       }
 
@@ -327,7 +335,7 @@ export class CorrespondenciaService {
 
     return {
       recibidos: mapearConAlerta(recibidosPrev),
-      // Enviados: documentos activos en curso que el remitente o una VÍA envió/derivó
+      // Enviados: documentos en curso enviados por el remitente o VÍA
       enviados: mapearConAlerta(
         todos.filter(
           (d) =>
@@ -350,12 +358,10 @@ export class CorrespondenciaService {
                 ))),
         ),
       ),
-      // En Proceso (Borradores): documentos en ELABORACION, CANCELADO o DEVUELTO del remitente
+      // Borradores: únicamente borradores en estado ELABORACION
       enProceso: todos.filter(
         (d) =>
-          (d.estado === 'ELABORACION' ||
-            d.estado === 'CANCELADO' ||
-            d.estado === 'DEVUELTO') &&
+          d.estado === 'ELABORACION' &&
           d.participantes.some(
             (p) => p.userId === userId && p.rol === 'REMITENTE',
           ),
