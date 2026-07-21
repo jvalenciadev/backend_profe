@@ -802,14 +802,38 @@ export class CorrespondenciaService {
   }
 
   async buscarUsuarios(query: string) {
+    const allowedRoleIds = [
+      'c8233c1d-cae1-447f-8f3b-a1757da4aa3a', // FACILITADOR
+      '29614aad-668b-43dc-8aba-768c802524ad', // RESPONSABLE
+      'beb28e58-0d5a-4edd-83b3-f4f9a1d54d1f', // TECNICOS
+      'caf759ed-feeb-4dc7-912c-a7ecf8cc6bdd', // TECNICO MATEMATICO
+    ];
+
+    const cleanQuery = query?.trim() ?? '';
+
     return this.prisma.user.findMany({
       where: {
-        OR: [
-          { nombre: { contains: query, mode: 'insensitive' } },
-          { apellidos: { contains: query, mode: 'insensitive' } },
-          { cargoStr: { contains: query, mode: 'insensitive' } },
-        ],
         deletedAt: null,
+        OR: [
+          { userRoles: { some: { roleId: { in: allowedRoleIds } } } },
+          { cargoStr: { contains: 'FACILITADOR', mode: 'insensitive' } },
+          { cargoStr: { contains: 'RESPONSABLE', mode: 'insensitive' } },
+          { cargoStr: { contains: 'TECNICO', mode: 'insensitive' } },
+          { cargoStr: { contains: 'TÉCNICO', mode: 'insensitive' } },
+        ],
+        ...(cleanQuery
+          ? {
+              AND: [
+                {
+                  OR: [
+                    { nombre: { contains: cleanQuery, mode: 'insensitive' } },
+                    { apellidos: { contains: cleanQuery, mode: 'insensitive' } },
+                    { cargoStr: { contains: cleanQuery, mode: 'insensitive' } },
+                  ],
+                },
+              ],
+            }
+          : {}),
       },
       select: {
         id: true,
@@ -818,7 +842,7 @@ export class CorrespondenciaService {
         cargoStr: true,
         imagen: true,
       },
-      take: 10,
+      take: 20,
     });
   }
   async findById(id: string) {
