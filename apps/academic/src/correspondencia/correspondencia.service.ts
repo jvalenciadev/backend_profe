@@ -532,9 +532,11 @@ export class CorrespondenciaService {
     }
 
     if (accion === 'CANCELAR') {
-      if (doc.estado !== 'ENVIADO') {
+      // Un borrador (ELABORACION) puede descartarse directamente: nunca fue enviado ni circuló.
+      // Un documento ENVIADO puede cancelarse solo si aún no fue recibido ni derivado.
+      if (doc.estado !== 'ENVIADO' && doc.estado !== 'ELABORACION') {
         throw new BadRequestException(
-          'Solo se pueden cancelar documentos en estado ENVIADO (que aún no han sido recibidos)',
+          'Solo se pueden cancelar documentos en estado ELABORACION o ENVIADO (que aún no han sido recibidos)',
         );
       }
       const esRemitente = doc.participantes.some(
@@ -542,19 +544,22 @@ export class CorrespondenciaService {
       );
       if (!esRemitente) {
         throw new BadRequestException(
-          'Solo el remitente original puede cancelar el envío del documento',
+          'Solo el remitente original puede cancelar el documento',
         );
       }
-      const yaCirculo = doc.seguimientos.some(
-        (s) =>
-          s.accion === 'RECEPCION' ||
-          s.accion === 'DERIVACION' ||
-          s.accion === 'DEVOLUCION',
-      );
-      if (yaCirculo) {
-        throw new BadRequestException(
-          'No se puede cancelar el envío porque el documento ya ha ingresado en trámite anteriormente',
+      // Si ya fue ENVIADO: verificar que no haya circulado aún
+      if (doc.estado === 'ENVIADO') {
+        const yaCirculo = doc.seguimientos.some(
+          (s) =>
+            s.accion === 'RECEPCION' ||
+            s.accion === 'DERIVACION' ||
+            s.accion === 'DEVOLUCION',
         );
+        if (yaCirculo) {
+          throw new BadRequestException(
+            'No se puede cancelar el envío porque el documento ya ha ingresado en trámite anteriormente',
+          );
+        }
       }
     }
 
