@@ -320,13 +320,8 @@ export class CorrespondenciaService {
         return true;
       }
 
-      // Caso C: El documento fue DEVUELTO y le corresponde al remitente o destinatario devuelto
-      if (
-        d.estado === 'DEVUELTO' &&
-        (s0.destinatarioId === userId ||
-          s0.accion === 'DEVOLUCION' ||
-          d.participantes.some((p) => p.userId === userId && p.rol === 'REMITENTE'))
-      ) {
+      // Caso C: El documento fue DEVUELTO y le corresponde únicamente al usuario a quien se le devolvió (remitente creador)
+      if (d.estado === 'DEVUELTO' && s0.destinatarioId === userId) {
         return true;
       }
 
