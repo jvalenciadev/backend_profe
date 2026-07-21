@@ -368,7 +368,7 @@ export class CorrespondenciaService {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
   }
 
-  async getHistorialTenants(tenantIdFilter?: string) {
+  async getHistorialTenants(tenantIdFilter?: string, currentUserId?: string) {
     let targetTenantId: string | undefined = undefined;
     let targetSigla: string | undefined = undefined;
 
@@ -407,6 +407,19 @@ export class CorrespondenciaService {
           { cite: { contains: `/${targetSigla}/` } },
         ],
       };
+    }
+
+    // Filtrar por el usuario autenticado (seg_destinatario_id / usuarioId / participante de la hoja de ruta)
+    if (currentUserId) {
+      whereClause.AND = [
+        {
+          OR: [
+            { destinatarioId: currentUserId },
+            { usuarioId: currentUserId },
+            { documento: { participantes: { some: { userId: currentUserId } } } },
+          ],
+        },
+      ];
     }
 
     const seguimientos = await this.prisma.corSeguimiento.findMany({

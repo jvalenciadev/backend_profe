@@ -40,8 +40,9 @@ export class CorrespondenciaController {
 
   /** GET /correspondencia/historial-tenants — Historial y auditoría de hojas de ruta por TENANT_ID */
   @Get('historial-tenants')
-  getHistorialTenants(@Query('tenantId') tenantId?: string) {
-    return this.service.getHistorialTenants(tenantId);
+  getHistorialTenants(@Query('tenantId') tenantId?: string, @Req() req?: any) {
+    const userId = req?.user?.id ?? req?.user?.sub;
+    return this.service.getHistorialTenants(tenantId, userId);
   }
 
   /** GET /correspondencia/usuarios?q=Maria — Autocompletado */
