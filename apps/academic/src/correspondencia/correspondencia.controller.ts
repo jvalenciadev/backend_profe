@@ -38,6 +38,12 @@ export class CorrespondenciaController {
     return this.service.getBandejaCategorizada(userId);
   }
 
+  /** GET /correspondencia/historial-tenants — Historial y auditoría de hojas de ruta por TENANT_ID */
+  @Get('historial-tenants')
+  getHistorialTenants(@Query('tenantId') tenantId?: string) {
+    return this.service.getHistorialTenants(tenantId);
+  }
+
   /** GET /correspondencia/usuarios?q=Maria — Autocompletado */
   @Get('usuarios')
   buscarUsuarios(@Query('q') q: string) {

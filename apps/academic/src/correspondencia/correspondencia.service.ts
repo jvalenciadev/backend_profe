@@ -18,7 +18,7 @@ const PREFIJOS: Record<CorTipoDocumento, string> = {
 
 @Injectable()
 export class CorrespondenciaService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   private async generarCite(
     tx: any,
@@ -210,7 +210,7 @@ export class CorrespondenciaService {
   }
 
   async getBandejaCategorizada(userId: string) {
-    const todos = await this.prisma.corDocumento.findMany({
+    const rawTodos = await this.prisma.corDocumento.findMany({
       where: {
         participantes: { some: { userId } },
         deletedAt: null,
@@ -225,6 +225,7 @@ export class CorrespondenciaService {
                 apellidos: true,
                 cargoStr: true,
                 imagen: true,
+                tenantId: true,
               },
             },
           },
@@ -232,19 +233,42 @@ export class CorrespondenciaService {
         seguimientos: {
           orderBy: { fecha: 'desc' },
           include: {
-            usuario: { select: { id: true, nombre: true, apellidos: true } },
+            usuario: { select: { id: true, nombre: true, apellidos: true, tenantId: true } },
             destinatario: {
               select: {
                 id: true,
                 nombre: true,
                 apellidos: true,
                 cargoStr: true,
+                tenantId: true,
               },
             },
           },
         },
       },
       orderBy: { createdAt: 'desc' },
+    });
+
+    const departamentos = await this.prisma.departamento.findMany({
+      select: { id: true, nombre: true, abreviacion: true },
+    });
+    const depMap = new Map<string, { id: string; nombre: string; abreviacion: string }>();
+    departamentos.forEach((d) => depMap.set(d.id, d));
+
+    const todos = rawTodos.map((d) => {
+      let tenantInfo = d.tenantId ? depMap.get(d.tenantId) : null;
+      if (!tenantInfo && d.cite) {
+        const match = d.cite.match(/PROFE\/([A-Z]+)\b/i);
+        const sigla = match ? match[1].toUpperCase() : 'NAC';
+        tenantInfo = { id: d.tenantId || sigla, nombre: `Sede ${sigla}`, abreviacion: sigla };
+      } else if (!tenantInfo) {
+        tenantInfo = { id: 'NAC', nombre: 'Sede Nacional', abreviacion: 'NAC' };
+      }
+
+      return {
+        ...d,
+        tenantInfo,
+      };
     });
 
     const ahora = new Date();
@@ -255,7 +279,7 @@ export class CorrespondenciaService {
         const ultimoMovimiento = d.seguimientos[0]?.fecha || d.createdAt;
         const diasTranscurridos = Math.floor(
           (ahora.getTime() - new Date(ultimoMovimiento).getTime()) /
-            (1000 * 60 * 60 * 24),
+          (1000 * 60 * 60 * 24),
         );
 
         return {
@@ -304,25 +328,27 @@ export class CorrespondenciaService {
     return {
       recibidos: mapearConAlerta(recibidosPrev),
       // Enviados: documentos activos en curso que el remitente o una VÍA envió/derivó
-      enviados: todos.filter(
-        (d) =>
-          d.estado !== 'ELABORACION' &&
-          d.estado !== 'ARCHIVADO' &&
-          d.estado !== 'CANCELADO' &&
-          d.estado !== 'DEVUELTO' &&
-          // Documentos en curso del remitente
-          (d.participantes.some(
-            (p) => p.userId === userId && p.rol === 'REMITENTE',
-          ) ||
-            // VÍAs que ya derivaron
+      enviados: mapearConAlerta(
+        todos.filter(
+          (d) =>
+            d.estado !== 'ELABORACION' &&
+            d.estado !== 'ARCHIVADO' &&
+            d.estado !== 'CANCELADO' &&
+            d.estado !== 'DEVUELTO' &&
+            // Documentos en curso del remitente
             (d.participantes.some(
-              (p) => p.userId === userId && p.rol === 'VIA',
-            ) &&
-              d.seguimientos.some(
-                (s) =>
-                  s.usuarioId === userId &&
-                  (s.accion === 'DERIVACION' || s.accion === 'ENVIO'),
-              ))),
+              (p) => p.userId === userId && p.rol === 'REMITENTE',
+            ) ||
+              // VÍAs que ya derivaron
+              (d.participantes.some(
+                (p) => p.userId === userId && p.rol === 'VIA',
+              ) &&
+                d.seguimientos.some(
+                  (s) =>
+                    s.usuarioId === userId &&
+                    (s.accion === 'DERIVACION' || s.accion === 'ENVIO'),
+                ))),
+        ),
       ),
       // En Proceso (Borradores): documentos en ELABORACION, CANCELADO o DEVUELTO del remitente
       enProceso: todos.filter(
@@ -335,6 +361,104 @@ export class CorrespondenciaService {
           ),
       ),
       archivados: todos.filter((d) => d.estado === 'ARCHIVADO'),
+    };
+  }
+
+  async getHistorialTenants(tenantIdFilter?: string) {
+    const seguimientos = await this.prisma.corSeguimiento.findMany({
+      where: tenantIdFilter
+        ? {
+          documento: {
+            tenantId: tenantIdFilter,
+          },
+        }
+        : {},
+      orderBy: { fecha: 'desc' },
+      take: 300,
+      include: {
+        documento: {
+          select: {
+            id: true,
+            cite: true,
+            hr: true,
+            tipo: true,
+            referencia: true,
+            estado: true,
+            tenantId: true,
+            createdAt: true,
+          },
+        },
+        usuario: {
+          select: {
+            id: true,
+            nombre: true,
+            apellidos: true,
+            cargoStr: true,
+            tenantId: true,
+          },
+        },
+        destinatario: {
+          select: {
+            id: true,
+            nombre: true,
+            apellidos: true,
+            cargoStr: true,
+            tenantId: true,
+          },
+        },
+      },
+    });
+
+    const departamentos = await this.prisma.departamento.findMany({
+      select: { id: true, nombre: true, abreviacion: true },
+    });
+
+    const tenantMap = new Map<string, { id: string; nombre: string; abreviacion: string }>();
+    departamentos.forEach((d) => tenantMap.set(d.id, d));
+
+    const enrichedSeguimientos = seguimientos.map((s) => {
+      const docTenant = s.documento?.tenantId ? tenantMap.get(s.documento.tenantId) : null;
+      const userTenant = s.usuario?.tenantId ? tenantMap.get(s.usuario.tenantId) : null;
+      const destTenant = s.destinatario?.tenantId ? tenantMap.get(s.destinatario.tenantId) : null;
+
+      const siglaCiteMatch = s.documento?.cite?.match(/PROFE\/([A-Z]+)\b/i);
+      const siglaCite = siglaCiteMatch ? siglaCiteMatch[1].toUpperCase() : 'NAC';
+
+      return {
+        ...s,
+        docTenant: docTenant || { id: s.documento?.tenantId || siglaCite, nombre: `Sede ${siglaCite}`, abreviacion: siglaCite },
+        userTenant: userTenant || { id: s.usuario?.tenantId || siglaCite, nombre: `Sede ${siglaCite}`, abreviacion: siglaCite },
+        destTenant: destTenant || (s.destinatario ? { id: s.destinatario.tenantId || 'GLOBAL', nombre: 'Destino Externo', abreviacion: 'EXT' } : null),
+      };
+    });
+
+    const statsByTenant: Record<string, { tenantId: string; abreviacion: string; nombre: string; totalMovimientos: number; creaciones: number; derivaciones: number; recepciones: number; archivados: number }> = {};
+
+    enrichedSeguimientos.forEach((s) => {
+      const key = s.docTenant.abreviacion || 'NAC';
+      if (!statsByTenant[key]) {
+        statsByTenant[key] = {
+          tenantId: s.docTenant.id,
+          abreviacion: key,
+          nombre: s.docTenant.nombre,
+          totalMovimientos: 0,
+          creaciones: 0,
+          derivaciones: 0,
+          recepciones: 0,
+          archivados: 0,
+        };
+      }
+      statsByTenant[key].totalMovimientos += 1;
+      if (s.accion === 'CREACION') statsByTenant[key].creaciones += 1;
+      if (s.accion === 'DERIVACION' || s.accion === 'ENVIO') statsByTenant[key].derivaciones += 1;
+      if (s.accion === 'RECEPCION') statsByTenant[key].recepciones += 1;
+      if (s.accion === 'ARCHIVADO') statsByTenant[key].archivados += 1;
+    });
+
+    return {
+      historial: enrichedSeguimientos,
+      departamentos,
+      statsByTenant: Object.values(statsByTenant),
     };
   }
 
