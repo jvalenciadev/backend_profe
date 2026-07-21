@@ -364,15 +364,53 @@ export class CorrespondenciaService {
     };
   }
 
+  private isValidUuid(str: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+  }
+
   async getHistorialTenants(tenantIdFilter?: string) {
+    let targetTenantId: string | undefined = undefined;
+    let targetSigla: string | undefined = undefined;
+
+    if (tenantIdFilter && tenantIdFilter !== 'TODOS') {
+      const isUuid = this.isValidUuid(tenantIdFilter);
+      const dept = await this.prisma.departamento.findFirst({
+        where: {
+          OR: [
+            ...(isUuid ? [{ id: tenantIdFilter }] : []),
+            { abreviacion: { equals: tenantIdFilter, mode: 'insensitive' as const } },
+          ],
+        },
+      });
+
+      if (dept) {
+        targetTenantId = dept.id;
+        targetSigla = dept.abreviacion.toUpperCase();
+      } else {
+        targetSigla = tenantIdFilter.toUpperCase();
+      }
+    }
+
+    const whereClause: any = {};
+    if (targetTenantId) {
+      whereClause.documento = {
+        OR: [
+          { tenantId: targetTenantId },
+          { cite: { contains: `/PROFE/${targetSigla}` } },
+          { cite: { contains: `/${targetSigla}/` } },
+        ],
+      };
+    } else if (targetSigla) {
+      whereClause.documento = {
+        OR: [
+          { cite: { contains: `/PROFE/${targetSigla}` } },
+          { cite: { contains: `/${targetSigla}/` } },
+        ],
+      };
+    }
+
     const seguimientos = await this.prisma.corSeguimiento.findMany({
-      where: tenantIdFilter
-        ? {
-          documento: {
-            tenantId: tenantIdFilter,
-          },
-        }
-        : {},
+      where: whereClause,
       orderBy: { fecha: 'desc' },
       take: 300,
       include: {
@@ -416,7 +454,7 @@ export class CorrespondenciaService {
     const tenantMap = new Map<string, { id: string; nombre: string; abreviacion: string }>();
     departamentos.forEach((d) => tenantMap.set(d.id, d));
 
-    const enrichedSeguimientos = seguimientos.map((s) => {
+    let enrichedSeguimientos = seguimientos.map((s) => {
       const docTenant = s.documento?.tenantId ? tenantMap.get(s.documento.tenantId) : null;
       const userTenant = s.usuario?.tenantId ? tenantMap.get(s.usuario.tenantId) : null;
       const destTenant = s.destinatario?.tenantId ? tenantMap.get(s.destinatario.tenantId) : null;
@@ -426,11 +464,19 @@ export class CorrespondenciaService {
 
       return {
         ...s,
-        docTenant: docTenant || { id: s.documento?.tenantId || siglaCite, nombre: `Sede ${siglaCite}`, abreviacion: siglaCite },
-        userTenant: userTenant || { id: s.usuario?.tenantId || siglaCite, nombre: `Sede ${siglaCite}`, abreviacion: siglaCite },
+        docTenant: docTenant || { id: s.documento?.tenantId || siglaCite, nombre: `Departamento ${siglaCite}`, abreviacion: siglaCite },
+        userTenant: userTenant || { id: s.usuario?.tenantId || siglaCite, nombre: `Departamento ${siglaCite}`, abreviacion: siglaCite },
         destTenant: destTenant || (s.destinatario ? { id: s.destinatario.tenantId || 'GLOBAL', nombre: 'Destino Externo', abreviacion: 'EXT' } : null),
       };
     });
+
+    if (targetSigla) {
+      enrichedSeguimientos = enrichedSeguimientos.filter((s) =>
+        s.docTenant.abreviacion === targetSigla ||
+        (targetTenantId && s.docTenant.id === targetTenantId) ||
+        s.documento?.cite?.toUpperCase().includes(`/${targetSigla}`)
+      );
+    }
 
     const statsByTenant: Record<string, { tenantId: string; abreviacion: string; nombre: string; totalMovimientos: number; creaciones: number; derivaciones: number; recepciones: number; archivados: number }> = {};
 
