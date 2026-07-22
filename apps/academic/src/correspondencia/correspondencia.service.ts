@@ -304,24 +304,41 @@ export class CorrespondenciaService {
       )
         return false;
 
-      const s0 = d.seguimientos[0];
-      if (!s0) return false;
+      // Buscar si entre los seguimientos del documento existe una interacción específica para este usuario
+      const misSegs = (d.seguimientos || []).filter(
+        (s: any) => s.destinatarioId === userId || s.usuarioId === userId,
+      );
 
-      // Caso A: Se le envió/derivó el documento al usuario
+      if (misSegs.length > 0) {
+        const miUltimo = misSegs[0];
+        if (
+          (miUltimo.accion === 'ENVIO' ||
+            miUltimo.accion === 'DERIVACION' ||
+            miUltimo.accion === 'DEVOLUCION') &&
+          miUltimo.destinatarioId === userId
+        ) {
+          return true;
+        }
+        if (miUltimo.accion === 'RECEPCION' && miUltimo.usuarioId === userId) {
+          return true;
+        }
+        return false;
+      }
+
+      // Compatibilidad con registros antiguos (donde solo se creó 1 registro en corSeguimiento para un solo destinatario)
+      const esDestinatarioLegado = d.participantes.some(
+        (p: any) =>
+          (p.rol === 'DESTINATARIO' || p.rol === 'VIA') && p.userId === userId,
+      );
+      const esRemitente = d.participantes.some(
+        (p: any) => p.rol === 'REMITENTE' && p.userId === userId,
+      );
+
       if (
-        (s0.accion === 'ENVIO' || s0.accion === 'DERIVACION') &&
-        s0.destinatarioId === userId
+        esDestinatarioLegado &&
+        !esRemitente &&
+        (d.estado === 'ENVIADO' || d.estado === 'EN_TRAMITE')
       ) {
-        return true;
-      }
-
-      // Caso B: El usuario recibió el documento y aún no lo ha derivado/archivado
-      if (s0.accion === 'RECEPCION' && s0.usuarioId === userId) {
-        return true;
-      }
-
-      // Caso C: El documento fue DEVUELTO y le corresponde únicamente al usuario a quien se le devolvió (remitente creador)
-      if (d.estado === 'DEVUELTO' && s0.destinatarioId === userId) {
         return true;
       }
 
@@ -677,21 +694,40 @@ export class CorrespondenciaService {
       accion === 'DEVOLUCION' ||
       accion === 'ARCHIVADO'
     ) {
-      const sortedSegs = [...doc.seguimientos].sort(
-        (a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime(),
+      const misSegs = doc.seguimientos.filter(
+        (s: any) => s.destinatarioId === usuarioId || s.usuarioId === usuarioId,
       );
-      const s0 = sortedSegs[0];
       let tieneCustodia = false;
-      if (s0) {
-        if (s0.accion === 'RECEPCION' && s0.usuarioId === usuarioId) {
+      if (misSegs.length > 0) {
+        const miUltimo = misSegs[0];
+        if (
+          (miUltimo.accion === 'ENVIO' ||
+            miUltimo.accion === 'DERIVACION' ||
+            miUltimo.accion === 'DEVOLUCION') &&
+          miUltimo.destinatarioId === usuarioId
+        ) {
           tieneCustodia = true;
         } else if (
-          (s0.accion === 'ENVIO' || s0.accion === 'DERIVACION') &&
-          s0.destinatarioId === usuarioId
+          miUltimo.accion === 'RECEPCION' &&
+          miUltimo.usuarioId === usuarioId
+        ) {
+          tieneCustodia = true;
+        }
+      } else {
+        // Compatibilidad con registros antiguos donde destinatarioId solo guardó al primer destinatario
+        const esDestinatario = doc.participantes.some(
+          (p: any) =>
+            (p.rol === 'DESTINATARIO' || p.rol === 'VIA') &&
+            p.userId === usuarioId,
+        );
+        if (
+          esDestinatario &&
+          (doc.estado === 'ENVIADO' || doc.estado === 'EN_TRAMITE')
         ) {
           tieneCustodia = true;
         }
       }
+
       if (!tieneCustodia) {
         throw new BadRequestException(
           'No tienes la custodia actual de este documento para realizar esta acción',
@@ -737,27 +773,28 @@ export class CorrespondenciaService {
         }
       }
 
-      // 2. Calcular a quién va dirigido este movimiento (para mostrar en el historial)
-      let destinatarioId: string | null = null;
+      // 2. Calcular los destinatarios a los que va dirigido este movimiento
+      let destinatariosTarget: (string | null)[] = [null];
       if (accion === 'ENVIO' || accion === 'DERIVACION') {
         if (nuevoDestinatarioId) {
           // Derivación dinámica: el nuevo destinatario seleccionado
-          destinatarioId = nuevoDestinatarioId;
+          destinatariosTarget = [nuevoDestinatarioId];
         } else {
-          // Envio estándar: primero busca VIAs, si no hay, va al DESTINATARIO
+          // Envio estándar: Si hay VÍAs, va a TODAS las VÍAs. Si no hay VÍAs, a TODOS los DESTINATARIOS.
           const vias = doc.participantes.filter(
             (p) => p.rol === 'VIA' && p.userId !== usuarioId,
           );
           const destinatarios = doc.participantes.filter(
-            (p) => p.rol === 'DESTINATARIO',
+            (p) => p.rol === 'DESTINATARIO' && p.userId !== usuarioId,
           );
-          const siguiente = vias.length > 0 ? vias[0] : destinatarios[0];
-          destinatarioId = siguiente?.userId ?? null;
-        }
-      }
 
-      // DEVOLUCION: siempre se devuelve al creador/remitente original del documento
-      if (accion === 'DEVOLUCION') {
+          if (vias.length > 0) {
+            destinatariosTarget = vias.map((v) => v.userId);
+          } else if (destinatarios.length > 0) {
+            destinatariosTarget = destinatarios.map((d) => d.userId);
+          }
+        }
+      } else if (accion === 'DEVOLUCION') {
         const remitenteParticipante = doc.participantes.find(
           (p) => p.rol === 'REMITENTE',
         );
@@ -766,20 +803,24 @@ export class CorrespondenciaService {
             'No se encontró un remitente original para devolver el documento',
           );
         }
-        destinatarioId = remitenteParticipante.userId;
+        destinatariosTarget = [remitenteParticipante.userId];
       }
 
-      // 3. Crear el registro de seguimiento con el archivo adjunto y el destinatario
-      const seg = await tx.corSeguimiento.create({
-        data: {
-          documentoId,
-          accion,
-          detalle,
-          usuarioId,
-          archivoUrl: archivoUrl || null,
-          destinatarioId,
-        },
-      });
+      // 3. Crear el registro de seguimiento para CADA destinatario seleccionado (Soporte multi-destinatario)
+      const segsCreated = await Promise.all(
+        destinatariosTarget.map((targetId) =>
+          tx.corSeguimiento.create({
+            data: {
+              documentoId,
+              accion,
+              detalle,
+              usuarioId,
+              archivoUrl: archivoUrl || null,
+              destinatarioId: targetId,
+            },
+          }),
+        ),
+      );
 
       // 4. Actualizar el estado del documento y su archivo principal
       await tx.corDocumento.update({
@@ -790,7 +831,7 @@ export class CorrespondenciaService {
         },
       });
 
-      return seg;
+      return segsCreated[0];
     });
   }
 
@@ -823,16 +864,16 @@ export class CorrespondenciaService {
         ],
         ...(cleanQuery
           ? {
-              AND: [
-                {
-                  OR: [
-                    { nombre: { contains: cleanQuery, mode: 'insensitive' } },
-                    { apellidos: { contains: cleanQuery, mode: 'insensitive' } },
-                    { cargoStr: { contains: cleanQuery, mode: 'insensitive' } },
-                  ],
-                },
-              ],
-            }
+            AND: [
+              {
+                OR: [
+                  { nombre: { contains: cleanQuery, mode: 'insensitive' } },
+                  { apellidos: { contains: cleanQuery, mode: 'insensitive' } },
+                  { cargoStr: { contains: cleanQuery, mode: 'insensitive' } },
+                ],
+              },
+            ],
+          }
           : {}),
       },
       select: {
