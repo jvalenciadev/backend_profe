@@ -40,7 +40,6 @@ export class ComunicadoController {
   ) { }
 
   @Get()
-  @CheckPolicies((ability: any) => ability.can('read', 'Comunicado'))
   async findAll(@Query() query: any, @Req() req: any) {
     const page = query.page ? Number(query.page) : 1;
     const limit = query.limit ? Number(query.limit) : 20;
@@ -54,7 +53,6 @@ export class ComunicadoController {
         page,
         limit,
       },
-      req.ability,
     );
     return {
       ...result,
@@ -65,9 +63,8 @@ export class ComunicadoController {
   }
 
   @Get(':id')
-  @CheckPolicies((ability: any) => ability.can('read', 'Comunicado'))
-  async findOne(@Param('id') id: string, @Req() req: any) {
-    return await this.getComunicadoByIdUseCase.execute(id, req.ability);
+  async findOne(@Param('id') id: string) {
+    return await this.getComunicadoByIdUseCase.execute(id);
   }
 
   @Post()
