@@ -5,6 +5,7 @@ export const COMUNICADO_REPOSITORY = 'COMUNICADO_REPOSITORY';
 export interface ComunicadoFilters {
   search?: string;
   estado?: string;
+  tipo?: string;
   page?: number;
   limit?: number;
   tenantId?: string;

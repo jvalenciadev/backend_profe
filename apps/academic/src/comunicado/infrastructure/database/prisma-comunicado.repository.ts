@@ -65,12 +65,19 @@ export class PrismaComunicadoRepository implements IComunicadoRepository {
     filters: ComunicadoFilters = {},
     ability?: any,
   ): Promise<{ data: Comunicado[]; total: number }> {
-    const { search, estado, page = 1, limit = 20, tenantId } = filters;
+    const { search, estado, tipo, page = 1, limit = 20, tenantId } = filters;
     let where: any = { estado: { not: 'eliminado' } };
 
     if (estado && estado !== 'todos') where.estado = estado;
+    if (tipo && tipo !== 'todos') where.tipo = tipo;
     if (search) where.nombre = { contains: search, mode: 'insensitive' };
-    if (tenantId) where.tenantId = tenantId;
+    if (tenantId && tenantId !== 'todos' && tenantId !== 'all') {
+      if (tenantId === 'null') {
+        where.tenantId = null;
+      } else {
+        where.OR = [{ tenantId: tenantId }, { tenantId: null }];
+      }
+    }
 
     if (ability) {
       const caslWhere = this.caslPrisma.getWhere(ability, 'read', 'Comunicado');

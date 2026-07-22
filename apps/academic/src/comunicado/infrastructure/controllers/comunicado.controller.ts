@@ -37,7 +37,7 @@ export class ComunicadoController {
     private readonly createComunicadoUseCase: CreateComunicadoUseCase,
     private readonly updateComunicadoUseCase: UpdateComunicadoUseCase,
     private readonly deleteComunicadoUseCase: DeleteComunicadoUseCase,
-  ) {}
+  ) { }
 
   @Get()
   @CheckPolicies((ability: any) => ability.can('read', 'Comunicado'))
@@ -49,6 +49,8 @@ export class ComunicadoController {
       {
         search: query.search,
         estado: query.estado,
+        tipo: query.tipo,
+        tenantId: query.tenantId,
         page,
         limit,
       },

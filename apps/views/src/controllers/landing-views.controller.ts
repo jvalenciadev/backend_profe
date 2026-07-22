@@ -105,7 +105,7 @@ export class LandingViewsController {
         },
       }),
       this.prisma.comunicado.findMany({
-        where: { estado: Estado.activo, ...(tenantId ? { tenantId } : {}) },
+        where: { estado: Estado.activo, ...(tenantId ? { OR: [{ tenantId }, { tenantId: null }] } : {}) },
         take: 8,
         orderBy: { createdAt: 'desc' },
       }),
