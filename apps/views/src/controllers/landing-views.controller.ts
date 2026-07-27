@@ -35,7 +35,7 @@ export class LandingViewsController {
     private prisma: PrismaService,
     private mailService: MailService,
     private readonly uploadConfig: UploadConfigService,
-  ) {}
+  ) { }
 
   // ─── LANDING DATA ────────────────────────────────────────────────────────────
   @Get('landing-page')
@@ -62,7 +62,7 @@ export class LandingViewsController {
       this.prisma.evento.findMany({
         where: {
           estado: { in: [Estado.activo, Estado.finalizado, Estado.vista] },
-          ...(tenantId ? { tenantId } : {}),
+          ...(tenantId ? { tenantId } : { tenantId: null }),
         },
         take: 12,
         orderBy: { fecha: 'desc' },
@@ -685,8 +685,8 @@ export class LandingViewsController {
     });
     const alreadyHasRole = rolePart
       ? await this.prisma.userRole.findFirst({
-          where: { userId: user.id, roleId: rolePart.id },
-        })
+        where: { userId: user.id, roleId: rolePart.id },
+      })
       : null;
     if (rolePart && !alreadyHasRole) {
       await this.prisma.userRole.create({
