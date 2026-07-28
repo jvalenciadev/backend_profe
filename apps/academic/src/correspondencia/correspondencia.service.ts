@@ -295,51 +295,49 @@ export class CorrespondenciaService {
         };
       });
 
-    // Recibidos: documentos en la bandeja del usuario (envíos, derivaciones, recepciones y devoluciones)
+    // Recibidos: documentos en la custodia actual del usuario (envíos, derivaciones, recepciones y devoluciones)
     const recibidosPrev = todos.filter((d) => {
       if (
         d.estado === 'ELABORACION' ||
         d.estado === 'ARCHIVADO' ||
         d.estado === 'CANCELADO'
-      )
-        return false;
-
-      // Buscar si entre los seguimientos del documento existe una interacción específica para este usuario
-      const misSegs = (d.seguimientos || []).filter(
-        (s: any) => s.destinatarioId === userId || s.usuarioId === userId,
-      );
-
-      if (misSegs.length > 0) {
-        const miUltimo = misSegs[0];
-        if (
-          (miUltimo.accion === 'ENVIO' ||
-            miUltimo.accion === 'DERIVACION' ||
-            miUltimo.accion === 'DEVOLUCION') &&
-          miUltimo.destinatarioId === userId
-        ) {
-          return true;
-        }
-        if (miUltimo.accion === 'RECEPCION' && miUltimo.usuarioId === userId) {
-          return true;
-        }
+      ) {
         return false;
       }
 
-      // Compatibilidad con registros antiguos (donde solo se creó 1 registro en corSeguimiento para un solo destinatario)
-      const esDestinatarioLegado = d.participantes.some(
-        (p: any) =>
-          (p.rol === 'DESTINATARIO' || p.rol === 'VIA') && p.userId === userId,
-      );
-      const esRemitente = d.participantes.some(
-        (p: any) => p.rol === 'REMITENTE' && p.userId === userId,
-      );
+      const ultimoMov = d.seguimientos && d.seguimientos.length > 0 ? d.seguimientos[0] : null;
 
-      if (
-        esDestinatarioLegado &&
-        !esRemitente &&
-        (d.estado === 'ENVIADO' || d.estado === 'EN_TRAMITE')
-      ) {
-        return true;
+      if (ultimoMov) {
+        if (
+          (ultimoMov.accion === 'ENVIO' ||
+            ultimoMov.accion === 'DERIVACION' ||
+            ultimoMov.accion === 'DEVOLUCION') &&
+          ultimoMov.destinatarioId === userId
+        ) {
+          return true;
+        }
+        if (ultimoMov.accion === 'RECEPCION' && ultimoMov.usuarioId === userId) {
+          return true;
+        }
+      }
+
+      // Compatibilidad con registros antiguos (donde destinatarioId no estaba seteado en corSeguimiento)
+      if (!ultimoMov || d.seguimientos.length <= 1) {
+        const esDestinatarioLegado = d.participantes.some(
+          (p: any) =>
+            (p.rol === 'DESTINATARIO' || p.rol === 'VIA') && p.userId === userId,
+        );
+        const esRemitente = d.participantes.some(
+          (p: any) => p.rol === 'REMITENTE' && p.userId === userId,
+        );
+
+        if (
+          esDestinatarioLegado &&
+          !esRemitente &&
+          (d.estado === 'ENVIADO' || d.estado === 'EN_TRAMITE')
+        ) {
+          return true;
+        }
       }
 
       return false;
@@ -347,28 +345,38 @@ export class CorrespondenciaService {
 
     return {
       recibidos: mapearConAlerta(recibidosPrev),
-      // Enviados: documentos en curso enviados por el remitente o VÍA
+      // Enviados: documentos en curso donde el usuario participó enviando/derivando pero YA NO es el custodio
       enviados: mapearConAlerta(
-        todos.filter(
-          (d) =>
-            d.estado !== 'ELABORACION' &&
-            d.estado !== 'ARCHIVADO' &&
-            d.estado !== 'CANCELADO' &&
-            d.estado !== 'DEVUELTO' &&
-            // Documentos en curso del remitente
-            (d.participantes.some(
-              (p) => p.userId === userId && p.rol === 'REMITENTE',
-            ) ||
-              // VÍAs que ya derivaron
-              (d.participantes.some(
-                (p) => p.userId === userId && p.rol === 'VIA',
-              ) &&
-                d.seguimientos.some(
-                  (s) =>
-                    s.usuarioId === userId &&
-                    (s.accion === 'DERIVACION' || s.accion === 'ENVIO'),
-                ))),
-        ),
+        todos.filter((d) => {
+          if (
+            d.estado === 'ELABORACION' ||
+            d.estado === 'ARCHIVADO' ||
+            d.estado === 'CANCELADO' ||
+            d.estado === 'DEVUELTO'
+          ) {
+            return false;
+          }
+
+          // Si actualmente está en mis recibidos (tengo la custodia), no sale en enviados
+          if (recibidosPrev.some((r) => r.id === d.id)) {
+            return false;
+          }
+
+          // Es el remitente original
+          const esRemitente = d.participantes.some(
+            (p) => p.userId === userId && p.rol === 'REMITENTE',
+          );
+          if (esRemitente) return true;
+
+          // O es un usuario (VÍA / DESTINATARIO) que ya realizó una acción de ENVIO o DERIVACION en este documento
+          const haDerivadoOEnviado = (d.seguimientos || []).some(
+            (s: any) =>
+              s.usuarioId === userId &&
+              (s.accion === 'DERIVACION' || s.accion === 'ENVIO' || s.accion === 'DEVOLUCION'),
+          );
+
+          return haDerivadoOEnviado;
+        }),
       ),
       // Borradores: únicamente borradores en estado ELABORACION
       enProceso: todos.filter(
@@ -597,7 +605,10 @@ export class CorrespondenciaService {
   ) {
     const doc = await this.prisma.corDocumento.findUnique({
       where: { id: documentoId },
-      include: { participantes: true, seguimientos: true },
+      include: {
+        participantes: true,
+        seguimientos: { orderBy: { fecha: 'desc' } },
+      },
     });
     if (!doc) throw new NotFoundException('Documento no encontrado');
 
@@ -694,27 +705,27 @@ export class CorrespondenciaService {
       accion === 'DEVOLUCION' ||
       accion === 'ARCHIVADO'
     ) {
-      const misSegs = doc.seguimientos.filter(
-        (s: any) => s.destinatarioId === usuarioId || s.usuarioId === usuarioId,
-      );
+      const ultimoMov = doc.seguimientos && doc.seguimientos.length > 0 ? doc.seguimientos[0] : null;
       let tieneCustodia = false;
-      if (misSegs.length > 0) {
-        const miUltimo = misSegs[0];
+
+      if (ultimoMov) {
         if (
-          (miUltimo.accion === 'ENVIO' ||
-            miUltimo.accion === 'DERIVACION' ||
-            miUltimo.accion === 'DEVOLUCION') &&
-          miUltimo.destinatarioId === usuarioId
+          (ultimoMov.accion === 'ENVIO' ||
+            ultimoMov.accion === 'DERIVACION' ||
+            ultimoMov.accion === 'DEVOLUCION') &&
+          ultimoMov.destinatarioId === usuarioId
         ) {
           tieneCustodia = true;
         } else if (
-          miUltimo.accion === 'RECEPCION' &&
-          miUltimo.usuarioId === usuarioId
+          ultimoMov.accion === 'RECEPCION' &&
+          ultimoMov.usuarioId === usuarioId
         ) {
           tieneCustodia = true;
         }
-      } else {
-        // Compatibilidad con registros antiguos donde destinatarioId solo guardó al primer destinatario
+      }
+
+      // Fallback para registros legados
+      if (!tieneCustodia && (!ultimoMov || doc.seguimientos.length <= 1)) {
         const esDestinatario = doc.participantes.some(
           (p: any) =>
             (p.rol === 'DESTINATARIO' || p.rol === 'VIA') &&

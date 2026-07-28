@@ -506,6 +506,80 @@ export class EventViewsController {
     };
   }
 
+  /**
+   * Endpoint exclusivo para facilitadores: registrar asistencia por C.I. (sin fechaNacimiento).
+   * Solo requiere codigoAsistencia del evento para validar la autorización.
+   */
+  @Post(':eventoId/asistencia-facilitador')
+  async registrarAsistenciaFacilitador(
+    @Param('eventoId') eventoId: string,
+    @Body() body: { ci: string; codigoAsistencia: string },
+  ) {
+    const evento = await this.prisma.evento.findFirst({
+      where: { id: eventoId, estado: 'activo' },
+    });
+
+    if (!evento) throw new NotFoundException('Evento no encontrado o inactivo');
+
+    if (!evento.codigoAsistencia)
+      throw new ForbiddenException(
+        'Este evento no tiene código de asistencia activo',
+      );
+
+    if (
+      evento.codigoAsistencia.trim().toUpperCase() !==
+      (body.codigoAsistencia ?? '').trim().toUpperCase()
+    )
+      throw new ForbiddenException('Código de asistencia del evento incorrecto');
+
+    const cleanCi = parseInt(body.ci.replace(/\D/g, ''), 10);
+    if (isNaN(cleanCi))
+      throw new NotFoundException('C.I. inválido');
+
+    const persona = await this.prisma.eventoPersona.findFirst({
+      where: { ci: cleanCi, deletedAt: null },
+    });
+
+    if (!persona)
+      throw new NotFoundException('Participante no registrado en el sistema');
+
+    const inscripcion = await this.prisma.eventoInscripcion.findFirst({
+      where: { personaId: persona.id, eventoId, deletedAt: null },
+    });
+
+    if (!inscripcion)
+      throw new NotFoundException('El participante no está inscrito en este evento');
+
+    if (inscripcion.asistencia) {
+      return {
+        success: true,
+        yaRegistrada: true,
+        mensaje: 'Asistencia registrada anteriormente',
+        persona: {
+          nombre: `${persona.nombre1 ?? ''} ${persona.apellido1 ?? ''}`.trim(),
+          ci: persona.ci.toString(),
+        },
+        evento: { nombre: evento.nombre },
+      };
+    }
+
+    await this.prisma.eventoInscripcion.update({
+      where: { id: inscripcion.id },
+      data: { asistencia: true },
+    });
+
+    return {
+      success: true,
+      yaRegistrada: false,
+      mensaje: '¡Asistencia registrada exitosamente!',
+      persona: {
+        nombre: `${persona.nombre1 ?? ''} ${persona.apellido1 ?? ''}`.trim(),
+        ci: persona.ci.toString(),
+      },
+      evento: { nombre: evento.nombre },
+    };
+  }
+
   @Post(':eventoId/cuestionario/:cuestionarioId/marcar-video')
   async marcarVideoVisto(
     @Param('eventoId') eventoId: string,
