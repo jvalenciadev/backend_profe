@@ -12,6 +12,8 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '@app/database';
 
+import { Estado } from '@prisma/client';
+
 /**
  * CONTROLADOR DE VISTAS DE EVENTOS
  * Requiere API_SECRET (X-SECRET) pero no sesión de usuario.
@@ -37,18 +39,25 @@ export class EventViewsController {
 
     if (tenant && !tenantIdFilter) {
       const dep = await this.prisma.departamento.findFirst({
-        where: { abreviacion: tenant.toUpperCase(), estado: 'activo' },
+        where: {
+          OR: [
+            { abreviacion: tenant.toUpperCase() },
+            { id: tenant },
+          ],
+        },
       });
       if (dep) tenantIdFilter = dep.id;
     }
 
     const eventos = await this.prisma.evento.findMany({
       where: {
-        estado: { in: ['activo', 'finalizado', 'vista'] },
-        ...(tenantIdFilter ? { tenantId: tenantIdFilter } : {}),
+        deletedAt: null,
+        ...(tenantIdFilter
+          ? { OR: [{ tenantId: tenantIdFilter }, { tenantId: null }] }
+          : {}),
       },
       orderBy: { fecha: 'desc' },
-      take: 30,
+      take: 50,
       include: {
         tipo: true,
         tenant: true,
