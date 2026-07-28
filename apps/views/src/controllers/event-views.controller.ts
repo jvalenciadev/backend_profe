@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Param,
+  Query,
   NotFoundException,
   BadRequestException,
   ConflictException,
@@ -17,7 +18,7 @@ import { PrismaService } from '@app/database';
  */
 @Controller('public/eventos')
 export class EventViewsController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   private parseCi(ci: string | number | undefined | null): bigint {
     if (ci === undefined || ci === null) return BigInt(0);
@@ -25,6 +26,102 @@ export class EventViewsController {
     const cleanStr = ciStr.split('-')[0].trim();
     const numericStr = cleanStr.replace(/\D/g, '');
     return BigInt(numericStr || '0');
+  }
+
+  @Get('facilitador/eventos-stats')
+  async getEventosStatsFacilitador(
+    @Query('tenant') tenant?: string,
+    @Query('tenantId') tenantIdQuery?: string,
+  ) {
+    let tenantIdFilter: string | undefined = tenantIdQuery;
+
+    if (tenant && !tenantIdFilter) {
+      const dep = await this.prisma.departamento.findFirst({
+        where: { abreviacion: tenant.toUpperCase(), estado: 'activo' },
+      });
+      if (dep) tenantIdFilter = dep.id;
+    }
+
+    const eventos = await this.prisma.evento.findMany({
+      where: {
+        estado: { in: ['activo', 'finalizado', 'vista'] },
+        ...(tenantIdFilter ? { tenantId: tenantIdFilter } : {}),
+      },
+      orderBy: { fecha: 'desc' },
+      take: 30,
+      include: {
+        tipo: true,
+        tenant: true,
+      },
+    });
+
+    const result = await Promise.all(
+      eventos.map(async (e) => {
+        const inscritosCount = await this.prisma.eventoInscripcion.count({
+          where: { eventoId: e.id, deletedAt: null },
+        });
+        const asistieronCount = await this.prisma.eventoInscripcion.count({
+          where: { eventoId: e.id, asistencia: true, deletedAt: null },
+        });
+        return {
+          id: e.id,
+          nombre: e.nombre,
+          codigo: e.codigo,
+          codigoAsistencia: e.codigoAsistencia,
+          lugar: e.lugar,
+          fecha: e.fecha,
+          tenantId: e.tenantId,
+          departamentoNombre: e.tenant?.nombre,
+          tipoNombre: e.tipo?.nombre,
+          totalInscritos: inscritosCount,
+          totalAsistieron: asistieronCount,
+        };
+      }),
+    );
+
+    return result;
+  }
+
+  @Get(':eventoId/participantes/buscar')
+  async buscarParticipante(
+    @Param('eventoId') eventoId: string,
+    @Query('query') query: string,
+  ) {
+    if (!query || query.trim().length === 0) return [];
+
+    const ciNum = this.parseCi(query);
+    const personas = await this.prisma.eventoPersona.findMany({
+      where: {
+        OR: [
+          ...(ciNum > BigInt(0) ? [{ ci: ciNum }] : []),
+          { nombre1: { contains: query, mode: 'insensitive' } },
+          { nombre2: { contains: query, mode: 'insensitive' } },
+          { apellido1: { contains: query, mode: 'insensitive' } },
+          { apellido2: { contains: query, mode: 'insensitive' } },
+        ],
+        deletedAt: null,
+      },
+      take: 15,
+    });
+
+    const result = await Promise.all(
+      personas.map(async (p) => {
+        const inscripcion = await this.prisma.eventoInscripcion.findFirst({
+          where: { personaId: p.id, eventoId, deletedAt: null },
+        });
+        if (!inscripcion) return null;
+        const nombreCompleto = `${p.nombre1} ${p.nombre2 || ''} ${p.apellido1} ${p.apellido2 || ''}`.replace(/\s+/g, ' ').trim();
+        return {
+          id: p.id,
+          inscripcionId: inscripcion.id,
+          nombre: nombreCompleto,
+          ci: p.ci.toString(),
+          asistencia: inscripcion.asistencia,
+        };
+      }),
+    );
+
+    return result.filter(Boolean);
   }
 
   @Get(':codigo')
@@ -576,9 +673,9 @@ export class EventViewsController {
           const puntosParciales =
             cuestionario.esEvaluativo && esCorrecta
               ? Math.round(
-                  pregunta.puntos /
-                    (pregunta.opciones.filter((o) => o.esCorrecta).length || 1),
-                )
+                pregunta.puntos /
+                (pregunta.opciones.filter((o) => o.esCorrecta).length || 1),
+              )
               : 0;
           puntajeTotal += puntosParciales;
           respuestasData.push({
