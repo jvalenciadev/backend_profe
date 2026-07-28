@@ -97,9 +97,30 @@ export class EventViewsController {
   @Get(':eventoId/participantes/buscar')
   async buscarParticipante(
     @Param('eventoId') eventoId: string,
-    @Query('query') query: string,
+    @Query('query') query?: string,
   ) {
-    if (!query || query.trim().length === 0) return [];
+    if (!query || query.trim().length === 0) {
+      const inscripciones = await this.prisma.eventoInscripcion.findMany({
+        where: { eventoId, deletedAt: null },
+        include: { persona: true },
+        take: 300,
+        orderBy: { createdAt: 'desc' },
+      });
+
+      return inscripciones.map((ins) => {
+        const p = ins.persona;
+        const nombreCompleto = `${p.nombre1 ?? ''} ${p.nombre2 || ''} ${p.apellido1 ?? ''} ${p.apellido2 || ''}`
+          .replace(/\s+/g, ' ')
+          .trim();
+        return {
+          id: p.id,
+          inscripcionId: ins.id,
+          nombre: nombreCompleto,
+          ci: p.ci.toString(),
+          asistencia: ins.asistencia,
+        };
+      });
+    }
 
     const ciNum = this.parseCi(query);
     const personas = await this.prisma.eventoPersona.findMany({
@@ -113,7 +134,7 @@ export class EventViewsController {
         ],
         deletedAt: null,
       },
-      take: 15,
+      take: 50,
     });
 
     const result = await Promise.all(
@@ -122,7 +143,9 @@ export class EventViewsController {
           where: { personaId: p.id, eventoId, deletedAt: null },
         });
         if (!inscripcion) return null;
-        const nombreCompleto = `${p.nombre1} ${p.nombre2 || ''} ${p.apellido1} ${p.apellido2 || ''}`.replace(/\s+/g, ' ').trim();
+        const nombreCompleto = `${p.nombre1 ?? ''} ${p.nombre2 || ''} ${p.apellido1 ?? ''} ${p.apellido2 || ''}`
+          .replace(/\s+/g, ' ')
+          .trim();
         return {
           id: p.id,
           inscripcionId: inscripcion.id,
