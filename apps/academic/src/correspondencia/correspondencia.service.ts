@@ -919,4 +919,46 @@ export class CorrespondenciaService {
       },
     });
   }
+
+  /**
+   * Exportación completa de TODAS las Hojas de Ruta filtradas por tenantId del usuario.
+   * Si el usuario NO tiene tenantId (admin global), retorna todos los documentos.
+   */
+  async exportByTenant(tenantId: string | null) {
+    const rawDocs = await this.prisma.corDocumento.findMany({
+      where: {
+        deletedAt: null,
+        ...(tenantId ? { tenantId } : {}),
+      },
+      include: {
+        participantes: {
+          include: {
+            usuario: {
+              select: { id: true, nombre: true, apellidos: true, cargoStr: true, tenantId: true },
+            },
+          },
+        },
+        seguimientos: {
+          orderBy: { fecha: 'desc' },
+          include: {
+            usuario: { select: { id: true, nombre: true, apellidos: true, tenantId: true } },
+            destinatario: {
+              select: { id: true, nombre: true, apellidos: true, cargoStr: true },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const departamentos = await this.prisma.departamento.findMany({
+      select: { id: true, nombre: true, abreviacion: true },
+    });
+    const depMap = new Map(departamentos.map((d) => [d.id, d]));
+
+    return rawDocs.map((d) => {
+      const tenantInfo = d.tenantId ? depMap.get(d.tenantId) ?? null : null;
+      return { ...d, tenantInfo };
+    });
+  }
 }

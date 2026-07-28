@@ -84,4 +84,15 @@ export class CorrespondenciaController {
   findById(@Param('id') id: string) {
     return this.service.findById(id);
   }
+
+  /**
+   * GET /correspondencia/export-by-tenant
+   * Retorna TODAS las Hojas de Ruta del tenant del usuario autenticado.
+   * Sin tenantId (admin global) devuelve todos.
+   */
+  @Get('export-by-tenant')
+  exportByTenant(@Req() req: any) {
+    const tenantId: string | null = req.user?.tenantId ?? null;
+    return this.service.exportByTenant(tenantId);
+  }
 }

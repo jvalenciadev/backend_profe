@@ -53,7 +53,6 @@ export class CaslPrismaService {
       'ProgramaModulo',
       'ProgramaModuloDos',
       'ProgramaModuloVersion',
-      'TipoEvento',
       'EventoTipo',
       'Persona',
       'MapPersona',
@@ -111,6 +110,7 @@ export class CaslPrismaService {
       'Distrito',
       'CorParticipante',
       'CorSeguimiento',
+      'CorExport', // Subject virtual para controlar exportación de Hojas de Ruta
     ];
 
     const fieldsToRemove: string[] = [];
