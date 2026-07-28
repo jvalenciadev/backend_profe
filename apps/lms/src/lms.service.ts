@@ -185,6 +185,7 @@ export class LmsService {
     const payload = {
       username: user.username,
       sub: user.id,
+      tenantId: user.tenantId,
       roles: roles,
     };
 
@@ -205,6 +206,8 @@ export class LmsService {
         nombre: user.nombre,
         apellidos: user.apellidos,
         roles: roles,
+        tenantId: user.tenantId,
+        tenant_id: user.tenantId,
         imagen: user.imagen,
         ci: user.ci ? String(user.ci) : null,
         correo: user.correo,
@@ -3310,6 +3313,8 @@ export class LmsService {
       nombre: user.nombre,
       apellidos: user.apellidos,
       roles: roles,
+      tenantId: user.tenantId,
+      tenant_id: user.tenantId,
       imagen: user.imagen,
       ci: user.ci ? String(user.ci) : null,
       correo: user.correo,

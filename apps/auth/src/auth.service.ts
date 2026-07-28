@@ -11,7 +11,7 @@ export class AuthService {
     private jwtService: JwtService,
     private abilityFactory: CaslAbilityFactory,
     private mailService: MailService,
-  ) {}
+  ) { }
 
   async forgotPassword(email: string) {
     const user = await this.prisma.user.findUnique({
@@ -220,6 +220,7 @@ export class AuthService {
         tiktok: user.tiktok,
         tenant: user.tenant,
         tenantId: user.tenantId,
+        tenant_id: user.tenantId,
         roles: roles,
         permissions: ability.rules,
         estado: user.estado,
