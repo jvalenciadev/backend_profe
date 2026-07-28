@@ -35,25 +35,28 @@ export class EventViewsController {
     @Query('tenant') tenant?: string,
     @Query('tenantId') tenantIdQuery?: string,
   ) {
-    let tenantIdFilter: string | undefined = tenantIdQuery;
+    let tenantIdFilter: string | undefined = tenantIdQuery || tenant;
 
-    if (tenant && !tenantIdFilter) {
+    if (tenantIdFilter && tenantIdFilter !== 'null' && tenantIdFilter !== 'undefined') {
       const dep = await this.prisma.departamento.findFirst({
         where: {
           OR: [
-            { abreviacion: tenant.toUpperCase() },
-            { id: tenant },
+            { id: tenantIdFilter },
+            { abreviacion: tenantIdFilter.toUpperCase() },
+            { nombre: { contains: tenantIdFilter, mode: 'insensitive' } },
           ],
         },
       });
       if (dep) tenantIdFilter = dep.id;
+    } else {
+      tenantIdFilter = undefined;
     }
 
     const eventos = await this.prisma.evento.findMany({
       where: {
         deletedAt: null,
         ...(tenantIdFilter
-          ? { OR: [{ tenantId: tenantIdFilter }, { tenantId: null }] }
+          ? { tenantId: tenantIdFilter }
           : {}),
       },
       orderBy: { fecha: 'desc' },
