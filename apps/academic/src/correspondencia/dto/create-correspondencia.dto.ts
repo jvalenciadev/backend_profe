@@ -1,6 +1,7 @@
 import {
   IsArray,
   IsEnum,
+  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -29,6 +30,14 @@ export class CreateCorrespondenciaDto {
   @IsString()
   @IsOptional()
   contenido?: string;
+
+  @IsInt()
+  @IsOptional()
+  plazoDias?: number;
+
+  @IsUUID()
+  @IsOptional()
+  documentoPadreId?: string;
 
   @IsArray()
   destinatarios: { userId: string; cargoLiteral?: string }[];

@@ -1904,21 +1904,27 @@ enum CorTipoDocumento {
 }
 
 model CorDocumento {
-  id          String           @id @default(uuid()) @db.Uuid
-  tipo        CorTipoDocumento
-  cite        String           @unique @map("cor_cite")
-  hr          String?          @map("cor_hr")
-  correlativo Int              @map("cor_correlativo")
-  gestion     Int              @map("cor_gestion")
-  referencia  String           @map("cor_referencia") @db.Text
-  contenido   String?          @map("cor_contenido") @db.Text
-  archivoPdf  String?          @map("cor_archivo_pdf")
-  estado      String           @default("ELABORACION") @map("cor_estado")
-  tenantId    String?          @map("tenant_id") @db.Uuid
+  id               String           @id @default(uuid()) @db.Uuid
+  tipo             CorTipoDocumento
+  cite             String           @unique @map("cor_cite")
+  hr               String?          @map("cor_hr")
+  correlativo      Int              @map("cor_correlativo")
+  gestion          Int              @map("cor_gestion")
+  referencia       String           @map("cor_referencia") @db.Text
+  contenido        String?          @map("cor_contenido") @db.Text
+  archivoPdf       String?          @map("cor_archivo_pdf")
+  estado           String           @default("ELABORACION") @map("cor_estado")
+  tenantId         String?          @map("tenant_id") @db.Uuid
+
+  plazoDias        Int?             @map("cor_plazo_dias")
+  fechaLimite      DateTime?        @map("cor_fecha_limite")
+  documentoPadreId String?          @map("doc_padre_id") @db.Uuid
 
   // Relaciones
-  participantes CorParticipante[]
-  seguimientos  CorSeguimiento[]
+  documentoPadre  CorDocumento?    @relation("DocPadreHijo", fields: [documentoPadreId], references: [id], onDelete: SetNull)
+  documentosHijos CorDocumento[]   @relation("DocPadreHijo")
+  participantes   CorParticipante[]
+  seguimientos    CorSeguimiento[]
 
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -1926,6 +1932,7 @@ model CorDocumento {
 
   @@index([cite])
   @@index([gestion, correlativo])
+  @@index([documentoPadreId])
   @@map("cor_documentos")
 }
 
@@ -1947,11 +1954,12 @@ model CorSeguimiento {
   id             String   @id @default(uuid()) @db.Uuid
   documentoId    String   @map("doc_id") @db.Uuid
   fecha          DateTime @default(now()) @map("seg_fecha")
-  accion         String   @map("seg_accion") // CREACION, ENVIO, RECEPCION, DERIVACION, OBSERVACION, CANCELAR, DEVOLUCION
+  accion         String   @map("seg_accion") // CREACION, ENVIO, RECEPCION, DERIVACION, OBSERVACION, CANCELAR, DEVOLUCION, RESPUESTA
   detalle        String?  @map("seg_detalle") @db.Text
   usuarioId      String   @map("user_id") @db.Uuid
   archivoUrl     String?  @map("seg_archivo_url")
   destinatarioId String?  @map("seg_destinatario_id") @db.Uuid // A quién se envía/deriva
+  estadoPlazo    String?  @map("seg_estado_plazo") // EN_PLAZO, FUERA_DE_PLAZO, PENDIENTE
 
   documento    CorDocumento @relation(fields: [documentoId], references: [id], onDelete: Cascade)
   usuario      User         @relation(fields: [usuarioId], references: [id])

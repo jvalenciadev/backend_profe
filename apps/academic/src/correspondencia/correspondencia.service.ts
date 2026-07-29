@@ -24,6 +24,7 @@ export class CorrespondenciaService {
     tx: any,
     tipo: CorTipoDocumento,
     tenantId?: string | null,
+    documentoPadreId?: string | null,
   ): Promise<{
     cite: string;
     hr: string;
@@ -51,20 +52,32 @@ export class CorrespondenciaService {
     const cite = `${prefijo}/PROFE/${siglaTerritorial} Nro. ${correlativo}/${gestion}`;
 
     // 2. Lógica HOJA DE RUTA (Global y Universal)
-    // Buscamos el último documento de TODO el sistema en este año
-    const ultimoDocHR = await tx.corDocumento.findFirst({
-      where: { gestion },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    let numHR = 0;
-    if (ultimoDocHR?.hr) {
-      const partes = ultimoDocHR.hr.split('/');
-      numHR = parseInt(partes[0], 10) || 0;
+    let hr = '';
+    if (documentoPadreId) {
+      const docPadre = await tx.corDocumento.findUnique({
+        where: { id: documentoPadreId },
+        select: { hr: true },
+      });
+      if (docPadre?.hr) {
+        hr = docPadre.hr;
+      }
     }
 
-    const proximoHR = numHR + 1;
-    const hr = `${proximoHR.toString().padStart(4, '0')}/${gestion}`;
+    if (!hr) {
+      const ultimoDocHR = await tx.corDocumento.findFirst({
+        where: { gestion },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      let numHR = 0;
+      if (ultimoDocHR?.hr) {
+        const partes = ultimoDocHR.hr.split('/');
+        numHR = parseInt(partes[0], 10) || 0;
+      }
+
+      const proximoHR = numHR + 1;
+      hr = `${proximoHR.toString().padStart(4, '0')}/${gestion}`;
+    }
 
     return { cite, hr, correlativo, gestion };
   }
@@ -91,7 +104,32 @@ export class CorrespondenciaService {
         tx,
         dto.tipo,
         tenantId,
+        dto.documentoPadreId,
       );
+
+      // Calcular fecha límite si hay plazoDias
+      let fechaLimite: Date | null = null;
+      if (dto.plazoDias && dto.plazoDias > 0) {
+        fechaLimite = new Date();
+        fechaLimite.setDate(fechaLimite.getDate() + dto.plazoDias);
+      }
+
+      // Evaluar estado del plazo si se está respondiendo a un documento padre
+      let estadoPlazo: string | null = null;
+      if (dto.documentoPadreId) {
+        const docPadre = await tx.corDocumento.findUnique({
+          where: { id: dto.documentoPadreId },
+          select: { fechaLimite: true, createdAt: true },
+        });
+        if (docPadre) {
+          const limite = docPadre.fechaLimite;
+          if (limite) {
+            estadoPlazo = new Date() <= new Date(limite) ? 'EN_PLAZO' : 'FUERA_DE_PLAZO';
+          } else {
+            estadoPlazo = 'EN_PLAZO';
+          }
+        }
+      }
 
       const participantes = [
         ...dto.destinatarios.map((p) => ({
@@ -111,23 +149,32 @@ export class CorrespondenciaService {
         })),
       ];
 
+      const accionSeguimiento = dto.documentoPadreId ? 'RESPUESTA' : 'CREACION';
+      const detalleSeguimiento = dto.documentoPadreId
+        ? `Respuesta a H.R. registrada con nuevo CITE: ${cite}`
+        : `Documento elaborado. CITE asignado: ${cite}`;
+
       return (tx.corDocumento as any).create({
         data: {
           tipo: dto.tipo,
           cite,
-          hr, // HR Global generada
+          hr, // HR heredada o nueva
           correlativo,
           gestion,
           tenantId, // Vinculamos el documento al departamento del creador
           referencia: dto.referencia,
           contenido: dto.contenido,
+          plazoDias: dto.plazoDias ?? null,
+          fechaLimite,
+          documentoPadreId: dto.documentoPadreId ?? null,
           estado: 'ELABORACION',
           participantes: { create: participantes },
           seguimientos: {
             create: {
-              accion: 'CREACION',
-              detalle: `Documento elaborado. CITE asignado: ${cite}`,
+              accion: accionSeguimiento,
+              detalle: detalleSeguimiento,
               usuarioId: creatorId,
+              estadoPlazo,
             },
           },
         },
@@ -200,6 +247,37 @@ export class CorrespondenciaService {
             },
           },
         },
+        documentosHijos: {
+          include: {
+            participantes: {
+              include: {
+                usuario: {
+                  select: {
+                    id: true,
+                    nombre: true,
+                    apellidos: true,
+                    cargoStr: true,
+                  },
+                },
+              },
+            },
+            seguimientos: {
+              orderBy: { fecha: 'desc' },
+              include: {
+                usuario: { select: { id: true, nombre: true, apellidos: true, cargoStr: true } },
+              },
+            },
+          },
+        },
+        documentoPadre: {
+          select: {
+            id: true,
+            cite: true,
+            hr: true,
+            fechaLimite: true,
+            plazoDias: true,
+          },
+        },
       },
     });
     if (!doc)
@@ -226,6 +304,23 @@ export class CorrespondenciaService {
                 cargoStr: true,
                 imagen: true,
                 tenantId: true,
+              },
+            },
+          },
+        },
+        documentosHijos: {
+          include: {
+            participantes: {
+              include: {
+                usuario: {
+                  select: { id: true, nombre: true, apellidos: true, cargoStr: true },
+                },
+              },
+            },
+            seguimientos: {
+              orderBy: { fecha: 'desc' },
+              include: {
+                usuario: { select: { id: true, nombre: true, apellidos: true, cargoStr: true } },
               },
             },
           },
@@ -295,7 +390,19 @@ export class CorrespondenciaService {
         };
       });
 
-    // Recibidos: documentos en la custodia actual del usuario (envíos, derivaciones, recepciones y devoluciones)
+    // Helper para determinar la última transferencia activa
+    const getUltimaTransferencia = (doc: any) => {
+      const segs = doc.seguimientos || [];
+      return segs.find(
+        (s: any) =>
+          s.destinatarioId &&
+          (s.accion === 'ENVIO' ||
+            s.accion === 'DERIVACION' ||
+            s.accion === 'DEVOLUCION'),
+      );
+    };
+
+    // 1. Recibidos: Documentos en los que el usuario actual es el CUSTODIO ACTUAL en el último lote de transferencias
     const recibidosPrev = todos.filter((d) => {
       if (
         d.estado === 'ELABORACION' ||
@@ -305,47 +412,44 @@ export class CorrespondenciaService {
         return false;
       }
 
-      const ultimoMov = d.seguimientos && d.seguimientos.length > 0 ? d.seguimientos[0] : null;
+      const esCreador = d.participantes.some(
+        (p: any) => p.userId === userId && p.rol === 'REMITENTE',
+      );
 
-      if (ultimoMov) {
-        if (
-          (ultimoMov.accion === 'ENVIO' ||
-            ultimoMov.accion === 'DERIVACION' ||
-            ultimoMov.accion === 'DEVOLUCION') &&
-          ultimoMov.destinatarioId === userId
-        ) {
-          return true;
-        }
-        if (ultimoMov.accion === 'RECEPCION' && ultimoMov.usuarioId === userId) {
-          return true;
-        }
-      }
+      const ultimaTrans = getUltimaTransferencia(d);
 
-      // Compatibilidad con registros antiguos (donde destinatarioId no estaba seteado en corSeguimiento)
-      if (!ultimoMov || d.seguimientos.length <= 1) {
-        const esDestinatarioLegado = d.participantes.some(
-          (p: any) =>
-            (p.rol === 'DESTINATARIO' || p.rol === 'VIA') && p.userId === userId,
-        );
-        const esRemitente = d.participantes.some(
-          (p: any) => p.rol === 'REMITENTE' && p.userId === userId,
+      if (ultimaTrans) {
+        // Agrupar transferencias simultáneas (±5s) para soporte multi-destinatario
+        const ultimaTs = new Date(ultimaTrans.fecha || 0).getTime();
+        const transSimultaneas = (d.seguimientos || []).filter(
+          (s: any) =>
+            s.destinatarioId &&
+            (s.accion === 'ENVIO' ||
+              s.accion === 'DERIVACION' ||
+              s.accion === 'DEVOLUCION') &&
+            Math.abs(new Date(s.fecha || 0).getTime() - ultimaTs) <= 5000,
         );
 
-        if (
-          esDestinatarioLegado &&
-          !esRemitente &&
-          (d.estado === 'ENVIADO' || d.estado === 'EN_TRAMITE')
-        ) {
-          return true;
-        }
+        // Si el usuario en sesión es destinatario de este último lote de transferencias, TIENE LA CUSTODIA.
+        const esDestinatarioUltimoLote = transSimultaneas.some(
+          (s: any) => s.destinatarioId === userId,
+        );
+        return esDestinatarioUltimoLote;
       }
 
-      return false;
+      // Si no hay transferencias registradas aún, es Recibido para los DESTINATARIOS/VIAs iniciales (que no sean el creador)
+      const esDestinatarioInicial = d.participantes.some(
+        (p: any) =>
+          (p.rol === 'DESTINATARIO' || p.rol === 'VIA') &&
+          p.userId === userId,
+      );
+
+      return esDestinatarioInicial && !esCreador;
     });
 
     return {
       recibidos: mapearConAlerta(recibidosPrev),
-      // Enviados: documentos en curso donde el usuario participó enviando/derivando pero YA NO es el custodio
+      // 2. Enviados: Documentos creados o transferidos por el usuario donde la custodia actual la tiene OTRO usuario
       enviados: mapearConAlerta(
         todos.filter((d) => {
           if (
@@ -357,31 +461,28 @@ export class CorrespondenciaService {
             return false;
           }
 
-          // Si actualmente está en mis recibidos (tengo la custodia), no sale en enviados
+          // Si actualmente está en sus Recibidos (tengo la custodia actual), NO debe salir en Enviados
           if (recibidosPrev.some((r) => r.id === d.id)) {
             return false;
           }
 
-          // Es el remitente original
-          const esRemitente = d.participantes.some(
-            (p) => p.userId === userId && p.rol === 'REMITENTE',
+          const esCreador = d.participantes.some(
+            (p: any) => p.userId === userId && p.rol === 'REMITENTE',
           );
-          if (esRemitente) return true;
 
-          // O es un usuario (VÍA / DESTINATARIO) que ya realizó una acción de ENVIO o DERIVACION en este documento
           const haDerivadoOEnviado = (d.seguimientos || []).some(
             (s: any) =>
               s.usuarioId === userId &&
               (s.accion === 'DERIVACION' || s.accion === 'ENVIO' || s.accion === 'DEVOLUCION'),
           );
 
-          return haDerivadoOEnviado;
+          return esCreador || haDerivadoOEnviado;
         }),
       ),
-      // Borradores: únicamente borradores en estado ELABORACION
+      // Borradores: borradores en estado ELABORACION y documentos cancelados del remitente
       enProceso: todos.filter(
         (d) =>
-          d.estado === 'ELABORACION' &&
+          (d.estado === 'ELABORACION' || d.estado === 'CANCELADO') &&
           d.participantes.some(
             (p) => p.userId === userId && p.rol === 'REMITENTE',
           ),
@@ -455,6 +556,9 @@ export class CorrespondenciaService {
             estado: true,
             tenantId: true,
             createdAt: true,
+            plazoDias: true,
+            fechaLimite: true,
+            documentoPadreId: true,
             participantes: {
               include: {
                 usuario: {
@@ -524,6 +628,9 @@ export class CorrespondenciaService {
           estado: s.documento.estado,
           tenantId: s.documento.tenantId,
           createdAt: s.documento.createdAt,
+          plazoDias: (s.documento as any).plazoDias,
+          fechaLimite: (s.documento as any).fechaLimite,
+          documentoPadreId: (s.documento as any).documentoPadreId,
           creador,
         },
         docTenant: docTenant || { id: s.documento?.tenantId || siglaCite, nombre: `Departamento ${siglaCite}`, abreviacion: siglaCite },
@@ -607,6 +714,7 @@ export class CorrespondenciaService {
       where: { id: documentoId },
       include: {
         participantes: true,
+        documentosHijos: { select: { id: true, cite: true } },
         seguimientos: { orderBy: { fecha: 'desc' } },
       },
     });
@@ -643,34 +751,54 @@ export class CorrespondenciaService {
     }
 
     if (accion === 'CANCELAR') {
-      // Un borrador (ELABORACION) puede descartarse directamente: nunca fue enviado ni circuló.
-      // Un documento ENVIADO puede cancelarse solo si aún no fue recibido ni derivado.
-      if (doc.estado !== 'ENVIADO' && doc.estado !== 'ELABORACION') {
+      if (doc.estado !== 'ENVIADO' && doc.estado !== 'ELABORACION' && doc.estado !== 'EN_TRAMITE') {
         throw new BadRequestException(
-          'Solo se pueden cancelar documentos en estado ELABORACION o ENVIADO (que aún no han sido recibidos)',
+          'Solo se pueden cancelar documentos en estado ELABORACION, ENVIADO o EN_TRAMITE',
         );
       }
       const esRemitente = doc.participantes.some(
         (p) => p.userId === usuarioId && p.rol === 'REMITENTE',
       );
-      if (!esRemitente) {
+      const ultimoMov = doc.seguimientos?.[0];
+      const fueUltimoEmisor = ultimoMov?.usuarioId === usuarioId && (ultimoMov?.accion === 'ENVIO' || ultimoMov?.accion === 'DERIVACION');
+
+      if (!esRemitente && !fueUltimoEmisor) {
         throw new BadRequestException(
-          'Solo el remitente original puede cancelar el documento',
+          'Solo el remitente original o el funcionario que realizó la derivación puede cancelar el envío',
         );
       }
-      // Si ya fue ENVIADO: verificar que no haya circulado aún
-      if (doc.estado === 'ENVIADO') {
+
+      // 1. Verificar si ya fue respondido con un nuevo CITE
+      const tieneRespuestas = (doc.documentosHijos || []).length > 0 || doc.seguimientos.some((s) => s.accion === 'RESPUESTA');
+      if (tieneRespuestas) {
+        throw new BadRequestException(
+          'No se puede cancelar el envío porque este trámite ya cuenta con una respuesta o informe emitido',
+        );
+      }
+
+      // 2. Si fue ENVIADO o DERIVADO: verificar que el destinatario no haya recepcionado o derivado
+      if (doc.estado === 'ENVIADO' || doc.estado === 'EN_TRAMITE') {
         const yaCirculo = doc.seguimientos.some(
           (s) =>
             s.accion === 'RECEPCION' ||
-            s.accion === 'DERIVACION' ||
-            s.accion === 'DEVOLUCION',
+            (s.accion === 'DERIVACION' && s.usuarioId !== usuarioId) ||
+            s.accion === 'DEVOLUCION' ||
+            s.accion === 'ARCHIVADO',
         );
         if (yaCirculo) {
           throw new BadRequestException(
-            'No se puede cancelar el envío porque el documento ya ha ingresado en trámite anteriormente',
+            'No se puede cancelar el envío/derivación porque el destinatario ya recepcionó, derivó o atendió el trámite',
           );
         }
+      }
+
+      // 3. Verificar si transcurrieron más de los días de plazo (ej: 7 días)
+      const plazoMax = doc.plazoDias || 7;
+      const diasTranscurridos = (Date.now() - doc.createdAt.getTime()) / (1000 * 60 * 60 * 24);
+      if (diasTranscurridos > plazoMax) {
+        throw new BadRequestException(
+          `No se puede cancelar el envío porque ha expirado el plazo máximo de ${plazoMax} días desde su emisión`,
+        );
       }
     }
 
@@ -697,6 +825,19 @@ export class CorrespondenciaService {
       }
     }
 
+
+    // Restricción Mandatoria: El CREADOR / REMITENTE original no puede devolverse el documento a sí mismo.
+    if (accion === 'DEVOLUCION') {
+      const esCreadorOriginal = doc.participantes.some(
+        (p) => p.userId === usuarioId && p.rol === 'REMITENTE',
+      );
+      if (esCreadorOriginal) {
+        throw new BadRequestException(
+          'El creador o remitente original no puede devolverse el documento a sí mismo',
+        );
+      }
+    }
+
     // Lógica de Custodia General:
     // El usuario debe tener la custodia del documento para recibir, derivar, devolver o archivar.
     if (
@@ -705,38 +846,54 @@ export class CorrespondenciaService {
       accion === 'DEVOLUCION' ||
       accion === 'ARCHIVADO'
     ) {
-      const ultimoMov = doc.seguimientos && doc.seguimientos.length > 0 ? doc.seguimientos[0] : null;
+      const segs = doc.seguimientos || [];
+
+      // Buscar la última transferencia realizada (ENVIO, DERIVACION, DEVOLUCION)
+      const ultimaTrans = segs.find(
+        (s: any) =>
+          s.destinatarioId &&
+          (s.accion === 'ENVIO' ||
+            s.accion === 'DERIVACION' ||
+            s.accion === 'DEVOLUCION'),
+      );
+
       let tieneCustodia = false;
 
-      if (ultimoMov) {
-        if (
-          (ultimoMov.accion === 'ENVIO' ||
-            ultimoMov.accion === 'DERIVACION' ||
-            ultimoMov.accion === 'DEVOLUCION') &&
-          ultimoMov.destinatarioId === usuarioId
-        ) {
-          tieneCustodia = true;
-        } else if (
-          ultimoMov.accion === 'RECEPCION' &&
-          ultimoMov.usuarioId === usuarioId
-        ) {
-          tieneCustodia = true;
-        }
-      }
+      if (ultimaTrans) {
+        // Agrupar transferencias del mismo lote simultáneo (±5s) para soporte multi-destinatario
+        const ultimaTs = new Date(ultimaTrans.fecha || 0).getTime();
+        const transSimultaneas = segs.filter(
+          (s: any) =>
+            s.destinatarioId &&
+            (s.accion === 'ENVIO' ||
+              s.accion === 'DERIVACION' ||
+              s.accion === 'DEVOLUCION') &&
+            Math.abs(new Date(s.fecha || 0).getTime() - ultimaTs) <= 5000,
+        );
 
-      // Fallback para registros legados
-      if (!tieneCustodia && (!ultimoMov || doc.seguimientos.length <= 1)) {
-        const esDestinatario = doc.participantes.some(
+        // Si el usuario es el destinatario de la última transferencia (o lote), tiene la custodia.
+        const esDestinatarioUltimaTrans = transSimultaneas.some(
+          (s: any) => s.destinatarioId === usuarioId,
+        );
+
+        // Verificar que el usuario no haya derivado o devuelto POSTERIOR a esa última transferencia
+        const fechaUltimaTrans = new Date(ultimaTrans.fecha || 0).getTime();
+        const derivoDespues = segs.some(
+          (s: any) =>
+            s.usuarioId === usuarioId &&
+            (s.accion === 'DERIVACION' || s.accion === 'DEVOLUCION') &&
+            new Date(s.fecha || 0).getTime() > fechaUltimaTrans,
+        );
+
+        tieneCustodia = esDestinatarioUltimaTrans && !derivoDespues;
+      } else {
+        // Si no hay transferencias en los seguimientos, comprobar si es destinatario/vía inicial
+        const esDestinatarioInicial = doc.participantes.some(
           (p: any) =>
             (p.rol === 'DESTINATARIO' || p.rol === 'VIA') &&
             p.userId === usuarioId,
         );
-        if (
-          esDestinatario &&
-          (doc.estado === 'ENVIADO' || doc.estado === 'EN_TRAMITE')
-        ) {
-          tieneCustodia = true;
-        }
+        tieneCustodia = esDestinatarioInicial;
       }
 
       if (!tieneCustodia) {
