@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
+  Patch,
   Post,
   Put,
   Query,
@@ -78,6 +80,18 @@ export class CorrespondenciaController {
   @Post(':id/pdf')
   subirPdf(@Param('id') id: string, @Body('url') url: string) {
     return this.service.updatePdf(id, url);
+  }
+
+  /** POST /correspondencia/:id/adjunto — Agrega un adjunto extra al documento */
+  @Post(':id/adjunto')
+  addAdjunto(@Param('id') id: string, @Body('url') url: string) {
+    return this.service.addAdjunto(id, url);
+  }
+
+  /** DELETE /correspondencia/:id/adjunto/:index — Elimina un adjunto por índice */
+  @Delete(':id/adjunto/:index')
+  removeAdjunto(@Param('id') id: string, @Param('index') index: string) {
+    return this.service.removeAdjunto(id, parseInt(index, 10));
   }
 
   @Get('buscar-id/:id')

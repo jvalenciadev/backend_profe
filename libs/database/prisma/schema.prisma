@@ -1913,6 +1913,7 @@ model CorDocumento {
   referencia       String           @map("cor_referencia") @db.Text
   contenido        String?          @map("cor_contenido") @db.Text
   archivoPdf       String?          @map("cor_archivo_pdf")
+  adjuntos         Json?            @map("cor_adjuntos")
   estado           String           @default("ELABORACION") @map("cor_estado")
   tenantId         String?          @map("tenant_id") @db.Uuid
 

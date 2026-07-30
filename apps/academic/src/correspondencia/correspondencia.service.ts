@@ -18,7 +18,7 @@ const PREFIJOS: Record<CorTipoDocumento, string> = {
 
 @Injectable()
 export class CorrespondenciaService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   private async generarCite(
     tx: any,
@@ -1007,6 +1007,34 @@ export class CorrespondenciaService {
     return this.prisma.corDocumento.update({
       where: { id: documentoId },
       data: { archivoPdf: url },
+    });
+  }
+
+  async addAdjunto(documentoId: string, url: string) {
+    const doc = await this.prisma.corDocumento.findUnique({
+      where: { id: documentoId },
+    });
+    if (!doc) throw new NotFoundException('Documento no encontrado');
+    const docAny = doc as any;
+    const actuales: string[] = Array.isArray(docAny.adjuntos) ? (docAny.adjuntos as string[]) : [];
+    return (this.prisma.corDocumento as any).update({
+      where: { id: documentoId },
+      data: { adjuntos: [...actuales, url] },
+    });
+  }
+
+  async removeAdjunto(documentoId: string, index: number) {
+    const doc = await this.prisma.corDocumento.findUnique({
+      where: { id: documentoId },
+    });
+    if (!doc) throw new NotFoundException('Documento no encontrado');
+    const docAny = doc as any;
+    const actuales: string[] = Array.isArray(docAny.adjuntos) ? (docAny.adjuntos as string[]) : [];
+    if (index < 0 || index >= actuales.length) throw new BadRequestException('Índice de adjunto inválido');
+    const nuevos = actuales.filter((_, i) => i !== index);
+    return (this.prisma.corDocumento as any).update({
+      where: { id: documentoId },
+      data: { adjuntos: nuevos },
     });
   }
 
