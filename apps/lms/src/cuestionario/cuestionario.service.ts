@@ -8,7 +8,7 @@ import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class CuestionarioService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   async getCuestionario(id: string) {
     return this.prisma.mod_cuestionario.findUnique({
@@ -222,16 +222,16 @@ export class CuestionarioService {
       intentosRestantes: Math.max(
         0,
         cue.maxIntentos -
-          intentos.filter((i) => i.estado !== 'eliminado').length,
+        intentos.filter((i) => i.estado !== 'eliminado').length,
       ),
       intentoEnProgreso: enProgreso,
       mejorPuntaje:
         intentos.filter((i) => i.estado !== 'eliminado').length > 0
           ? Math.max(
-              ...intentos
-                .filter((i) => i.estado !== 'eliminado')
-                .map((i) => i.puntajeTotal || 0),
-            )
+            ...intentos
+              .filter((i) => i.estado !== 'eliminado')
+              .map((i) => i.puntajeTotal || 0),
+          )
           : 0,
     };
   }
@@ -272,13 +272,13 @@ export class CuestionarioService {
       const tiempoRestanteSegundos =
         cue.duracion > 0
           ? Math.max(
-              0,
-              cue.duracion * 60 +
-                extraTime -
-                Math.floor(
-                  (Date.now() - intentoEnProgreso.iniciadoEn.getTime()) / 1000,
-                ),
-            )
+            0,
+            cue.duracion * 60 +
+            extraTime -
+            Math.floor(
+              (Date.now() - intentoEnProgreso.iniciadoEn.getTime()) / 1000,
+            ),
+          )
           : null;
       return { ...intentoEnProgreso, tiempoRestanteSegundos };
     }
@@ -360,13 +360,13 @@ export class CuestionarioService {
     const tiempoRestanteSegundos =
       cue.duracion > 0
         ? Math.max(
-            0,
-            cue.duracion * 60 +
-              extraTime -
-              Math.floor(
-                (Date.now() - nuevoIntento.iniciadoEn.getTime()) / 1000,
-              ),
-          )
+          0,
+          cue.duracion * 60 +
+          extraTime -
+          Math.floor(
+            (Date.now() - nuevoIntento.iniciadoEn.getTime()) / 1000,
+          ),
+        )
         : null;
 
     return { ...nuevoIntento, tiempoRestanteSegundos };
@@ -574,7 +574,7 @@ export class CuestionarioService {
     if (/^\\d+$/.test(ci)) {
       try {
         searchConditions.push({ ci: BigInt(ci) });
-      } catch (e) {}
+      } catch (e) { }
     }
 
     const user = await this.prisma.user.findFirst({

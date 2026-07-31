@@ -15,7 +15,7 @@ import { JwtAuthGuard } from '../guards/jwt-auth.guard';
 @Controller('cuestionarios')
 @UseGuards(JwtAuthGuard)
 export class CuestionarioController {
-  constructor(private readonly cuestionarioService: CuestionarioService) {}
+  constructor(private readonly cuestionarioService: CuestionarioService) { }
 
   @Get(':id')
   async getCuestionario(@Param('id') id: string) {

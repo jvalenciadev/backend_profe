@@ -9,6 +9,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Patch,
 } from '@nestjs/common';
 import { PrismaService } from '@app/database';
 
@@ -1098,5 +1099,130 @@ export class EventViewsController {
       persona: { ...persona, ci: persona.ci.toString() },
       progress,
     };
+  }
+
+  @Get('cuestionario/:cuestionarioId/intentos-respuestas')
+  async getIntentosRespuestasCuestionario(
+    @Param('cuestionarioId') cuestionarioId: string,
+  ) {
+    const cuestionario = await this.prisma.eventoCuestionario.findUnique({
+      where: { id: cuestionarioId },
+      include: {
+        preguntas: {
+          include: { opciones: true },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
+    });
+    if (!cuestionario) throw new NotFoundException('Cuestionario no encontrado');
+
+    const intentos = await this.prisma.eventoCuestionarioIntento.findMany({
+      where: { cuestionarioId },
+      include: {
+        persona: true,
+      },
+      orderBy: { iniciadoEn: 'desc' },
+    });
+
+    const todasRespuestas = await this.prisma.evento_respuestas.findMany({
+      where: { cuestionarioId },
+      include: { pregunta: true },
+    });
+
+    const result = intentos.map((intento) => {
+      const respPersona = todasRespuestas.filter(
+        (r) => r.personaId === intento.personaId,
+      );
+      return {
+        id: intento.id,
+        personaId: intento.personaId,
+        persona: {
+          id: intento.persona.id,
+          nombre: `${intento.persona.nombre1} ${intento.persona.nombre2 || ''}`.trim(),
+          apellidos: `${intento.persona.apellido1} ${intento.persona.apellido2 || ''}`.trim(),
+          ci: intento.persona.ci.toString(),
+          correo: intento.persona.correo,
+          celular: intento.persona.celular,
+        },
+        puntaje: intento.puntaje,
+        estado: intento.estado,
+        numeroIntentos: intento.numeroIntentos,
+        iniciadoEn: intento.iniciadoEn,
+        finalizadoEn: intento.finalizadoEn,
+        respuestas: respPersona.map((r) => ({
+          id: r.id.toString(),
+          preguntaId: r.preguntaId,
+          preguntaTexto: r.pregunta?.texto || '',
+          preguntaTipo: r.pregunta?.tipo || '',
+          preguntaPuntos: r.pregunta?.puntos || 0,
+          texto: r.texto,
+          puntos: r.puntos,
+          esCorrecta: r.esCorrecta,
+        })),
+      };
+    });
+
+    return {
+      cuestionario: {
+        id: cuestionario.id,
+        titulo: cuestionario.titulo,
+        puntosMaximos: cuestionario.puntosMaximos,
+        preguntas: cuestionario.preguntas,
+      },
+      intentos: result,
+    };
+  }
+
+  @Patch('cuestionario/respuesta/:respuestaId/calificar')
+  async calificarRespuestaEvento(
+    @Param('respuestaId') respuestaId: string,
+    @Body() body: { puntos: number },
+  ) {
+    const resId = BigInt(respuestaId);
+    const resp = await this.prisma.evento_respuestas.findUnique({
+      where: { id: resId },
+      include: { pregunta: true },
+    });
+
+    if (!resp) throw new NotFoundException('Respuesta no encontrada');
+
+    const puntosMax = resp.pregunta?.puntos || 0;
+    const nuevosPuntos = Math.min(Math.max(0, Number(body.puntos) || 0), puntosMax);
+    const esCorrecta = nuevosPuntos > 0;
+
+    await this.prisma.evento_respuestas.update({
+      where: { id: resId },
+      data: {
+        puntos: nuevosPuntos,
+        esCorrecta,
+      },
+    });
+
+    // Recalcular puntaje del intento de la persona
+    if (resp.cuestionarioId && resp.personaId) {
+      const respuestasPersona = await this.prisma.evento_respuestas.findMany({
+        where: {
+          cuestionarioId: resp.cuestionarioId,
+          personaId: resp.personaId,
+        },
+      });
+
+      const nuevoPuntajeTotal = respuestasPersona.reduce(
+        (sum, r) => sum + r.puntos,
+        0,
+      );
+
+      await this.prisma.eventoCuestionarioIntento.updateMany({
+        where: {
+          cuestionarioId: resp.cuestionarioId,
+          personaId: resp.personaId,
+        },
+        data: {
+          puntaje: nuevoPuntajeTotal,
+        },
+      });
+    }
+
+    return { success: true, puntos: nuevosPuntos, esCorrecta };
   }
 }
