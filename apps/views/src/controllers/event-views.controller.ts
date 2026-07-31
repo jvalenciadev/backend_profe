@@ -1104,35 +1104,91 @@ export class EventViewsController {
   @Get('cuestionario/:cuestionarioId/intentos-respuestas')
   async getIntentosRespuestasCuestionario(
     @Param('cuestionarioId') cuestionarioId: string,
+    @Query('page') pageStr = '1',
+    @Query('limit') limitStr = '50',
   ) {
-    const cuestionario = await this.prisma.eventoCuestionario.findUnique({
-      where: { id: cuestionarioId },
-      include: {
-        preguntas: {
-          include: { opciones: true },
-          orderBy: { createdAt: 'asc' },
+    const page = Math.max(1, parseInt(pageStr) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(limitStr) || 50));
+    const skip = (page - 1) * limit;
+
+    // Solo necesitamos los IDs de preguntas TEXTO para filtrar
+    const preguntasTexto = await this.prisma.evento_pregunta.findMany({
+      where: { cuestionarioId, tipo: 'TEXTO', estado: { not: 'eliminado' } as any },
+      select: { id: true, texto: true, puntos: true },
+    });
+
+    // Si no hay preguntas TEXTO, devolver vacío rápidamente
+    const preguntaTextoIds = preguntasTexto.map((p) => p.id);
+
+    const [total, intentos] = await Promise.all([
+      this.prisma.eventoCuestionarioIntento.count({ where: { cuestionarioId } }),
+      this.prisma.eventoCuestionarioIntento.findMany({
+        where: { cuestionarioId },
+        select: {
+          id: true,
+          puntaje: true,
+          estado: true,
+          numeroIntentos: true,
+          iniciadoEn: true,
+          finalizadoEn: true,
+          personaId: true,
+          persona: {
+            select: {
+              id: true,
+              nombre1: true,
+              nombre2: true,
+              apellido1: true,
+              apellido2: true,
+              ci: true,
+              correo: true,
+              celular: true,
+            },
+          },
+          // Incluir solo respuestas de preguntas TEXTO en el JOIN
+          ...(preguntaTextoIds.length > 0 && {
+            cuestionario: {
+              select: { id: true },
+            },
+          }),
         },
-      },
-    });
-    if (!cuestionario) throw new NotFoundException('Cuestionario no encontrado');
+        orderBy: { iniciadoEn: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
 
-    const intentos = await this.prisma.eventoCuestionarioIntento.findMany({
-      where: { cuestionarioId },
-      include: {
-        persona: true,
-      },
-      orderBy: { iniciadoEn: 'desc' },
-    });
+    // Obtener respuestas TEXTO de un solo query para las personas de esta página
+    const personaIds = intentos.map((i) => i.personaId);
+    const respuestasTexto =
+      preguntaTextoIds.length > 0 && personaIds.length > 0
+        ? await this.prisma.evento_respuestas.findMany({
+            where: {
+              cuestionarioId,
+              personaId: { in: personaIds },
+              preguntaId: { in: preguntaTextoIds },
+            },
+            select: {
+              id: true,
+              texto: true,
+              puntos: true,
+              esCorrecta: true,
+              preguntaId: true,
+              personaId: true,
+            },
+          })
+        : [];
 
-    const todasRespuestas = await this.prisma.evento_respuestas.findMany({
-      where: { cuestionarioId },
-      include: { pregunta: true },
-    });
+    // Construir un mapa preguntaId -> datos para O(1) lookup
+    const preguntaMap = new Map(preguntasTexto.map((p) => [p.id, p]));
+    // Mapa personaId -> respuestas
+    const respPorPersona = new Map<string, typeof respuestasTexto>();
+    for (const r of respuestasTexto) {
+      if (!respPorPersona.has(r.personaId)) respPorPersona.set(r.personaId, []);
+      respPorPersona.get(r.personaId)!.push(r);
+    }
 
     const result = intentos.map((intento) => {
-      const respPersona = todasRespuestas.filter(
-        (r) => r.personaId === intento.personaId,
-      );
+      const resps = respPorPersona.get(intento.personaId) || [];
       return {
         id: intento.id,
         personaId: intento.personaId,
@@ -1149,26 +1205,28 @@ export class EventViewsController {
         numeroIntentos: intento.numeroIntentos,
         iniciadoEn: intento.iniciadoEn,
         finalizadoEn: intento.finalizadoEn,
-        respuestas: respPersona.map((r) => ({
-          id: r.id.toString(),
-          preguntaId: r.preguntaId,
-          preguntaTexto: r.pregunta?.texto || '',
-          preguntaTipo: r.pregunta?.tipo || '',
-          preguntaPuntos: r.pregunta?.puntos || 0,
-          texto: r.texto,
-          puntos: r.puntos,
-          esCorrecta: r.esCorrecta,
-        })),
+        respuestas: resps.map((r) => {
+          const preg = preguntaMap.get(r.preguntaId);
+          return {
+            id: r.id.toString(),
+            preguntaId: r.preguntaId,
+            preguntaTexto: preg?.texto || '',
+            preguntaTipo: 'TEXTO',
+            preguntaPuntos: preg?.puntos || 0,
+            texto: r.texto,
+            puntos: r.puntos,
+            esCorrecta: r.esCorrecta,
+          };
+        }),
       };
     });
 
     return {
-      cuestionario: {
-        id: cuestionario.id,
-        titulo: cuestionario.titulo,
-        puntosMaximos: cuestionario.puntosMaximos,
-        preguntas: cuestionario.preguntas,
-      },
+      cuestionario: { id: cuestionarioId },
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
       intentos: result,
     };
   }
