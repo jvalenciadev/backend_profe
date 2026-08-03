@@ -71,7 +71,7 @@ export class CaslPrismaService {
       'ProgramaTipoCalificacion',
       'evento_restriccion', // model evento_restriccion (snake_case)
       'EventoCuestionario',
-      'evento_pregunta', // model evento_pregunta (snake_case)
+      'EventoPregunta',
       'evento_opciones', // model evento_opciones (snake_case)
       'evento_respuestas', // model evento_respuestas (snake_case)
       'Galeria',

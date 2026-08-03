@@ -29,7 +29,7 @@ export class EventoPreguntaController {
     private readonly createEventoPreguntaUseCase: CreateEventoPreguntaUseCase,
     private readonly updateEventoPreguntaUseCase: UpdateEventoPreguntaUseCase,
     private readonly deleteEventoPreguntaUseCase: DeleteEventoPreguntaUseCase,
-  ) {}
+  ) { }
 
   @Get()
   @CheckPolicies((ability: any) => ability.can('read', 'EventoPregunta'))
