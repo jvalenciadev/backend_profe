@@ -1162,20 +1162,20 @@ export class EventViewsController {
     const respuestasTexto =
       preguntaTextoIds.length > 0 && personaIds.length > 0
         ? await this.prisma.evento_respuestas.findMany({
-            where: {
-              cuestionarioId,
-              personaId: { in: personaIds },
-              preguntaId: { in: preguntaTextoIds },
-            },
-            select: {
-              id: true,
-              texto: true,
-              puntos: true,
-              esCorrecta: true,
-              preguntaId: true,
-              personaId: true,
-            },
-          })
+          where: {
+            cuestionarioId,
+            personaId: { in: personaIds },
+            preguntaId: { in: preguntaTextoIds },
+          },
+          select: {
+            id: true,
+            texto: true,
+            puntos: true,
+            esCorrecta: true,
+            preguntaId: true,
+            personaId: true,
+          },
+        })
         : [];
 
     // Construir un mapa preguntaId -> datos para O(1) lookup
@@ -1282,5 +1282,106 @@ export class EventViewsController {
     }
 
     return { success: true, puntos: nuevosPuntos, esCorrecta };
+  }
+
+  @Get('cuestionario/:cuestionarioId/exportar-respuestas')
+  async exportarRespuestasCuestionario(
+    @Param('cuestionarioId') cuestionarioId: string,
+  ) {
+    const cuestionario = await this.prisma.eventoCuestionario.findUnique({
+      where: { id: cuestionarioId },
+      select: { id: true, titulo: true, puntosMaximos: true },
+    });
+    if (!cuestionario) throw new NotFoundException('Cuestionario no encontrado');
+
+    const preguntas = await this.prisma.evento_pregunta.findMany({
+      where: { cuestionarioId, estado: { not: 'eliminado' } as any },
+      include: { opciones: true },
+    });
+
+    const intentos = await this.prisma.eventoCuestionarioIntento.findMany({
+      where: { cuestionarioId },
+      include: {
+        persona: {
+          select: {
+            id: true,
+            nombre1: true,
+            nombre2: true,
+            apellido1: true,
+            apellido2: true,
+            ci: true,
+            correo: true,
+            celular: true,
+          },
+        },
+      },
+      orderBy: { iniciadoEn: 'desc' },
+    });
+
+    const respuestas = await this.prisma.evento_respuestas.findMany({
+      where: { cuestionarioId },
+      include: {
+        opcion: true,
+      },
+    });
+
+    const respMap = new Map<string, typeof respuestas>();
+    for (const r of respuestas) {
+      const key = `${r.personaId}_${r.preguntaId}`;
+      if (!respMap.has(key)) respMap.set(key, []);
+      respMap.get(key)!.push(r);
+    }
+
+    const resultIntentos = intentos.map((intento) => {
+      const p = intento.persona;
+      const personaNombre = `${p?.nombre1 || ''} ${p?.nombre2 || ''}`.trim();
+      const personaApellidos = `${p?.apellido1 || ''} ${p?.apellido2 || ''}`.trim();
+
+      const respuestasPorPregunta: Record<string, string> = {};
+      for (const preg of preguntas) {
+        const key = `${intento.personaId}_${preg.id}`;
+        const userResps = respMap.get(key) || [];
+
+        if (userResps.length === 0) {
+          respuestasPorPregunta[preg.id] = 'Sin respuesta';
+        } else {
+          const textValues = userResps.map((r) => {
+            if (preg.tipo === 'TEXTO') return r.texto || 'Sin texto';
+            if (r.opcion?.texto) return r.opcion.texto;
+            if (r.texto) return r.texto;
+            return 'Respondido';
+          });
+          respuestasPorPregunta[preg.id] = textValues.join(' | ');
+        }
+      }
+
+      return {
+        id: intento.id,
+        personaId: intento.personaId,
+        ci: p?.ci ? String(p.ci) : 'N/A',
+        nombres: personaNombre || 'N/A',
+        apellidos: personaApellidos || 'N/A',
+        nombreCompleto: `${personaNombre} ${personaApellidos}`.trim() || 'N/A',
+        correo: p?.correo || 'N/A',
+        celular: p?.celular || 'N/A',
+        estado: intento.estado === 'finished' ? 'FINALIZADO' : intento.estado === 'in_progress' ? 'EN PROGRESO' : intento.estado,
+        puntaje: intento.puntaje ?? 0,
+        numeroIntentos: intento.numeroIntentos,
+        iniciadoEn: intento.iniciadoEn ? new Date(intento.iniciadoEn).toLocaleString('es-BO') : 'N/A',
+        finalizadoEn: intento.finalizadoEn ? new Date(intento.finalizadoEn).toLocaleString('es-BO') : 'N/A',
+        respuestas: respuestasPorPregunta,
+      };
+    });
+
+    return {
+      cuestionario,
+      preguntas: preguntas.map((p) => ({
+        id: p.id,
+        texto: p.texto,
+        tipo: p.tipo,
+        puntos: p.puntos,
+      })),
+      intentos: resultIntentos,
+    };
   }
 }
