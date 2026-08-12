@@ -18,7 +18,7 @@ const PREFIJOS: Record<CorTipoDocumento, string> = {
 
 @Injectable()
 export class CorrespondenciaService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
   private async generarCite(
     tx: any,
@@ -64,18 +64,25 @@ export class CorrespondenciaService {
     }
 
     if (!hr) {
-      const ultimoDocHR = await tx.corDocumento.findFirst({
-        where: { gestion },
-        orderBy: { createdAt: 'desc' },
+      const todosDocsHR = await tx.corDocumento.findMany({
+        where: {
+          gestion,
+          hr: { not: null },
+        },
+        select: { hr: true },
       });
 
-      let numHR = 0;
-      if (ultimoDocHR?.hr) {
-        const partes = ultimoDocHR.hr.split('/');
-        numHR = parseInt(partes[0], 10) || 0;
+      let maxHR = 0;
+      for (const doc of todosDocsHR) {
+        if (doc.hr) {
+          const num = parseInt(doc.hr.split('/')[0], 10);
+          if (!isNaN(num) && num > maxHR) {
+            maxHR = num;
+          }
+        }
       }
 
-      const proximoHR = numHR + 1;
+      const proximoHR = maxHR + 1;
       hr = `${proximoHR.toString().padStart(4, '0')}/${gestion}`;
     }
 
