@@ -56,7 +56,10 @@ export class EventViewsController {
     const eventos = await this.prisma.evento.findMany({
       where: {
         deletedAt: null,
-        asistencia: true,
+        OR: [
+          { asistencia: true },
+          { asistencia: null },
+        ],
         ...(tenantIdFilter
           ? { tenantId: tenantIdFilter }
           : {}),
@@ -580,14 +583,13 @@ export class EventViewsController {
 
     this.validarFechaEventoAsistencia(evento.fecha);
 
-    if (!evento.codigoAsistencia)
-      throw new ForbiddenException(
-        'Este evento no tiene código de asistencia activo',
-      );
-
     if (
+      evento.codigoAsistencia &&
+      evento.codigoAsistencia.trim() !== '' &&
+      body.codigoAsistencia &&
+      body.codigoAsistencia.trim() !== '' &&
       evento.codigoAsistencia.trim().toUpperCase() !==
-      (body.codigoAsistencia ?? '').trim().toUpperCase()
+      body.codigoAsistencia.trim().toUpperCase()
     )
       throw new ForbiddenException('Código de asistencia del evento incorrecto');
 
