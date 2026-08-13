@@ -55,7 +55,6 @@ export class EventViewsController {
 
     const eventos = await this.prisma.evento.findMany({
       where: {
-        deletedAt: null,
         OR: [
           { asistencia: true },
           { asistencia: null },
