@@ -56,6 +56,7 @@ export class EventViewsController {
     const eventos = await this.prisma.evento.findMany({
       where: {
         deletedAt: null,
+        asistencia: true,
         ...(tenantIdFilter
           ? { tenantId: tenantIdFilter }
           : {}),
