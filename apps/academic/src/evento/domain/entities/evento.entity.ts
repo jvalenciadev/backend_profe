@@ -19,5 +19,8 @@ export class Evento {
     public asistidos: number = 0,
     public camposExtras: any[] = [],
     public cuestionarios: any[] = [],
+    public inscripcionAbierta: boolean = false,
+    public asistencia: boolean = false,
+    public urlVideo: string | null = null,
   ) {}
 }

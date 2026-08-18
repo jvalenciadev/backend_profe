@@ -246,6 +246,9 @@ export class PrismaEventoRepository implements IEventoRepository {
       record.asistidos || 0,
       record.camposExtras || [],
       record.cuestionarios || [],
+      record.inscripcionAbierta ?? false,
+      record.asistencia ?? false,
+      record.urlVideo || null,
     );
   }
 }
