@@ -6,16 +6,34 @@ import { PrismaEvaluacionRepository } from './infrastructure/database/prisma-eva
 import { EvaluationsController } from './infrastructure/controllers/evaluations.controller';
 import {
   CreatePeriodoUseCase,
+  UpdatePeriodoUseCase,
   GetPeriodosUseCase,
   GetPeriodoByIdUseCase,
   TogglePeriodoUseCase,
   DeletePeriodoUseCase,
 } from './application/use-cases/periodo.use-cases';
 import {
-  CreateEvaluacionUseCase,
-  GetEvaluacionesUseCase,
-  GetEvaluacionByIdUseCase,
-  GetMyEvaluacionesUseCase,
+  CreateCuestionarioUseCase,
+  GetCuestionariosUseCase,
+  GetCuestionarioByIdUseCase,
+  GetCuestionariosByCargoUseCase,
+  UpdateCuestionarioUseCase,
+  DeleteCuestionarioUseCase,
+} from './application/use-cases/cuestionario.use-cases';
+import {
+  CreateAsignacionUseCase,
+  CreateAsignacionesMasivasUseCase,
+  GetAsignacionesByEvaluadorUseCase,
+  GetAsignacionesByEvaluadoUseCase,
+  GetAsignacionByIdUseCase,
+  GetAllAsignacionesUseCase,
+  DeleteAsignacionUseCase,
+} from './application/use-cases/asignacion.use-cases';
+import {
+  IniciarIntentoUseCase,
+  ResponderIntentoUseCase,
+  GetIntentoByIdUseCase,
+  GetConsolidadoEvaluadoUseCase,
   VerifyEvaluacionCodeUseCase,
   GetUsersToEvaluateUseCase,
 } from './application/use-cases/evaluacion.use-cases';
@@ -28,18 +46,34 @@ import { GeneratePDFUseCase } from './application/use-cases/generate-pdf.use-cas
     { provide: EVALUACION_REPOSITORY, useClass: PrismaEvaluacionRepository },
     // Períodos
     CreatePeriodoUseCase,
+    UpdatePeriodoUseCase,
     GetPeriodosUseCase,
     GetPeriodoByIdUseCase,
     TogglePeriodoUseCase,
     DeletePeriodoUseCase,
-    // Evaluaciones
-    CreateEvaluacionUseCase,
-    GetEvaluacionesUseCase,
-    GetEvaluacionByIdUseCase,
-    GetMyEvaluacionesUseCase,
+    // Cuestionarios
+    CreateCuestionarioUseCase,
+    GetCuestionariosUseCase,
+    GetCuestionarioByIdUseCase,
+    GetCuestionariosByCargoUseCase,
+    UpdateCuestionarioUseCase,
+    DeleteCuestionarioUseCase,
+    // Asignaciones
+    CreateAsignacionUseCase,
+    CreateAsignacionesMasivasUseCase,
+    GetAsignacionesByEvaluadorUseCase,
+    GetAsignacionesByEvaluadoUseCase,
+    GetAsignacionByIdUseCase,
+    GetAllAsignacionesUseCase,
+    DeleteAsignacionUseCase,
+    // Intentos & Respuestas
+    IniciarIntentoUseCase,
+    ResponderIntentoUseCase,
+    GetIntentoByIdUseCase,
+    GetConsolidadoEvaluadoUseCase,
     VerifyEvaluacionCodeUseCase,
     GetUsersToEvaluateUseCase,
-    // Infraestructura
+    // Infraestructura / PDF
     GeneratePDFUseCase,
   ],
 })

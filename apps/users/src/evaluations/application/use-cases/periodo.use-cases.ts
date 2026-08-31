@@ -2,11 +2,12 @@ import {
   Injectable,
   Inject,
   NotFoundException,
-  ForbiddenException,
-  BadRequestException,
 } from '@nestjs/common';
 import { EVALUACION_REPOSITORY } from '../../domain/repositories/evaluacion.repository.interface';
-import type { IEvaluacionRepository } from '../../domain/repositories/evaluacion.repository.interface';
+import type {
+  IEvaluacionRepository,
+  CreatePeriodoData,
+} from '../../domain/repositories/evaluacion.repository.interface';
 import { EvaluacionPeriodo } from '../../domain/entities/evaluacion.entity';
 
 @Injectable()
@@ -16,13 +17,22 @@ export class CreatePeriodoUseCase {
     private readonly repository: IEvaluacionRepository,
   ) {}
 
-  async execute(data: {
-    gestion: string;
-    semestre: string;
-    periodo: string;
-    criterios: { nombre: string; puntajeMaximo: number; orden?: number }[];
-  }): Promise<EvaluacionPeriodo> {
+  async execute(data: CreatePeriodoData): Promise<EvaluacionPeriodo> {
     return this.repository.createPeriodo(data);
+  }
+}
+
+@Injectable()
+export class UpdatePeriodoUseCase {
+  constructor(
+    @Inject(EVALUACION_REPOSITORY)
+    private readonly repository: IEvaluacionRepository,
+  ) {}
+
+  async execute(id: string, data: Partial<CreatePeriodoData>): Promise<EvaluacionPeriodo> {
+    const existing = await this.repository.findPeriodoById(id);
+    if (!existing) throw new NotFoundException('Período no encontrado');
+    return this.repository.updatePeriodo(id, data);
   }
 }
 

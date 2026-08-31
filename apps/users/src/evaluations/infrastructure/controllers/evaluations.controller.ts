@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Body,
   Param,
   Delete,
@@ -15,16 +16,34 @@ import {
 import { JwtAuthGuard, Public } from '@app/common';
 import {
   CreatePeriodoUseCase,
+  UpdatePeriodoUseCase,
   GetPeriodosUseCase,
   GetPeriodoByIdUseCase,
   TogglePeriodoUseCase,
   DeletePeriodoUseCase,
 } from '../../application/use-cases/periodo.use-cases';
 import {
-  CreateEvaluacionUseCase,
-  GetEvaluacionesUseCase,
-  GetEvaluacionByIdUseCase,
-  GetMyEvaluacionesUseCase,
+  CreateCuestionarioUseCase,
+  GetCuestionariosUseCase,
+  GetCuestionarioByIdUseCase,
+  GetCuestionariosByCargoUseCase,
+  UpdateCuestionarioUseCase,
+  DeleteCuestionarioUseCase,
+} from '../../application/use-cases/cuestionario.use-cases';
+import {
+  CreateAsignacionUseCase,
+  CreateAsignacionesMasivasUseCase,
+  GetAsignacionesByEvaluadorUseCase,
+  GetAsignacionesByEvaluadoUseCase,
+  GetAsignacionByIdUseCase,
+  GetAllAsignacionesUseCase,
+  DeleteAsignacionUseCase,
+} from '../../application/use-cases/asignacion.use-cases';
+import {
+  IniciarIntentoUseCase,
+  ResponderIntentoUseCase,
+  GetIntentoByIdUseCase,
+  GetConsolidadoEvaluadoUseCase,
   VerifyEvaluacionCodeUseCase,
   GetUsersToEvaluateUseCase,
 } from '../../application/use-cases/evaluacion.use-cases';
@@ -36,25 +55,52 @@ export class EvaluationsController {
   private readonly logger = new Logger(EvaluationsController.name);
 
   constructor(
+    // Períodos
     private readonly createPeriodoUseCase: CreatePeriodoUseCase,
+    private readonly updatePeriodoUseCase: UpdatePeriodoUseCase,
     private readonly getPeriodosUseCase: GetPeriodosUseCase,
     private readonly getPeriodoByIdUseCase: GetPeriodoByIdUseCase,
     private readonly togglePeriodoUseCase: TogglePeriodoUseCase,
     private readonly deletePeriodoUseCase: DeletePeriodoUseCase,
-    private readonly createEvaluacionUseCase: CreateEvaluacionUseCase,
-    private readonly getEvaluacionesUseCase: GetEvaluacionesUseCase,
-    private readonly getEvaluacionByIdUseCase: GetEvaluacionByIdUseCase,
-    private readonly getMyEvaluacionesUseCase: GetMyEvaluacionesUseCase,
+    // Cuestionarios
+    private readonly createCuestionarioUseCase: CreateCuestionarioUseCase,
+    private readonly getCuestionariosUseCase: GetCuestionariosUseCase,
+    private readonly getCuestionarioByIdUseCase: GetCuestionarioByIdUseCase,
+    private readonly getCuestionariosByCargoUseCase: GetCuestionariosByCargoUseCase,
+    private readonly updateCuestionarioUseCase: UpdateCuestionarioUseCase,
+    private readonly deleteCuestionarioUseCase: DeleteCuestionarioUseCase,
+    // Asignaciones
+    private readonly createAsignacionUseCase: CreateAsignacionUseCase,
+    private readonly createAsignacionesMasivasUseCase: CreateAsignacionesMasivasUseCase,
+    private readonly getAsignacionesByEvaluadorUseCase: GetAsignacionesByEvaluadorUseCase,
+    private readonly getAsignacionesByEvaluadoUseCase: GetAsignacionesByEvaluadoUseCase,
+    private readonly getAsignacionByIdUseCase: GetAsignacionByIdUseCase,
+    private readonly getAllAsignacionesUseCase: GetAllAsignacionesUseCase,
+    private readonly deleteAsignacionUseCase: DeleteAsignacionUseCase,
+    // Intentos & Respuestas
+    private readonly iniciarIntentoUseCase: IniciarIntentoUseCase,
+    private readonly responderIntentoUseCase: ResponderIntentoUseCase,
+    private readonly getIntentoByIdUseCase: GetIntentoByIdUseCase,
+    private readonly getConsolidadoEvaluadoUseCase: GetConsolidadoEvaluadoUseCase,
     private readonly verifyCodeUseCase: VerifyEvaluacionCodeUseCase,
     private readonly getUsersToEvaluateUseCase: GetUsersToEvaluateUseCase,
+    // PDF
     private readonly generatePDFUseCase: GeneratePDFUseCase,
   ) {}
 
-  // ── PERÍODOS ─────────────────────────────────────────────────
+  // ── PERÍODOS ─────────────────────────────────────────────────────────────
 
   @Post('periodos')
   async createPeriodo(@Body() data: any) {
     return this.createPeriodoUseCase.execute(data);
+  }
+
+  @Put('periodos/:id')
+  async updatePeriodo(
+    @Param('id') id: string,
+    @Body() data: any,
+  ) {
+    return this.updatePeriodoUseCase.execute(id, data);
   }
 
   @Get('periodos')
@@ -80,7 +126,125 @@ export class EvaluationsController {
     return this.deletePeriodoUseCase.execute(id);
   }
 
-  // ── EVALUACIONES ──────────────────────────────────────────────
+  // ── CUESTIONARIOS POR CARGO ──────────────────────────────────────────────
+
+  @Post('cuestionarios')
+  async createCuestionario(@Req() req: any, @Body() data: any) {
+    return this.createCuestionarioUseCase.execute({
+      ...data,
+      createdBy: req.user?.id,
+    });
+  }
+
+  @Get('cuestionarios')
+  async findCuestionarios(@Query('periodoId') periodoId?: string) {
+    return this.getCuestionariosUseCase.execute(periodoId);
+  }
+
+  @Get('cuestionarios/cargo/:cargoId')
+  async findCuestionariosByCargo(
+    @Param('cargoId') cargoId: string,
+    @Query('periodoId') periodoId?: string,
+  ) {
+    return this.getCuestionariosByCargoUseCase.execute(cargoId, periodoId);
+  }
+
+  @Get('cuestionarios/:id')
+  async findCuestionarioById(@Param('id') id: string) {
+    return this.getCuestionarioByIdUseCase.execute(id);
+  }
+
+  @Put('cuestionarios/:id')
+  async updateCuestionario(@Param('id') id: string, @Body() data: any) {
+    return this.updateCuestionarioUseCase.execute(id, data);
+  }
+
+  @Delete('cuestionarios/:id')
+  async deleteCuestionario(@Param('id') id: string) {
+    return this.deleteCuestionarioUseCase.execute(id);
+  }
+
+  // ── ASIGNACIONES (QUIÉN EVALÚA A QUIÉN) ──────────────────────────────────
+
+  @Post('asignaciones')
+  async createAsignacion(@Req() req: any, @Body() data: any) {
+    return this.createAsignacionUseCase.execute({
+      ...data,
+      createdBy: req.user?.id,
+    });
+  }
+
+  @Post('asignaciones/masivas')
+  async createAsignacionesMasivas(@Req() req: any, @Body() data: { asignaciones: any[] }) {
+    const list = (data.asignaciones || []).map((a) => ({
+      ...a,
+      createdBy: req.user?.id,
+    }));
+    return this.createAsignacionesMasivasUseCase.execute(list);
+  }
+
+  @Get('asignaciones')
+  async findAllAsignaciones(
+    @Query('tenantId') tenantId?: string,
+    @Query('periodoId') periodoId?: string,
+  ) {
+    return this.getAllAsignacionesUseCase.execute(tenantId, periodoId);
+  }
+
+  @Get('asignaciones/mis-pendientes')
+  async findMisPendientes(@Req() req: any, @Query('periodoId') periodoId?: string) {
+    return this.getAsignacionesByEvaluadorUseCase.execute(req.user.id, periodoId);
+  }
+
+  @Get('asignaciones/mis-evaluaciones')
+  async findMisEvaluaciones(@Req() req: any, @Query('periodoId') periodoId?: string) {
+    return this.getAsignacionesByEvaluadoUseCase.execute(req.user.id, periodoId);
+  }
+
+  @Get('asignaciones/evaluado/:evaluadoId')
+  async findAsignacionesByEvaluado(
+    @Param('evaluadoId') evaluadoId: string,
+    @Query('periodoId') periodoId?: string,
+  ) {
+    return this.getAsignacionesByEvaluadoUseCase.execute(evaluadoId, periodoId);
+  }
+
+  @Get('asignaciones/:id')
+  async findAsignacionById(@Param('id') id: string) {
+    return this.getAsignacionByIdUseCase.execute(id);
+  }
+
+  @Delete('asignaciones/:id')
+  async deleteAsignacion(@Param('id') id: string) {
+    return this.deleteAsignacionUseCase.execute(id);
+  }
+
+  // ── INTENTOS Y RESPUESTAS (TEMPORIZADOR Y ESCALA LIKERT) ──────────────────
+
+  @Post('intentos/iniciar')
+  async iniciarIntento(@Body() data: { evaluacionAdminId: string }) {
+    return this.iniciarIntentoUseCase.execute(data);
+  }
+
+  @Get('intentos/:id')
+  async findIntentoById(@Param('id') id: string) {
+    return this.getIntentoByIdUseCase.execute(id);
+  }
+
+  @Post('intentos/responder')
+  async responderIntento(@Body() data: any) {
+    return this.responderIntentoUseCase.execute(data);
+  }
+
+  @Get('consolidado/:evaluadoId/:periodoId')
+  async getConsolidado(
+    @Param('evaluadoId') evaluadoId: string,
+    @Param('periodoId') periodoId: string,
+  ) {
+    return this.getConsolidadoEvaluadoUseCase.execute(evaluadoId, periodoId);
+  }
+
+  // ── USUARIOS Y COMPATIBILIDAD ─────────────────────────────────────────────
 
   @Get('eligibles')
   async findEligibles(
@@ -98,67 +262,24 @@ export class EvaluationsController {
     @Query('periodoId') pId: string,
     @Query('tenantId') tId?: string,
   ) {
-    return this.getUsersToEvaluateUseCase.execute(
-      tId || req.user.tenantId,
-      pId,
-    );
-  }
-
-  @Get('my/all')
-  async findMyEvaluations(@Req() req: any) {
-    return this.getMyEvaluacionesUseCase.execute(req.user.id);
-  }
-
-  @Get()
-  async findEvaluaciones(
-    @Req() req: any,
-    @Query('periodoId') periodoId?: string,
-  ) {
-    return this.getEvaluacionesUseCase.execute(req.user.tenantId, periodoId);
-  }
-
-  @Get('pdf/:id')
-  async getPdf(@Param('id') id: string, @Res() res: any) {
-    try {
-      const buffer = await this.generatePDFUseCase.execute(id);
-      res.set({
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="hoja_de_concepto_${id}.pdf"`,
-        'Content-Length': buffer.length,
-      });
-      res.end(buffer);
-    } catch (error) {
-      this.logger.error(`Error generating PDF for ${id}: ${error.message}`);
-      res
-        .status(500)
-        .json({ success: false, message: 'No se pudo generar el PDF' });
-    }
-  }
-
-  @Get(':id/pdf')
-  async getPdfAlias(@Param('id') id: string, @Res() res: any) {
-    return this.getPdf(id, res);
-  }
-
-  @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.getEvaluacionByIdUseCase.execute(id);
-  }
-
-  @Post()
-  async createEvaluation(@Body() body: any, @Req() req: any) {
-    this.logger.log(`POST /evaluations body: ${JSON.stringify(body)}`);
-    const { responsableTenantId, ...data } = body;
-    return this.createEvaluacionUseCase.execute(
-      data,
-      responsableTenantId,
-      req.user.id,
-    );
+    const tenantId = tId || req.user.tenantId;
+    return this.getUsersToEvaluateUseCase.execute(tenantId, pId);
   }
 
   @Public()
   @Get('verify/:code')
   async verifyCode(@Param('code') code: string) {
     return this.verifyCodeUseCase.execute(code);
+  }
+
+  @Get('pdf/:id')
+  async getPdf(@Param('id') id: string, @Res() res: any) {
+    const pdfBuffer = await this.generatePDFUseCase.execute(id);
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename=evaluacion-${id}.pdf`,
+      'Content-Length': pdfBuffer.length,
+    });
+    res.end(pdfBuffer);
   }
 }

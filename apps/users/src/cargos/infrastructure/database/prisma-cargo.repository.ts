@@ -30,10 +30,11 @@ export class PrismaCargoRepository implements ICargoRepository {
   }
 
   async create(cargo: Omit<Cargo, 'id'>): Promise<Cargo> {
+    const estado = (cargo.estado?.toLowerCase() as any) || 'activo';
     const data = await this.prisma.cargo.create({
       data: {
         nombre: cargo.nombre,
-        estado: (cargo.estado as any) || 'activo',
+        estado,
         createdBy: cargo.createdBy,
       },
     });
@@ -59,7 +60,7 @@ export class PrismaCargoRepository implements ICargoRepository {
     let where: any = { estado: { not: 'eliminado' } };
 
     if (estado && estado !== 'todos') {
-      where.estado = estado;
+      where.estado = estado.toLowerCase();
     }
     if (search) {
       where.nombre = { contains: search, mode: 'insensitive' };
@@ -87,13 +88,16 @@ export class PrismaCargoRepository implements ICargoRepository {
   }
 
   async update(id: string, cargo: Partial<Cargo>): Promise<Cargo> {
+    const updateData: any = {
+      nombre: cargo.nombre,
+      updatedBy: cargo.updatedBy,
+    };
+    if (cargo.estado) {
+      updateData.estado = cargo.estado.toLowerCase() as any;
+    }
     const data = await this.prisma.cargo.update({
       where: { id },
-      data: {
-        nombre: cargo.nombre,
-        estado: cargo.estado as any,
-        updatedBy: cargo.updatedBy,
-      },
+      data: updateData,
     });
     return this.mapToDomain(data);
   }

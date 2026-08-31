@@ -66,7 +66,8 @@ model User {
   auditLogs                       AuditLog[]
   bp_posgrado                     bp_posgrado[]
   bp_produccion_intelectual       bp_produccion_intelectual[]
-  evaluaciones                    EvaluacionAdmins[]
+  evaluacionesRealizadas          EvaluacionAdmins[]          @relation("EvaluadorAdmins")
+  evaluacionesRecibidas           EvaluacionAdmins[]          @relation("EvaluadoAdmins")
   roles                           UserRole[]
   programaDosFacilitadors         ProgramaDosFacilitador[]
   sedes                           UserSede[]
@@ -185,17 +186,19 @@ model bp_tipo_posgrado {
 }
 
 model Cargo {
-  id           String             @id @default(uuid()) @map("car_id") @db.Uuid
-  nombre       String             @map("car_nombre")
-  estado       Estado             @default(activo) @map("car_estado")
-  createdAt    DateTime           @default(now()) @map("created_at")
-  updatedAt    DateTime           @updatedAt @map("updated_at")
-  deletedAt    DateTime?          @map("deleted_at")
-  createdBy    String?            @map("created_by") @db.Uuid
-  updatedBy    String?            @map("updated_by") @db.Uuid
-  deletedBy    String?            @map("deleted_by") @db.Uuid
-  admins       User[]
-  evaluaciones EvaluacionAdmins[]
+  id            String                        @id @default(uuid()) @map("car_id") @db.Uuid
+  nombre        String                        @map("car_nombre")
+  estado        Estado                        @default(activo) @map("car_estado")
+  createdAt     DateTime                      @default(now()) @map("created_at")
+  updatedAt     DateTime                      @updatedAt @map("updated_at")
+  deletedAt     DateTime?                     @map("deleted_at")
+  createdBy     String?                       @map("created_by") @db.Uuid
+  updatedBy     String?                       @map("updated_by") @db.Uuid
+  deletedBy     String?                       @map("deleted_by") @db.Uuid
+  admins        User[]
+  evaluaciones  EvaluacionAdmins[]
+  cuestionarios EvaluacionCuestionarioCargo[]
+  criterios     EvaluacionCriterioCargo[]
 
   @@map("cargo")
 }
@@ -259,75 +262,186 @@ model distrito {
   @@map("distrito")
 }
 
-model EvaluacionAdmins {
-  id                 String              @id @default(uuid()) @map("eva_id") @db.Uuid
-  puntajeTotal       Int                 @map("eva_puntaje_total")
-  codigoVerificacion String              @map("eva_codigo_verificacion")
-  qrCode             String?             @map("eva_qr_code")
-  estado             Estado              @default(activo) @map("eva_estado")
-  createdAt          DateTime            @default(now()) @map("created_at")
-  updatedAt          DateTime            @updatedAt @map("updated_at")
-  deletedAt          DateTime?           @map("deleted_at")
-  createdBy          String?             @map("created_by") @db.Uuid
-  updatedBy          String?             @map("updated_by") @db.Uuid
-  deletedBy          String?             @map("deleted_by") @db.Uuid
-  periodoId          String              @map("evp_id") @db.Uuid
-  userId             String              @map("user_id") @db.Uuid
-  tenantId           String?             @map("tenant_id") @db.Uuid
-  cargoId            String?             @map("car_id_postulacion") @db.Uuid
-  cargo              Cargo?              @relation(fields: [cargoId], references: [id])
-  periodoEval        EvaluacionPeriodo   @relation(fields: [periodoId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "evaluacion_admins_periodo_fkey")
-  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "evaluacion_admins_user_fkey")
-  puntajes           EvaluacionPuntaje[]
-
-  @@unique([userId, periodoId], map: "evaluacion_admins_user_periodo_unique")
-  @@map("evaluacion_admins")
-}
-
-model EvaluacionCriterio {
-  id            String              @id @default(uuid()) @map("evc_id") @db.Uuid
-  periodoId     String              @map("evp_id") @db.Uuid
-  nombre        String              @map("evc_nombre")
-  puntajeMaximo Int                 @map("evc_puntaje_maximo")
-  orden         Int                 @default(0) @map("evc_orden")
-  estado        Estado              @default(activo) @map("evc_estado")
-  createdAt     DateTime            @default(now()) @map("created_at")
-  updatedAt     DateTime            @updatedAt @map("updated_at")
-  periodoEval   EvaluacionPeriodo   @relation(fields: [periodoId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "evaluacion_criterio_periodo_fkey")
-  puntajes      EvaluacionPuntaje[]
-
-  @@map("evaluacion_criterio")
-}
-
 model EvaluacionPeriodo {
-  id           String               @id @default(uuid()) @map("evp_id") @db.Uuid
-  periodo      String               @map("evp_periodo")
-  gestion      String               @map("evp_gestion")
-  semestre     String               @map("evp_semestre")
-  activo       Boolean              @default(true) @map("evp_activo")
-  estado       Estado               @default(activo) @map("evp_estado")
-  createdAt    DateTime             @default(now()) @map("created_at")
-  updatedAt    DateTime             @updatedAt @map("updated_at")
-  deletedAt    DateTime?            @map("deleted_at")
-  createdBy    String?              @map("created_by") @db.Uuid
-  updatedBy    String?              @map("updated_by") @db.Uuid
-  deletedBy    String?              @map("deleted_by") @db.Uuid
-  evaluaciones EvaluacionAdmins[]
-  criterios    EvaluacionCriterio[]
+  id            String                   @id @default(uuid()) @map("evp_id") @db.Uuid
+  periodo       String                   @map("evp_periodo")
+  gestion       String                   @map("evp_gestion")
+  semestre      String                   @map("evp_semestre")
+  fechaInicio   DateTime?                @map("evp_fecha_inicio")
+  fechaFin      DateTime?                @map("evp_fecha_fin")
+  activo        Boolean                  @default(true) @map("evp_activo")
+  estado        Estado                   @default(activo) @map("evp_estado")
+  createdAt     DateTime                 @default(now()) @map("created_at")
+  updatedAt     DateTime                 @updatedAt @map("updated_at")
+  deletedAt     DateTime?                @map("deleted_at")
+  createdBy     String?                  @map("created_by") @db.Uuid
+  updatedBy     String?                  @map("updated_by") @db.Uuid
+  deletedBy     String?                  @map("deleted_by") @db.Uuid
+  cuestionarios EvaluacionCuestionario[]
+  criterios     EvaluacionCriterio[]
+  evaluaciones  EvaluacionAdmins[]
 
   @@map("evaluacion_periodo")
 }
 
-model EvaluacionPuntaje {
-  id           String             @id @default(uuid()) @map("evpu_id") @db.Uuid
-  evaluacionId String             @map("eva_id") @db.Uuid
-  criterioId   String             @map("evc_id") @db.Uuid
-  puntaje      Int                @map("evpu_puntaje")
-  criterio     EvaluacionCriterio @relation(fields: [criterioId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "evaluacion_puntaje_crit_fkey")
-  evaluacion   EvaluacionAdmins   @relation(fields: [evaluacionId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "evaluacion_puntaje_eval_fkey")
+model EvaluacionCuestionario {
+  id                  String                        @id @default(uuid()) @map("evcu_id") @db.Uuid
+  periodoId           String                        @map("evp_id") @db.Uuid
+  criterioId          String?                       @map("evc_id") @db.Uuid
+  titulo              String                        @map("evcu_titulo")
+  descripcion         String?                       @map("evcu_descripcion") @db.Text
+  tiempoLimiteMinutos Int?                          @map("evcu_tiempo_limite_minutos")
+  maxIntentos         Int                           @default(1) @map("evcu_max_intentos")
+  tipoCalculo         String                        @default("PROMEDIO_SIMPLE") @map("evcu_tipo_calculo")
+  notaMinima          Decimal                       @default(60.00) @map("evcu_nota_minima") @db.Decimal(5, 2)
+  maxPreguntas        Int?                          @map("evcu_max_preguntas")
+  randomPreguntas     Boolean                       @default(false) @map("evcu_random_preguntas")
+  estado              Estado                        @default(activo) @map("evcu_estado")
+  createdAt           DateTime                      @default(now()) @map("created_at")
+  updatedAt           DateTime                      @updatedAt @map("updated_at")
+  deletedAt           DateTime?                     @map("deleted_at")
+  createdBy           String?                       @map("created_by") @db.Uuid
+  updatedBy           String?                       @map("updated_by") @db.Uuid
+  deletedBy           String?                       @map("deleted_by") @db.Uuid
+  periodo             EvaluacionPeriodo             @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+  criterio            EvaluacionCriterio?           @relation("CriterioCuestionarios", fields: [criterioId], references: [id], onDelete: SetNull)
+  cargos              EvaluacionCuestionarioCargo[]
+  evaluaciones        EvaluacionAdmins[]
 
-  @@unique([evaluacionId, criterioId], map: "evaluacion_puntaje_eval_crit_unique")
-  @@map("evaluacion_puntaje")
+  @@map("evaluacion_cuestionario")
+}
+
+model EvaluacionCuestionarioCargo {
+  id             String                 @id @default(uuid()) @map("ecc_id") @db.Uuid
+  cuestionarioId String                 @map("evcu_id") @db.Uuid
+  cargoId        String                 @map("car_id") @db.Uuid
+  cuestionario   EvaluacionCuestionario @relation(fields: [cuestionarioId], references: [id], onDelete: Cascade)
+  cargo          Cargo                  @relation(fields: [cargoId], references: [id], onDelete: Cascade)
+
+  @@unique([cuestionarioId, cargoId], map: "eval_cuest_cargo_unique")
+  @@map("evaluacion_cuestionario_cargos")
+}
+
+model EvaluacionCriterio {
+  id             String                    @id @default(uuid()) @map("evc_id") @db.Uuid
+  periodoId      String?                   @map("evp_id") @db.Uuid
+  nombre         String                    @map("evc_nombre")
+  descripcion    String?                   @map("evc_descripcion") @db.Text
+  pesoPorcentaje Decimal                   @default(0.00) @map("evc_peso_porcentaje") @db.Decimal(5, 2)
+  orden          Int                       @default(0) @map("evc_orden")
+  estado         Estado                    @default(activo) @map("evc_estado")
+  createdAt      DateTime                  @default(now()) @map("created_at")
+  updatedAt      DateTime                  @updatedAt @map("updated_at")
+  periodo        EvaluacionPeriodo?        @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+  cargos         EvaluacionCriterioCargo[]
+  subcriterios   EvaluacionSubcriterio[]
+  cuestionarios  EvaluacionCuestionario[]  @relation("CriterioCuestionarios")
+
+  @@map("evaluacion_criterio")
+}
+
+model EvaluacionCriterioCargo {
+  id         String             @id @default(uuid()) @map("eccg_id") @db.Uuid
+  criterioId String             @map("evc_id") @db.Uuid
+  cargoId    String             @map("car_id") @db.Uuid
+  criterio   EvaluacionCriterio @relation(fields: [criterioId], references: [id], onDelete: Cascade)
+  cargo      Cargo              @relation(fields: [cargoId], references: [id], onDelete: Cascade)
+
+  @@unique([criterioId, cargoId], map: "eval_crit_cargo_unique")
+  @@map("evaluacion_criterio_cargos")
+}
+
+model EvaluacionSubcriterio {
+  id             String                @id @default(uuid()) @map("evs_id") @db.Uuid
+  criterioId     String                @map("evc_id") @db.Uuid
+  codigo         String?               @map("evs_codigo")
+  indicador      String                @map("evs_indicador") @db.Text
+  descripcion    String?               @map("evs_descripcion") @db.Text
+  tipoPregunta   String                @default("LIKERT") @map("evs_tipo_pregunta")
+  pesoPorcentaje Decimal               @default(0.00) @map("evs_peso_porcentaje") @db.Decimal(5, 2)
+  orden          Int                   @default(0) @map("evs_orden")
+  estado         Estado                @default(activo) @map("evs_estado")
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+  criterio       EvaluacionCriterio    @relation(fields: [criterioId], references: [id], onDelete: Cascade)
+  respuestas     EvaluacionRespuesta[]
+  opciones       EvaluacionOpcion[]
+
+  @@map("evaluacion_subcriterio")
+}
+
+model EvaluacionOpcion {
+  id            String                @id @default(uuid()) @map("evo_id") @db.Uuid
+  subcriterioId String                @map("evs_id") @db.Uuid
+  texto         String                @map("evo_texto") @db.Text
+  esCorrecta    Boolean               @default(false) @map("evo_es_correcta")
+  orden         Int                   @default(0) @map("evo_orden")
+  createdAt     DateTime              @default(now()) @map("created_at")
+  subcriterio   EvaluacionSubcriterio @relation(fields: [subcriterioId], references: [id], onDelete: Cascade)
+
+  @@map("evaluacion_opciones")
+}
+
+model EvaluacionAdmins {
+  id                 String                  @id @default(uuid()) @map("eva_id") @db.Uuid
+  periodoId          String                  @map("evp_id") @db.Uuid
+  cuestionarioId     String?                 @map("evcu_id") @db.Uuid
+  evaluadorId        String?                 @map("evaluador_id") @db.Uuid
+  evaluadoId         String?                 @map("evaluado_id") @db.Uuid
+  cargoId            String?                 @map("car_id_postulacion") @db.Uuid
+  tenantId           String?                 @map("tenant_id") @db.Uuid
+  tipoEvaluacion     String                  @default("SUPERVISOR") @map("eva_tipo_evaluacion")
+  estadoEvaluacion   String                  @default("PENDIENTE") @map("eva_estado_evaluacion")
+  puntajeFinal       Decimal?                @map("eva_puntaje_final") @db.Decimal(5, 2)
+  codigoVerificacion String?                 @map("eva_codigo_verificacion")
+  qrCode             String?                 @map("eva_qr_code")
+  observaciones      String?                 @map("eva_observaciones") @db.Text
+  estado             Estado                  @default(activo) @map("eva_estado")
+  createdAt          DateTime                @default(now()) @map("created_at")
+  updatedAt          DateTime                @updatedAt @map("updated_at")
+  deletedAt          DateTime?               @map("deleted_at")
+  createdBy          String?                 @map("created_by") @db.Uuid
+  updatedBy          String?                 @map("updated_by") @db.Uuid
+  deletedBy          String?                 @map("deleted_by") @db.Uuid
+  periodo            EvaluacionPeriodo       @relation(fields: [periodoId], references: [id], onDelete: Cascade)
+  cuestionario       EvaluacionCuestionario? @relation(fields: [cuestionarioId], references: [id], onDelete: SetNull)
+  evaluador          User?                   @relation("EvaluadorAdmins", fields: [evaluadorId], references: [id], onDelete: Cascade)
+  evaluado           User?                   @relation("EvaluadoAdmins", fields: [evaluadoId], references: [id], onDelete: Cascade)
+  cargo              Cargo?                  @relation(fields: [cargoId], references: [id], onDelete: SetNull)
+  intentos           EvaluacionIntento[]
+
+  @@unique([periodoId, evaluadorId, evaluadoId, cuestionarioId], map: "eval_admin_asignacion_unique")
+  @@map("evaluacion_admins")
+}
+
+model EvaluacionIntento {
+  id                     String                @id @default(uuid()) @map("evi_id") @db.Uuid
+  evaluacionAdminId      String                @map("eva_id") @db.Uuid
+  numeroIntento          Int                   @default(1) @map("evi_numero_intento")
+  fechaInicio            DateTime              @default(now()) @map("evi_fecha_inicio")
+  fechaFin               DateTime?             @map("evi_fecha_fin")
+  tiempoEmpleadoSegundos Int?                  @map("evi_tiempo_empleado_segundos")
+  puntajeObtenido        Decimal?              @map("evi_puntaje_obtenido") @db.Decimal(5, 2)
+  estado                 String                @default("EN_CURSO") @map("evi_estado")
+  evaluacionAdmin        EvaluacionAdmins      @relation(fields: [evaluacionAdminId], references: [id], onDelete: Cascade)
+  respuestas             EvaluacionRespuesta[]
+
+  @@map("evaluacion_intentos")
+}
+
+model EvaluacionRespuesta {
+  id            String                @id @default(uuid()) @map("evr_id") @db.Uuid
+  intentoId     String                @map("evi_id") @db.Uuid
+  subcriterioId String                @map("evs_id") @db.Uuid
+  escalaTexto   String                @map("evr_escala_texto")
+  puntaje       Int                   @map("evr_puntaje")
+  observacion   String?               @map("evr_observacion") @db.Text
+  createdAt     DateTime              @default(now()) @map("created_at")
+  intento       EvaluacionIntento     @relation(fields: [intentoId], references: [id], onDelete: Cascade)
+  subcriterio   EvaluacionSubcriterio @relation(fields: [subcriterioId], references: [id], onDelete: Cascade)
+
+  @@unique([intentoId, subcriterioId], map: "eval_intento_subcrit_unique")
+  @@map("evaluacion_respuestas")
 }
 
 model Evento {
@@ -1713,14 +1827,14 @@ model mod_recurso {
 // ---------------------------------------------------------
 
 model mod_asistencia {
-  id              String   @id @default(uuid()) @db.Uuid
-  moduloId        String?  @map("pm_id") @db.Uuid
-  moduloMaestroId String?  @map("pm_id_maestro") @db.Uuid
-  actividadId     String?  @unique @map("mod_act_id") @db.Uuid // Vínculo con la actividad generada
-  fecha           DateTime @map("mod_asi_fecha") @db.Date
-  createdAt       DateTime @default(now()) @map("created_at")
-  turnoId         String?  @map("pdt_id") @db.Uuid
-  esPresencial    Boolean  @default(true) @map("mod_asi_presencial")
+  id               String    @id @default(uuid()) @db.Uuid
+  moduloId         String?   @map("pm_id") @db.Uuid
+  moduloMaestroId  String?   @map("pm_id_maestro") @db.Uuid
+  actividadId      String?   @unique @map("mod_act_id") @db.Uuid // Vínculo con la actividad generada
+  fecha            DateTime  @map("mod_asi_fecha") @db.Date
+  createdAt        DateTime  @default(now()) @map("created_at")
+  turnoId          String?   @map("pdt_id") @db.Uuid
+  esPresencial     Boolean   @default(true) @map("mod_asi_presencial")
   codigoAcceso     String?   @map("codigo_acceso") @db.VarChar(10)
   codigoExpiracion DateTime? @map("codigo_expiracion")
 
@@ -1904,26 +2018,26 @@ enum CorTipoDocumento {
 }
 
 model CorDocumento {
-  id               String           @id @default(uuid()) @db.Uuid
-  tipo             CorTipoDocumento
-  cite             String           @unique @map("cor_cite")
-  hr               String?          @map("cor_hr")
-  correlativo      Int              @map("cor_correlativo")
-  gestion          Int              @map("cor_gestion")
-  referencia       String           @map("cor_referencia") @db.Text
-  contenido        String?          @map("cor_contenido") @db.Text
-  archivoPdf       String?          @map("cor_archivo_pdf")
-  adjuntos         Json?            @map("cor_adjuntos")
-  estado           String           @default("ELABORACION") @map("cor_estado")
-  tenantId         String?          @map("tenant_id") @db.Uuid
+  id          String           @id @default(uuid()) @db.Uuid
+  tipo        CorTipoDocumento
+  cite        String           @unique @map("cor_cite")
+  hr          String?          @map("cor_hr")
+  correlativo Int              @map("cor_correlativo")
+  gestion     Int              @map("cor_gestion")
+  referencia  String           @map("cor_referencia") @db.Text
+  contenido   String?          @map("cor_contenido") @db.Text
+  archivoPdf  String?          @map("cor_archivo_pdf")
+  adjuntos    Json?            @map("cor_adjuntos")
+  estado      String           @default("ELABORACION") @map("cor_estado")
+  tenantId    String?          @map("tenant_id") @db.Uuid
 
-  plazoDias        Int?             @map("cor_plazo_dias")
-  fechaLimite      DateTime?        @map("cor_fecha_limite")
-  documentoPadreId String?          @map("doc_padre_id") @db.Uuid
+  plazoDias        Int?      @map("cor_plazo_dias")
+  fechaLimite      DateTime? @map("cor_fecha_limite")
+  documentoPadreId String?   @map("doc_padre_id") @db.Uuid
 
   // Relaciones
-  documentoPadre  CorDocumento?    @relation("DocPadreHijo", fields: [documentoPadreId], references: [id], onDelete: SetNull)
-  documentosHijos CorDocumento[]   @relation("DocPadreHijo")
+  documentoPadre  CorDocumento?     @relation("DocPadreHijo", fields: [documentoPadreId], references: [id], onDelete: SetNull)
+  documentosHijos CorDocumento[]    @relation("DocPadreHijo")
   participantes   CorParticipante[]
   seguimientos    CorSeguimiento[]
 
