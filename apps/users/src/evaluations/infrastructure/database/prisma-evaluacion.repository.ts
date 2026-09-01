@@ -239,26 +239,97 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
 
   // ── CUESTIONARIOS & CRITERIOS ─────────────────────────────────────────────
 
+  /**
+   * Garantiza que cada cuestionario tenga su propio criterio y banco de preguntas exclusivo,
+   * evitando que se mezclen o sobreescriban preguntas entre diferentes cargos.
+   */
+  private async ensureIsolatedCriterios(): Promise<void> {
+    try {
+      const cuestionarios = await this.db.evaluacionCuestionario.findMany({
+        where: { estado: { not: 'eliminado' } },
+        include: {
+          criterio: {
+            include: {
+              subcriterios: {
+                where: { estado: { not: 'eliminado' } },
+                include: { opciones: true },
+              },
+            },
+          },
+        },
+      });
+
+      const seenCriterioIds = new Set<string>();
+
+      for (const cuest of cuestionarios) {
+        const needsNewCrit = !cuest.criterioId || seenCriterioIds.has(cuest.criterioId);
+        if (needsNewCrit) {
+          await this.db.$transaction(async (tx: any) => {
+            const newCrit = await tx.evaluacionCriterio.create({
+              data: {
+                periodoId: cuest.periodoId,
+                nombre: cuest.titulo,
+                descripcion: cuest.descripcion,
+                pesoPorcentaje: 0,
+                orden: 1,
+              },
+            });
+
+            // Si el cuestionario tenía preguntas en su criterio compartido anterior, clonarlas para no perderlas
+            if (cuest.criterio?.subcriterios && cuest.criterio.subcriterios.length > 0) {
+              for (const sub of cuest.criterio.subcriterios) {
+                await tx.evaluacionSubcriterio.create({
+                  data: {
+                    criterioId: newCrit.id,
+                    codigo: sub.codigo,
+                    indicador: sub.indicador,
+                    descripcion: sub.descripcion,
+                    tipoPregunta: sub.tipoPregunta,
+                    pesoPorcentaje: sub.pesoPorcentaje,
+                    orden: sub.orden,
+                    opciones: sub.opciones && sub.opciones.length > 0 ? {
+                      create: sub.opciones.map((o: any) => ({
+                        texto: o.texto,
+                        esCorrecta: Boolean(o.esCorrecta),
+                        orden: o.orden,
+                      })),
+                    } : undefined,
+                  },
+                });
+              }
+            }
+
+            await tx.evaluacionCuestionario.update({
+              where: { id: cuest.id },
+              data: { criterioId: newCrit.id },
+            });
+            seenCriterioIds.add(newCrit.id);
+          });
+        } else if (cuest.criterioId) {
+          seenCriterioIds.add(cuest.criterioId);
+        }
+      }
+    } catch (e) {
+      console.error('Error auto-desacoplando criterios compartidos de cuestionarios:', e);
+    }
+  }
+
   async createCuestionario(data: CreateCuestionarioData): Promise<EvaluacionCuestionario> {
     return this.db.$transaction(async (tx: any) => {
-      let finalCriterioId = data.criterioId || null;
-
-      // Si no se vinculó a un criterio existente pero tiene preguntas, crear un criterio dedicado para este cuestionario
-      if (!finalCriterioId && data.preguntas && data.preguntas.length > 0) {
-        const autoCrit = await tx.evaluacionCriterio.create({
-          data: {
-            periodoId: data.periodoId,
-            nombre: data.titulo,
-            descripcion: data.descripcion,
-            pesoPorcentaje: 0,
-            orden: 1,
-          },
-        });
-        finalCriterioId = autoCrit.id;
-      }
+      // Cada cuestionario cuenta con su propio criterio exclusivo para alojar su banco de preguntas por cargo
+      const autoCrit = await tx.evaluacionCriterio.create({
+        data: {
+          periodoId: data.periodoId,
+          nombre: data.titulo,
+          descripcion: data.descripcion,
+          pesoPorcentaje: 0,
+          orden: 1,
+        },
+      });
+      const finalCriterioId = autoCrit.id;
 
       // Guardar preguntas / subcriterios y sus opciones si existen
-      if (finalCriterioId && data.preguntas && data.preguntas.length > 0) {
+      if (data.preguntas && data.preguntas.length > 0) {
         for (let i = 0; i < data.preguntas.length; i++) {
           const p = data.preguntas[i];
           await tx.evaluacionSubcriterio.create({
@@ -329,23 +400,41 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
       }
 
       const current = await tx.evaluacionCuestionario.findUnique({ where: { id } });
-      let finalCriterioId = data.criterioId !== undefined ? (data.criterioId || null) : current?.criterioId;
+      let finalCriterioId = current?.criterioId;
 
-      // Si no tiene criterio pero tiene preguntas, crear uno
-      if (!finalCriterioId && data.preguntas && data.preguntas.length > 0 && current) {
+      let isShared = false;
+      if (finalCriterioId) {
+        const othersCount = await tx.evaluacionCuestionario.count({
+          where: { criterioId: finalCriterioId, id: { not: id }, estado: { not: 'eliminado' } },
+        });
+        if (othersCount > 0) {
+          isShared = true;
+        }
+      }
+
+      // Si no tiene criterio o está compartido con otro cuestionario, crear un criterio dedicado exclusivo
+      if (!finalCriterioId || isShared) {
         const autoCrit = await tx.evaluacionCriterio.create({
           data: {
-            periodoId: current.periodoId,
-            nombre: data.titulo || current.titulo,
-            descripcion: data.descripcion || current.descripcion,
+            periodoId: current?.periodoId || data.periodoId,
+            nombre: data.titulo || current?.titulo || 'Evaluación',
+            descripcion: data.descripcion || current?.descripcion,
             pesoPorcentaje: 0,
             orden: 1,
           },
         });
         finalCriterioId = autoCrit.id;
+      } else if (finalCriterioId && data.titulo) {
+        await tx.evaluacionCriterio.update({
+          where: { id: finalCriterioId },
+          data: {
+            nombre: data.titulo,
+            descripcion: data.descripcion,
+          },
+        });
       }
 
-      // Si se envían preguntas, sincronizar subcriterios y opciones
+      // Si se envían preguntas, sincronizar subcriterios y opciones exclusivamente para este cuestionario
       if (finalCriterioId && data.preguntas && Array.isArray(data.preguntas)) {
         await tx.evaluacionSubcriterio.deleteMany({ where: { criterioId: finalCriterioId } });
         for (let i = 0; i < data.preguntas.length; i++) {
@@ -406,6 +495,8 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
   }
 
   async findCuestionarioById(id: string): Promise<EvaluacionCuestionario | null> {
+    await this.ensureIsolatedCriterios();
+
     const record = await this.db.evaluacionCuestionario.findFirst({
       where: { id, estado: { not: 'eliminado' } },
       include: {
@@ -427,6 +518,8 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
   }
 
   async findAllCuestionarios(periodoId?: string): Promise<EvaluacionCuestionario[]> {
+    await this.ensureIsolatedCriterios();
+
     const where: any = { estado: { not: 'eliminado' } };
     if (periodoId) where.periodoId = periodoId;
 
@@ -452,6 +545,8 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
   }
 
   async findCuestionariosByCargo(cargoId: string, periodoId?: string): Promise<EvaluacionCuestionario[]> {
+    await this.ensureIsolatedCriterios();
+
     const where: any = {
       estado: { not: 'eliminado' },
       cargos: { some: { cargoId } },
@@ -833,7 +928,7 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
     const intentoEnCurso = asignacion.intentos.find((i: any) => i.estado === 'EN_CURSO');
     if (intentoEnCurso) {
       const segundosTranscurridos = Math.max(0, Math.floor((ahora.getTime() - new Date(intentoEnCurso.fechaInicio).getTime()) / 1000));
-      
+
       // Si el cuestionario tiene límite y ya venció en el servidor:
       if (tiempoLimiteMinutos && tiempoLimiteMinutos > 0) {
         const totalSegundos = tiempoLimiteMinutos * 60;
@@ -980,8 +1075,8 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
           if (subcriterio && subcriterio.opciones && subcriterio.opciones.length > 0) {
             const opcionCorrecta = subcriterio.opciones.find((o: any) => o.esCorrecta);
             if (opcionCorrecta) {
-              const matched = opcionCorrecta.id === r.escalaTexto || 
-                              opcionCorrecta.texto?.trim().toLowerCase() === r.escalaTexto?.trim().toLowerCase();
+              const matched = opcionCorrecta.id === r.escalaTexto ||
+                opcionCorrecta.texto?.trim().toLowerCase() === r.escalaTexto?.trim().toLowerCase();
               valorPuntaje = matched ? 100 : 0;
             }
           } else {
