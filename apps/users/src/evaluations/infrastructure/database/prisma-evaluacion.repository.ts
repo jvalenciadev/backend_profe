@@ -241,13 +241,15 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
 
   /**
    * Garantiza que cada cuestionario tenga su propio criterio y banco de preguntas exclusivo,
-   * evitando que se mezclen o sobreescriban preguntas entre diferentes cargos.
+   * evitando que se mezclen, hereden o sobreescriban preguntas entre diferentes cargos.
    */
   private async ensureIsolatedCriterios(): Promise<void> {
     try {
       const cuestionarios = await this.db.evaluacionCuestionario.findMany({
         where: { estado: { not: 'eliminado' } },
+        orderBy: { createdAt: 'asc' },
         include: {
+          cargos: true,
           criterio: {
             include: {
               subcriterios: {
@@ -260,9 +262,11 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
       });
 
       const seenCriterioIds = new Set<string>();
+      const seenFirstQuestionFingerprints = new Map<string, string>(); // fingerprint -> primer cuestId que lo tuvo
 
       for (const cuest of cuestionarios) {
         const needsNewCrit = !cuest.criterioId || seenCriterioIds.has(cuest.criterioId);
+
         if (needsNewCrit) {
           await this.db.$transaction(async (tx: any) => {
             const newCrit = await tx.evaluacionCriterio.create({
@@ -275,30 +279,7 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
               },
             });
 
-            // Si el cuestionario tenía preguntas en su criterio compartido anterior, clonarlas para no perderlas
-            if (cuest.criterio?.subcriterios && cuest.criterio.subcriterios.length > 0) {
-              for (const sub of cuest.criterio.subcriterios) {
-                await tx.evaluacionSubcriterio.create({
-                  data: {
-                    criterioId: newCrit.id,
-                    codigo: sub.codigo,
-                    indicador: sub.indicador,
-                    descripcion: sub.descripcion,
-                    tipoPregunta: sub.tipoPregunta,
-                    pesoPorcentaje: sub.pesoPorcentaje,
-                    orden: sub.orden,
-                    opciones: sub.opciones && sub.opciones.length > 0 ? {
-                      create: sub.opciones.map((o: any) => ({
-                        texto: o.texto,
-                        esCorrecta: Boolean(o.esCorrecta),
-                        orden: o.orden,
-                      })),
-                    } : undefined,
-                  },
-                });
-              }
-            }
-
+            // El nuevo cuestionario no debe heredar las preguntas de otro cargo, inicia con su propio banco limpio
             await tx.evaluacionCuestionario.update({
               where: { id: cuest.id },
               data: { criterioId: newCrit.id },
@@ -307,10 +288,29 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
           });
         } else if (cuest.criterioId) {
           seenCriterioIds.add(cuest.criterioId);
+
+          // Si el cuestionario tiene subcriterios, verificar si fueron duplicados erróneamente de otro cargo
+          const subcrits = cuest.criterio?.subcriterios || [];
+          if (subcrits.length > 0) {
+            const fingerprint = subcrits.map((s: any) => s.indicador?.trim()).join('|||');
+            if (seenFirstQuestionFingerprints.has(fingerprint)) {
+              const originalCuestId = seenFirstQuestionFingerprints.get(fingerprint);
+              if (originalCuestId !== cuest.id) {
+                // Este cuestionario heredó las preguntas del otro cargo accidentalmente: limpiar sus preguntas para que empiece desde cero
+                await this.db.$transaction(async (tx: any) => {
+                  await tx.evaluacionSubcriterio.deleteMany({
+                    where: { criterioId: cuest.criterioId! },
+                  });
+                });
+              }
+            } else {
+              seenFirstQuestionFingerprints.set(fingerprint, cuest.id);
+            }
+          }
         }
       }
     } catch (e) {
-      console.error('Error auto-desacoplando criterios compartidos de cuestionarios:', e);
+      console.error('Error auto-desacoplando criterios de cuestionarios:', e);
     }
   }
 
