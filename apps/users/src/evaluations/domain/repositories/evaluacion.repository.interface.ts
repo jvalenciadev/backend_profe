@@ -17,12 +17,14 @@ export interface CreatePeriodoData {
 }
 
 export interface CreateOpcionData {
+  id?: string;
   texto: string;
   esCorrecta: boolean;
   orden?: number;
 }
 
 export interface CreateIndicadorData {
+  id?: string;
   codigo?: string;
   indicador: string;
   descripcion?: string;

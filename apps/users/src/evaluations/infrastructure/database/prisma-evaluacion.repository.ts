@@ -99,34 +99,112 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
       });
 
       if (data.criterios && Array.isArray(data.criterios)) {
-        await tx.evaluacionCriterio.deleteMany({
+        const incomingCritIds = data.criterios
+          .map((c: any) => c.id)
+          .filter((cid: any) => Boolean(cid));
+
+        // Obtener los criterios actuales del periodo que NO son de cuestionarios
+        const currentDbCriterios = await tx.evaluacionCriterio.findMany({
           where: { periodoId: id },
+          include: { cuestionarios: true },
         });
+
+        // Eliminar ÚNICAMENTE los criterios que el usuario quitó deliberadamente y que NO tengan cuestionarios vinculados
+        const toDelete = currentDbCriterios.filter(
+          (c: any) => !incomingCritIds.includes(c.id) && (!c.cuestionarios || c.cuestionarios.length === 0)
+        );
+        if (toDelete.length > 0) {
+          await tx.evaluacionCriterio.deleteMany({
+            where: { id: { in: toDelete.map((d: any) => d.id) } },
+          });
+        }
 
         for (let i = 0; i < data.criterios.length; i++) {
           const c = data.criterios[i];
-          await tx.evaluacionCriterio.create({
-            data: {
-              periodoId: id,
-              nombre: c.nombre,
-              descripcion: c.descripcion,
-              pesoPorcentaje: c.pesoPorcentaje ?? 0,
-              orden: c.orden ?? i + 1,
-              cargos: c.cargoIds && c.cargoIds.length > 0 ? {
-                create: c.cargoIds.map((cargoId: string) => ({ cargoId })),
-              } : undefined,
-              subcriterios: c.subcriterios && c.subcriterios.length > 0 ? {
-                create: c.subcriterios.map((s: any, si: number) => ({
-                  codigo: s.codigo ?? `IND-${i + 1}.${si + 1}`,
-                  indicador: s.indicador,
-                  descripcion: s.descripcion,
-                  tipoPregunta: s.tipoPregunta ?? 'LIKERT',
-                  pesoPorcentaje: s.pesoPorcentaje ?? 0,
-                  orden: s.orden ?? si + 1,
-                })),
-              } : undefined,
-            },
-          });
+
+          let critId = c.id;
+          if (critId && currentDbCriterios.some((curr: any) => curr.id === critId)) {
+            // Actualizar criterio existente sin destruir sus relaciones
+            await tx.evaluacionCriterio.update({
+              where: { id: critId },
+              data: {
+                nombre: c.nombre,
+                descripcion: c.descripcion,
+                pesoPorcentaje: c.pesoPorcentaje ?? 0,
+                orden: c.orden ?? i + 1,
+              },
+            });
+
+            // Actualizar cargos del criterio
+            if (c.cargoIds) {
+              await tx.evaluacionCriterioCargo.deleteMany({ where: { criterioId: critId } });
+              if (c.cargoIds.length > 0) {
+                await tx.evaluacionCriterioCargo.createMany({
+                  data: c.cargoIds.map((cargoId: string) => ({ criterioId: critId, cargoId })),
+                });
+              }
+            }
+          } else {
+            // Crear nuevo criterio
+            const createdCrit = await tx.evaluacionCriterio.create({
+              data: {
+                periodoId: id,
+                nombre: c.nombre,
+                descripcion: c.descripcion,
+                pesoPorcentaje: c.pesoPorcentaje ?? 0,
+                orden: c.orden ?? i + 1,
+                cargos: c.cargoIds && c.cargoIds.length > 0 ? {
+                  create: c.cargoIds.map((cargoId: string) => ({ cargoId })),
+                } : undefined,
+              },
+            });
+            critId = createdCrit.id;
+          }
+
+          // Sincronizar subcriterios preservando preguntas existentes
+          if (c.subcriterios && Array.isArray(c.subcriterios)) {
+            const currentSubcrits = await tx.evaluacionSubcriterio.findMany({
+              where: { criterioId: critId },
+            });
+            const incomingSubIds = c.subcriterios.map((s: any) => s.id).filter(Boolean);
+
+            // Eliminar solo los subcriterios que ya no vienen en la lista
+            const subToDelete = currentSubcrits.filter((s: any) => !incomingSubIds.includes(s.id));
+            if (subToDelete.length > 0) {
+              await tx.evaluacionSubcriterio.deleteMany({
+                where: { id: { in: subToDelete.map((s: any) => s.id) } },
+              });
+            }
+
+            for (let si = 0; si < c.subcriterios.length; si++) {
+              const s = c.subcriterios[si];
+              if (s.id && currentSubcrits.some((curr: any) => curr.id === s.id)) {
+                await tx.evaluacionSubcriterio.update({
+                  where: { id: s.id },
+                  data: {
+                    codigo: s.codigo ?? `IND-${i + 1}.${si + 1}`,
+                    indicador: s.indicador,
+                    descripcion: s.descripcion,
+                    tipoPregunta: s.tipoPregunta ?? 'LIKERT',
+                    pesoPorcentaje: s.pesoPorcentaje ?? 0,
+                    orden: s.orden ?? si + 1,
+                  },
+                });
+              } else {
+                await tx.evaluacionSubcriterio.create({
+                  data: {
+                    criterioId: critId,
+                    codigo: s.codigo ?? `IND-${i + 1}.${si + 1}`,
+                    indicador: s.indicador,
+                    descripcion: s.descripcion,
+                    tipoPregunta: s.tipoPregunta ?? 'LIKERT',
+                    pesoPorcentaje: s.pesoPorcentaje ?? 0,
+                    orden: s.orden ?? si + 1,
+                  },
+                });
+              }
+            }
+          }
         }
       }
 
