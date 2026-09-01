@@ -239,94 +239,23 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
 
   // ── CUESTIONARIOS & CRITERIOS ─────────────────────────────────────────────
 
-  /**
-   * Garantiza que cada cuestionario tenga su propio criterio y banco de preguntas exclusivo,
-   * evitando que se mezclen, hereden o sobreescriban preguntas entre diferentes cargos.
-   */
-  private async ensureIsolatedCriterios(): Promise<void> {
-    try {
-      const cuestionarios = await this.db.evaluacionCuestionario.findMany({
-        where: { estado: { not: 'eliminado' } },
-        orderBy: { createdAt: 'asc' },
-        include: {
-          cargos: true,
-          criterio: {
-            include: {
-              subcriterios: {
-                where: { estado: { not: 'eliminado' } },
-                include: { opciones: true },
-              },
-            },
-          },
-        },
-      });
-
-      const seenCriterioIds = new Set<string>();
-      const seenFirstQuestionFingerprints = new Map<string, string>(); // fingerprint -> primer cuestId que lo tuvo
-
-      for (const cuest of cuestionarios) {
-        const needsNewCrit = !cuest.criterioId || seenCriterioIds.has(cuest.criterioId);
-
-        if (needsNewCrit) {
-          await this.db.$transaction(async (tx: any) => {
-            const newCrit = await tx.evaluacionCriterio.create({
-              data: {
-                periodoId: cuest.periodoId,
-                nombre: cuest.titulo,
-                descripcion: cuest.descripcion,
-                pesoPorcentaje: 0,
-                orden: 1,
-              },
-            });
-
-            // El nuevo cuestionario no debe heredar las preguntas de otro cargo, inicia con su propio banco limpio
-            await tx.evaluacionCuestionario.update({
-              where: { id: cuest.id },
-              data: { criterioId: newCrit.id },
-            });
-            seenCriterioIds.add(newCrit.id);
-          });
-        } else if (cuest.criterioId) {
-          seenCriterioIds.add(cuest.criterioId);
-
-          // Si el cuestionario tiene subcriterios, verificar si fueron duplicados erróneamente de otro cargo
-          const subcrits = cuest.criterio?.subcriterios || [];
-          if (subcrits.length > 0) {
-            const fingerprint = subcrits.map((s: any) => s.indicador?.trim()).join('|||');
-            if (seenFirstQuestionFingerprints.has(fingerprint)) {
-              const originalCuestId = seenFirstQuestionFingerprints.get(fingerprint);
-              if (originalCuestId !== cuest.id) {
-                // Este cuestionario heredó las preguntas del otro cargo accidentalmente: limpiar sus preguntas para que empiece desde cero
-                await this.db.$transaction(async (tx: any) => {
-                  await tx.evaluacionSubcriterio.deleteMany({
-                    where: { criterioId: cuest.criterioId! },
-                  });
-                });
-              }
-            } else {
-              seenFirstQuestionFingerprints.set(fingerprint, cuest.id);
-            }
-          }
-        }
-      }
-    } catch (e) {
-      console.error('Error auto-desacoplando criterios de cuestionarios:', e);
-    }
-  }
-
   async createCuestionario(data: CreateCuestionarioData): Promise<EvaluacionCuestionario> {
     return this.db.$transaction(async (tx: any) => {
-      // Cada cuestionario cuenta con su propio criterio exclusivo para alojar su banco de preguntas por cargo
-      const autoCrit = await tx.evaluacionCriterio.create({
-        data: {
-          periodoId: data.periodoId,
-          nombre: data.titulo,
-          descripcion: data.descripcion,
-          pesoPorcentaje: 0,
-          orden: 1,
-        },
-      });
-      const finalCriterioId = autoCrit.id;
+      let finalCriterioId = data.criterioId || null;
+
+      // Si no se asignó un criterio existente, crear un criterio dedicado para este cuestionario
+      if (!finalCriterioId) {
+        const autoCrit = await tx.evaluacionCriterio.create({
+          data: {
+            periodoId: data.periodoId,
+            nombre: data.titulo,
+            descripcion: data.descripcion,
+            pesoPorcentaje: 0,
+            orden: 1,
+          },
+        });
+        finalCriterioId = autoCrit.id;
+      }
 
       // Guardar preguntas / subcriterios y sus opciones si existen
       if (data.preguntas && data.preguntas.length > 0) {
@@ -400,20 +329,10 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
       }
 
       const current = await tx.evaluacionCuestionario.findUnique({ where: { id } });
-      let finalCriterioId = current?.criterioId;
+      let finalCriterioId = data.criterioId !== undefined ? (data.criterioId || null) : current?.criterioId;
 
-      let isShared = false;
-      if (finalCriterioId) {
-        const othersCount = await tx.evaluacionCuestionario.count({
-          where: { criterioId: finalCriterioId, id: { not: id }, estado: { not: 'eliminado' } },
-        });
-        if (othersCount > 0) {
-          isShared = true;
-        }
-      }
-
-      // Si no tiene criterio o está compartido con otro cuestionario, crear un criterio dedicado exclusivo
-      if (!finalCriterioId || isShared) {
+      // Si no tiene criterio asignado, crear un criterio dedicado para este cuestionario
+      if (!finalCriterioId) {
         const autoCrit = await tx.evaluacionCriterio.create({
           data: {
             periodoId: current?.periodoId || data.periodoId,
@@ -424,17 +343,9 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
           },
         });
         finalCriterioId = autoCrit.id;
-      } else if (finalCriterioId && data.titulo) {
-        await tx.evaluacionCriterio.update({
-          where: { id: finalCriterioId },
-          data: {
-            nombre: data.titulo,
-            descripcion: data.descripcion,
-          },
-        });
       }
 
-      // Si se envían preguntas, sincronizar subcriterios y opciones exclusivamente para este cuestionario
+      // Si se envían preguntas, sincronizar subcriterios y opciones exclusivamente para este criterio
       if (finalCriterioId && data.preguntas && Array.isArray(data.preguntas)) {
         await tx.evaluacionSubcriterio.deleteMany({ where: { criterioId: finalCriterioId } });
         for (let i = 0; i < data.preguntas.length; i++) {
@@ -495,8 +406,6 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
   }
 
   async findCuestionarioById(id: string): Promise<EvaluacionCuestionario | null> {
-    await this.ensureIsolatedCriterios();
-
     const record = await this.db.evaluacionCuestionario.findFirst({
       where: { id, estado: { not: 'eliminado' } },
       include: {
@@ -518,8 +427,6 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
   }
 
   async findAllCuestionarios(periodoId?: string): Promise<EvaluacionCuestionario[]> {
-    await this.ensureIsolatedCriterios();
-
     const where: any = { estado: { not: 'eliminado' } };
     if (periodoId) where.periodoId = periodoId;
 
@@ -545,8 +452,6 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
   }
 
   async findCuestionariosByCargo(cargoId: string, periodoId?: string): Promise<EvaluacionCuestionario[]> {
-    await this.ensureIsolatedCriterios();
-
     const where: any = {
       estado: { not: 'eliminado' },
       cargos: { some: { cargoId } },
