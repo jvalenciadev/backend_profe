@@ -855,47 +855,6 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
 
     if (!asignacion) throw new NotFoundException('Asignación de evaluación no encontrada');
 
-    // Si la asignación pasada es de un supervisor y el evaluado rinde su examen personal, enrutar a AUTOEVALUACION
-    if (asignacion.tipoEvaluacion === 'SUPERVISOR' && asignacion.evaluadorId !== asignacion.evaluadoId) {
-      let autoAsig = await this.db.evaluacionAdmins.findFirst({
-        where: {
-          periodoId: asignacion.periodoId,
-          evaluadoId: asignacion.evaluadoId,
-          tipoEvaluacion: 'AUTOEVALUACION',
-          estado: { not: 'eliminado' },
-        },
-        include: {
-          cuestionario: true,
-          intentos: {
-            include: { respuestas: { include: { subcriterio: true } } },
-            orderBy: { numeroIntento: 'desc' },
-          },
-        },
-      });
-
-      if (!autoAsig) {
-        autoAsig = await this.db.evaluacionAdmins.create({
-          data: {
-            periodoId: asignacion.periodoId,
-            cuestionarioId: asignacion.cuestionarioId,
-            evaluadorId: asignacion.evaluadoId,
-            evaluadoId: asignacion.evaluadoId,
-            cargoId: asignacion.cargoId,
-            tenantId: asignacion.tenantId,
-            tipoEvaluacion: 'AUTOEVALUACION',
-          },
-          include: {
-            cuestionario: true,
-            intentos: {
-              include: { respuestas: { include: { subcriterio: true } } },
-              orderBy: { numeroIntento: 'desc' },
-            },
-          },
-        });
-      }
-      asignacion = autoAsig;
-    }
-
     // 1. Si la asignación es de supervisión y ya está COMPLETADA o tiene intentos finalizados, retornar el último intento con sus respuestas
     if (asignacion.tipoEvaluacion === 'SUPERVISOR' && asignacion.intentos.length > 0) {
       const intentoExistente = asignacion.intentos.find((i: any) => i.estado === 'EN_CURSO') || asignacion.intentos[0];
