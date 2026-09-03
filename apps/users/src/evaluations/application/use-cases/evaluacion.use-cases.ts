@@ -46,8 +46,11 @@ export class ResponderIntentoUseCase {
     if (!data.intentoId) {
       throw new BadRequestException('El ID del intento es obligatorio');
     }
-    if (!Array.isArray(data.respuestas) || data.respuestas.length === 0) {
+    if (!data.finalizar && (!Array.isArray(data.respuestas) || data.respuestas.length === 0)) {
       throw new BadRequestException('Debe incluir al menos una respuesta');
+    }
+    if (!Array.isArray(data.respuestas)) {
+      data.respuestas = [];
     }
 
     return this.repository.guardarRespuestasYCalcular(data);
