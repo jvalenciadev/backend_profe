@@ -460,35 +460,6 @@ export class EventViewsController {
     };
   }
 
-  private validarFechaEventoAsistencia(eventoFecha: Date) {
-    if (!eventoFecha) return;
-
-    const eveObj = new Date(eventoFecha);
-    const eveStr = `${eveObj.getUTCFullYear()}-${String(eveObj.getUTCMonth() + 1).padStart(2, '0')}-${String(eveObj.getUTCDate()).padStart(2, '0')}`;
-
-    const ahora = new Date();
-    let hoyStr: string;
-    try {
-      hoyStr = ahora.toLocaleDateString('en-CA', { timeZone: 'America/La_Paz' });
-    } catch {
-      const year = ahora.getFullYear();
-      const month = String(ahora.getMonth() + 1).padStart(2, '0');
-      const day = String(ahora.getDate()).padStart(2, '0');
-      hoyStr = `${year}-${month}-${day}`;
-    }
-
-    if (hoyStr !== eveStr) {
-      if (hoyStr > eveStr) {
-        throw new ForbiddenException(
-          `El plazo para registrar la asistencia a este evento ha finalizado (Fecha del taller: ${eveStr}).`,
-        );
-      } else {
-        throw new ForbiddenException(
-          `El registro de asistencia solo estará habilitado el día del taller (${eveStr}).`,
-        );
-      }
-    }
-  }
 
   @Post(':eventoId/asistencia')
   async registrarAsistencia(
@@ -502,7 +473,10 @@ export class EventViewsController {
 
     if (!evento) throw new NotFoundException('Evento no encontrado');
 
-    this.validarFechaEventoAsistencia(evento.fecha);
+    if (!evento.asistencia)
+      throw new ForbiddenException(
+        'El registro de asistencia no está activo para este evento',
+      );
 
     if (!evento.codigoAsistencia)
       throw new ForbiddenException(
@@ -580,7 +554,10 @@ export class EventViewsController {
 
     if (!evento) throw new NotFoundException('Evento no encontrado o inactivo');
 
-    this.validarFechaEventoAsistencia(evento.fecha);
+    if (!evento.asistencia)
+      throw new ForbiddenException(
+        'El registro de asistencia no está activo para este evento',
+      );
 
     if (
       evento.codigoAsistencia &&

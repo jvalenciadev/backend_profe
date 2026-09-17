@@ -49,6 +49,7 @@ describe('EventViewsController (Blindaje Completo - 752 líneas)', () => {
     nombre: 'Evento de Prueba',
     estado: 'activo',
     inscripcionAbierta: true,
+    asistencia: true,
     codigoAsistencia: 'ABC123',
     fecha: new Date(),
     lugar: 'La Paz',
