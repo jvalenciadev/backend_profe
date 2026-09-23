@@ -203,4 +203,117 @@ export class PrismaEventoInscripcionRepository implements IEventoInscripcionRepo
       data: { estado: 'eliminado', deletedAt: new Date(), deletedBy: userId },
     });
   }
+
+  async getHistorialByCi(ciStr: string, ability?: any): Promise<any> {
+    const cleanCi = (ciStr || '').split('-')[0].trim();
+    if (!cleanCi || !/^\d+$/.test(cleanCi)) {
+      return { found: false, persona: null, totalTalleres: 0, asistidos: 0, inscripciones: [] };
+    }
+
+    const ciBigInt = BigInt(cleanCi);
+
+    const personas = await (this.prisma as any).eventoPersona.findMany({
+      where: { ci: ciBigInt, deletedAt: null },
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        inscripciones: {
+          where: { estado: { not: 'eliminado' }, deletedAt: null },
+          orderBy: { createdAt: 'desc' },
+          include: {
+            evento: {
+              include: { tipo: true },
+            },
+            respuestasExtras: {
+              include: { campoExtra: true },
+            },
+          },
+        },
+        eventoCuestionarioIntentos: {
+          where: { estado: { not: 'eliminado' } },
+          orderBy: { createdAt: 'desc' },
+          include: {
+            cuestionario: {
+              select: {
+                id: true,
+                titulo: true,
+                esEvaluativo: true,
+                notaAprobacion: true,
+                eventoId: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!personas || personas.length === 0) {
+      return { found: false, persona: null, totalTalleres: 0, asistidos: 0, inscripciones: [] };
+    }
+
+    const p = personas[0];
+    const personaData = {
+      id: p.id,
+      ci: p.ci.toString(),
+      complemento: p.complemento || '',
+      expedido: p.expedido || '',
+      nombre1: p.nombre1,
+      nombre2: p.nombre2 || '',
+      apellido1: p.apellido1,
+      apellido2: p.apellido2 || '',
+      nombreCompleto: [p.nombre1, p.nombre2, p.apellido1, p.apellido2].filter(Boolean).join(' '),
+      correo: p.correo || '',
+      celular: p.celular || '',
+      generoId: p.generoId?.toString() || '1',
+      fechaNacimiento: p.fechaNacimiento,
+    };
+
+    const eventosVistos = new Set<string>();
+    const inscripcionesMap: any[] = [];
+
+    for (const pers of personas) {
+      for (const ins of pers.inscripciones || []) {
+        if (!ins.evento || eventosVistos.has(ins.evento.id)) continue;
+        eventosVistos.add(ins.evento.id);
+
+        const intentosEvento = (pers.eventoCuestionarioIntentos || []).filter(
+          (intento: any) => intento.cuestionario?.eventoId === ins.evento.id,
+        );
+
+        inscripcionesMap.push({
+          id: ins.id,
+          eventoId: ins.evento.id,
+          createdAt: ins.createdAt,
+          asistencia: ins.asistencia,
+          modalidadId: ins.modalidadId,
+          departamentoId: ins.departamentoId,
+          evento: {
+            id: ins.evento.id,
+            nombre: ins.evento.nombre,
+            codigo: ins.evento.codigo,
+            fecha: ins.evento.fecha,
+            lugar: ins.evento.lugar,
+            estado: ins.evento.estado,
+            tipo: ins.evento.tipo?.nombre || 'Taller',
+            modalidadIds: ins.evento.modalidadIds,
+          },
+          intentos: intentosEvento.map((i: any) => ({
+            id: i.id,
+            titulo: i.cuestionario?.titulo || 'Evaluación',
+            nota: i.nota,
+            aprobado: i.aprobado,
+            finalizado: i.finalizado,
+            fecha: i.createdAt,
+          })),
+        });
+      }
+    }
+
+    return {
+      found: true,
+      persona: personaData,
+      totalTalleres: inscripcionesMap.length,
+      asistidos: inscripcionesMap.filter((i) => i.asistencia).length,
+      inscripciones: inscripcionesMap,
+    };
+  }
 }

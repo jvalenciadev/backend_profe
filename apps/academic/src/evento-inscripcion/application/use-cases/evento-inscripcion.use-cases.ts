@@ -101,3 +101,18 @@ export class DeleteEventoInscripcionUseCase {
     return { message: 'Eliminado correctamente' };
   }
 }
+
+@Injectable()
+export class GetHistorialParticipanteUseCase {
+  constructor(
+    @Inject(EVENTOINSCRIPCION_REPOSITORY)
+    private readonly repo: IEventoInscripcionRepository,
+  ) {}
+
+  async execute(ci: string, ability?: any): Promise<any> {
+    if (this.repo.getHistorialByCi) {
+      return this.repo.getHistorialByCi(ci, ability);
+    }
+    return { found: false, persona: null, totalTalleres: 0, asistidos: 0, inscripciones: [] };
+  }
+}

@@ -245,6 +245,47 @@ describe('EventViewsController (Blindaje Completo - 752 líneas)', () => {
       expect(mockPrisma.eventoPersona.update).toHaveBeenCalled();
     });
 
+    it('debería permitir vaciar nombre2 y apellido2 al actualizar datos', async () => {
+      mockPrisma.evento.findFirst.mockResolvedValue({
+        ...mockEvento,
+        inscripcionAbierta: false,
+        estado: 'activo',
+      });
+      mockPrisma.eventoPersona.findFirst.mockResolvedValue({
+        ...mockPersona,
+        nombre2: 'PABLO',
+        apellido2: 'CATARI',
+      });
+      mockPrisma.eventoPersona.update.mockResolvedValue({
+        ...mockPersona,
+        nombre2: '',
+        apellido2: '',
+      });
+      mockPrisma.eventoInscripcion.findFirst.mockResolvedValue({
+        id: 'ins-1',
+        personaId: 'per-1',
+        eventoId: 'evt-1',
+        departamentoId: 'dep-1',
+        modalidadId: 'mod-1',
+      });
+
+      await controller.inscribirse('evt-1', {
+        ...inscripcionBody,
+        nombre2: '',
+        apellido2: '',
+        isEditingProfile: true,
+      });
+
+      expect(mockPrisma.eventoPersona.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            nombre2: '',
+            apellido2: '',
+          }),
+        }),
+      );
+    });
+
     it('debería lanzar ForbiddenException al intentar editar perfil si el evento está finalizado', async () => {
       mockPrisma.evento.findFirst.mockResolvedValue({
         ...mockEvento,

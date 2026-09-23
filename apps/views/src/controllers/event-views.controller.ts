@@ -332,13 +332,13 @@ export class EventViewsController {
           ci: ciBigInt,
           complemento: complemento || '',
           expedido: body.expedido || 'LP',
-          nombre1: body.nombre1.toUpperCase(),
-          nombre2: body.nombre2?.toUpperCase() || '',
-          apellido1: body.apellido1.toUpperCase(),
-          apellido2: body.apellido2?.toUpperCase() || '',
+          nombre1: body.nombre1?.trim().toUpperCase() || '',
+          nombre2: body.nombre2?.trim().toUpperCase() || '',
+          apellido1: body.apellido1?.trim().toUpperCase() || '',
+          apellido2: body.apellido2?.trim().toUpperCase() || '',
           fechaNacimiento: new Date(body.fechaNacimiento),
-          correo: body.correo.toLowerCase(),
-          celular: body.celular,
+          correo: body.correo?.trim().toLowerCase() || '',
+          celular: body.celular?.trim() || '',
           generoId: BigInt(body.generoId || 1),
         },
       });
@@ -346,12 +346,12 @@ export class EventViewsController {
       persona = await this.prisma.eventoPersona.update({
         where: { id: persona.id },
         data: {
-          nombre1: body.nombre1.toUpperCase(),
-          nombre2: body.nombre2?.toUpperCase() || persona.nombre2,
-          apellido1: body.apellido1.toUpperCase(),
-          apellido2: body.apellido2?.toUpperCase() || persona.apellido2,
-          correo: body.correo.toLowerCase(),
-          celular: body.celular,
+          nombre1: body.nombre1 ? body.nombre1.trim().toUpperCase() : persona.nombre1,
+          nombre2: body.nombre2 !== undefined ? (body.nombre2 ? body.nombre2.trim().toUpperCase() : '') : persona.nombre2,
+          apellido1: body.apellido1 ? body.apellido1.trim().toUpperCase() : persona.apellido1,
+          apellido2: body.apellido2 !== undefined ? (body.apellido2 ? body.apellido2.trim().toUpperCase() : '') : persona.apellido2,
+          correo: body.correo ? body.correo.trim().toLowerCase() : persona.correo,
+          celular: body.celular ? body.celular.trim() : persona.celular,
         },
       });
     }

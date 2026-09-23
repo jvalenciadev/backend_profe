@@ -22,6 +22,7 @@ import {
   DeleteEventoInscripcionUseCase,
   GetEventoInscripcionStatsUseCase,
   ExportEventoInscripcionesUseCase,
+  GetHistorialParticipanteUseCase,
 } from '../../application/use-cases/evento-inscripcion.use-cases';
 
 @Controller('eventos-inscripciones')
@@ -35,7 +36,18 @@ export class EventoInscripcionController {
     private readonly deleteEventoInscripcionUseCase: DeleteEventoInscripcionUseCase,
     private readonly getStatsUseCase: GetEventoInscripcionStatsUseCase,
     private readonly exportUseCase: ExportEventoInscripcionesUseCase,
+    private readonly getHistorialParticipanteUseCase: GetHistorialParticipanteUseCase,
   ) {}
+
+  /**
+   * GET /eventos-inscripciones/historial-ci/:ci
+   * Consulta el historial consolidado de participación y talleres de una persona por CI.
+   */
+  @Get('historial-ci/:ci')
+  @CheckPolicies((ability: any) => ability.can('read', 'EventoInscripcion'))
+  getHistorialByCi(@Param('ci') ci: string, @Req() req: any) {
+    return this.getHistorialParticipanteUseCase.execute(ci, req.ability);
+  }
 
   /**
    * GET /eventos-inscripciones

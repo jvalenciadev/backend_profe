@@ -8,4 +8,5 @@ export interface IEventoInscripcionRepository {
   create(data: any, userId?: string, forcedTenantId?: string): Promise<any>;
   update(id: string, data: any, userId?: string, ability?: any): Promise<any>;
   delete(id: string, userId?: string, ability?: any): Promise<void>;
+  getHistorialByCi?(ci: string, ability?: any): Promise<any>;
 }

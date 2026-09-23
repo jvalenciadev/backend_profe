@@ -12,6 +12,7 @@ import {
   DeleteEventoInscripcionUseCase,
   GetEventoInscripcionStatsUseCase,
   ExportEventoInscripcionesUseCase,
+  GetHistorialParticipanteUseCase,
 } from './application/use-cases/evento-inscripcion.use-cases';
 
 @Module({
@@ -29,7 +30,8 @@ import {
     DeleteEventoInscripcionUseCase,
     GetEventoInscripcionStatsUseCase,
     ExportEventoInscripcionesUseCase,
+    GetHistorialParticipanteUseCase,
   ],
-  exports: [GetEventoInscripcionsUseCase, GetEventoInscripcionByIdUseCase],
+  exports: [GetEventoInscripcionsUseCase, GetEventoInscripcionByIdUseCase, GetHistorialParticipanteUseCase],
 })
 export class EventoInscripcionModule {}
