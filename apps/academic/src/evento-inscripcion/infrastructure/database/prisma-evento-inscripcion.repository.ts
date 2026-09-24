@@ -217,7 +217,7 @@ export class PrismaEventoInscripcionRepository implements IEventoInscripcionRepo
       orderBy: { updatedAt: 'desc' },
       include: {
         inscripciones: {
-          where: { estado: { not: 'eliminado' }, deletedAt: null },
+          where: { deletedAt: null },
           orderBy: { createdAt: 'desc' },
           include: {
             evento: {
@@ -229,15 +229,15 @@ export class PrismaEventoInscripcionRepository implements IEventoInscripcionRepo
           },
         },
         eventoCuestionarioIntentos: {
-          where: { estado: { not: 'eliminado' } },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { iniciadoEn: 'desc' },
           include: {
             cuestionario: {
               select: {
                 id: true,
                 titulo: true,
                 esEvaluativo: true,
-                notaAprobacion: true,
+                puntajeMinimo: true,
+                puntosMaximos: true,
                 eventoId: true,
               },
             },
@@ -299,10 +299,10 @@ export class PrismaEventoInscripcionRepository implements IEventoInscripcionRepo
           intentos: intentosEvento.map((i: any) => ({
             id: i.id,
             titulo: i.cuestionario?.titulo || 'Evaluación',
-            nota: i.nota,
-            aprobado: i.aprobado,
-            finalizado: i.finalizado,
-            fecha: i.createdAt,
+            nota: i.puntaje,
+            aprobado: i.cuestionario?.puntajeMinimo != null ? i.puntaje >= i.cuestionario.puntajeMinimo : true,
+            finalizado: i.estado === 'finished',
+            fecha: i.iniciadoEn,
           })),
         });
       }
