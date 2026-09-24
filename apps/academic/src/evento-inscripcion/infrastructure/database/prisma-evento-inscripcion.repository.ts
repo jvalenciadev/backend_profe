@@ -299,6 +299,7 @@ export class PrismaEventoInscripcionRepository implements IEventoInscripcionRepo
           intentos: intentosEvento.map((i: any) => ({
             id: i.id,
             titulo: i.cuestionario?.titulo || 'Evaluación',
+            esEvaluativo: i.cuestionario?.esEvaluativo ?? true,
             nota: i.puntaje,
             aprobado: i.cuestionario?.puntajeMinimo != null ? i.puntaje >= i.cuestionario.puntajeMinimo : true,
             finalizado: i.estado === 'finished',
