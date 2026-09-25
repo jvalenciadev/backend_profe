@@ -95,6 +95,22 @@ export class PrismaEventoRepository implements IEventoRepository {
     return this.map({ ...record, inscritos, asistidos });
   }
 
+  async findByCodigo(codigo: string): Promise<Evento | null> {
+    if (!codigo || !codigo.trim()) return null;
+    const record = await (this.prisma as any).evento.findFirst({
+      where: {
+        codigo: { equals: codigo.trim(), mode: 'insensitive' },
+        estado: { not: 'eliminado' },
+      },
+      include: {
+        tipo: true,
+        tenant: true,
+      },
+    });
+    if (!record) return null;
+    return this.map(record);
+  }
+
   async create(data: any, userId?: string): Promise<Evento> {
     const { inscritos, asistidos, camposExtras, ...cleanData } = data;
 
