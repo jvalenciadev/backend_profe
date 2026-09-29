@@ -723,23 +723,15 @@ export class EventViewsController {
       });
     }
 
-    // Si NO es evaluativo, solo se puede completar una vez
-    if (!cuestionario.esEvaluativo) {
-      if (intentoActual && (intentoActual.numeroIntentos || 0) >= 1) {
-        throw new ForbiddenException(
-          'Este formulario ya fue completado. Solo se puede enviar una vez.',
-        );
-      }
-    } else {
-      // Si es evaluativo, respetar el límite de intentos configurado
-      if (
-        cuestionario.limiteIntentos !== null &&
-        (intentoActual?.numeroIntentos || 0) >= cuestionario.limiteIntentos
-      ) {
-        throw new ForbiddenException(
-          'Has superado el límite de intentos permitidos para este cuestionario.',
-        );
-      }
+    // Respetar el límite de intentos configurado (aplica tanto a evaluativo como encuesta)
+    const maxIntentos = cuestionario.limiteIntentos ?? (cuestionario.esEvaluativo ? null : 1);
+    if (
+      maxIntentos !== null &&
+      (intentoActual?.numeroIntentos || 0) >= maxIntentos
+    ) {
+      throw new ForbiddenException(
+        'Has superado el límite de intentos permitidos para este cuestionario.',
+      );
     }
 
     const yaRespondio = await this.prisma.evento_respuestas.findFirst({
@@ -750,13 +742,14 @@ export class EventViewsController {
       },
     });
 
-    // Solo borrar respuestas anteriores si es evaluativo (permite reintentos)
-    if (yaRespondio && cuestionario.esEvaluativo) {
+    // Permitir reemplazo de respuestas si tiene intentos disponibles
+    if (yaRespondio) {
+      if (maxIntentos !== null && (intentoActual?.numeroIntentos || 0) >= maxIntentos) {
+        throw new ForbiddenException('Este formulario ya fue completado.');
+      }
       await this.prisma.evento_respuestas.deleteMany({
         where: { cuestionarioId, personaId: persona.id },
       });
-    } else if (yaRespondio && !cuestionario.esEvaluativo) {
-      throw new ForbiddenException('Este formulario ya fue completado.');
     }
 
     let puntajeTotal = 0;
