@@ -832,7 +832,7 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
         evaluador: { select: { id: true, nombre: true, apellidos: true, correo: true } },
         evaluado: { select: { id: true, nombre: true, apellidos: true, correo: true, ci: true, sedes: { include: { sede: true } } } },
         cargo: true,
-        cuestionario: true,
+        cuestionario: { include: { criterio: true } },
         periodo: true,
         intentos: true,
       },
