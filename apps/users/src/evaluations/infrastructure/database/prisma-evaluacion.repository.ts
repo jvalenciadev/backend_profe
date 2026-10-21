@@ -570,14 +570,13 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
     let cargoId = data.cargoId;
     let tenantId = data.tenantId;
 
-    if (!cargoId || !tenantId) {
-      const evaluado = await this.db.user.findFirst({
-        where: { id: data.evaluadoId },
-        select: { cargoPostulacionId: true, tenantId: true },
-      });
-      if (!cargoId) cargoId = evaluado?.cargoPostulacionId ?? undefined;
-      if (!tenantId) tenantId = evaluado?.tenantId ?? undefined;
-    }
+    // Obtener datos del evaluado para cargo, tenant y código de verificación
+    const evaluado = await this.db.user.findFirst({
+      where: { id: data.evaluadoId },
+      select: { cargoPostulacionId: true, tenantId: true, ci: true },
+    });
+    if (!cargoId) cargoId = evaluado?.cargoPostulacionId ?? undefined;
+    if (!tenantId) tenantId = evaluado?.tenantId ?? undefined;
 
     // Si no se pasó cuestionarioId, buscar cuestionario activo para ese cargo en ese periodo
     let cuestionarioId = data.cuestionarioId;
@@ -593,6 +592,11 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
       cuestionarioId = cuest?.id;
     }
 
+    const ciVal = evaluado?.ci ? String(evaluado.ci) : null;
+    const codigoVerificacion =
+      data.codigoVerificacion ||
+      (ciVal ? `601-${ciVal}` : `601-${data.evaluadoId.slice(0, 8).toUpperCase()}`);
+
     const record = await this.db.evaluacionAdmins.create({
       data: {
         periodoId: data.periodoId,
@@ -602,6 +606,7 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
         cargoId,
         tenantId,
         tipoEvaluacion: data.tipoEvaluacion ?? 'SUPERVISOR',
+        codigoVerificacion,
         createdBy: data.createdBy,
       },
       include: {
@@ -724,7 +729,7 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
     if (periodoId) {
       const user = await this.db.user.findUnique({
         where: { id: evaluadoId },
-        select: { cargoPostulacionId: true, tenantId: true },
+        select: { cargoPostulacionId: true, tenantId: true, ci: true },
       });
       if (user?.cargoPostulacionId) {
         const cuestionariosCargo = await this.db.evaluacionCuestionario.findMany({
@@ -734,6 +739,9 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
             cargos: { some: { cargoId: user.cargoPostulacionId } },
           },
         });
+        const ciVal = user?.ci ? String(user.ci) : null;
+        const codigoVerificacion = ciVal ? `601-${ciVal}` : `601-${evaluadoId.slice(0, 8).toUpperCase()}`;
+
         for (const cuest of cuestionariosCargo) {
           const existeAuto = records.find(r => r.cuestionarioId === cuest.id && (r.tipoEvaluacion === 'AUTOEVALUACION' || r.evaluadorId === evaluadoId));
           if (!existeAuto) {
@@ -747,6 +755,7 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
                   cargoId: user.cargoPostulacionId,
                   tenantId: user.tenantId,
                   tipoEvaluacion: 'AUTOEVALUACION',
+                  codigoVerificacion,
                 },
                 include: includeOptions,
               });
@@ -974,6 +983,7 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
         include: {
           evaluacionAdmin: {
             include: {
+              evaluado: { select: { ci: true } },
               cuestionario: {
                 include: {
                   criterio: {
@@ -1097,6 +1107,11 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
         data: {
           puntajeFinal: puntajeCalculado,
           estadoEvaluacion: isFinalizado ? 'COMPLETADO' : 'EN_PROCESO',
+          ...(intento.evaluacionAdmin?.codigoVerificacion ? {} : {
+            codigoVerificacion: intento.evaluacionAdmin?.evaluado?.ci
+              ? `601-${intento.evaluacionAdmin.evaluado.ci}`
+              : `601-${intento.evaluacionAdminId.slice(0, 8).toUpperCase()}`
+          }),
         },
         include: {
           evaluador: { select: { id: true, nombre: true, apellidos: true, correo: true } },

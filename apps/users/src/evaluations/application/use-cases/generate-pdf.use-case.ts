@@ -197,10 +197,10 @@ export class GeneratePDFUseCase {
 
       // Filas
       const forms = [
-        { no: '1', cod: 'DO01', nom: 'Evaluación del inmediato superior y dependientes.', peso: '15%', res: evaluation.tipoEvaluacion === 'SUPERVISOR' ? `${Math.round((Number(evaluation.puntajeFinal ?? 0) * 15) / 100 * 10) / 10}` : '-' },
-        { no: '2', cod: 'DO02', nom: 'Evaluación de Factores Asociados al Desempeño Profesional del Personal del PROFE.', peso: '30%', res: evaluation.tipoEvaluacion === 'AUTOEVALUACION' ? `${Math.round((Number(evaluation.puntajeFinal ?? 0) * 30) / 100 * 10) / 10}` : '-' },
-        { no: '3', cod: 'DO03', nom: 'Evaluación comunitaria.', peso: '10%', res: evaluation.tipoEvaluacion === 'PAR' ? `${Math.round((Number(evaluation.puntajeFinal ?? 0) * 10) / 100 * 10) / 10}` : '-' },
-        { no: '4', cod: 'DO04', nom: 'Recolección y verificación de evidencias.', peso: '45%', res: evaluation.tipoEvaluacion === 'SUPERVISOR' ? '-' : '-' },
+        { no: '1', nom: 'Evaluación del inmediato superior y dependientes.', peso: '15%', res: evaluation.tipoEvaluacion === 'SUPERVISOR' ? `${Math.round((Number(evaluation.puntajeFinal ?? 0) * 15) / 100 * 10) / 10}` : '-' },
+        { no: '2', nom: 'Evaluación de Factores Asociados al Desempeño Profesional del Personal del PROFE.', peso: '30%', res: evaluation.tipoEvaluacion === 'AUTOEVALUACION' ? `${Math.round((Number(evaluation.puntajeFinal ?? 0) * 30) / 100 * 10) / 10}` : '-' },
+        { no: '3', nom: 'Evaluación comunitaria.', peso: '10%', res: evaluation.tipoEvaluacion === 'PAR' ? `${Math.round((Number(evaluation.puntajeFinal ?? 0) * 10) / 100 * 10) / 10}` : '-' },
+        { no: '4', nom: 'Recolección y verificación de evidencias.', peso: '45%', res: evaluation.tipoEvaluacion === 'SUPERVISOR' ? '-' : '-' },
       ];
 
       forms.forEach((fm) => {

@@ -71,6 +71,7 @@ export interface CreateAsignacionData {
   cargoId?: string;
   tenantId?: string;
   tipoEvaluacion?: string;
+  codigoVerificacion?: string;
   createdBy?: string;
 }
 
