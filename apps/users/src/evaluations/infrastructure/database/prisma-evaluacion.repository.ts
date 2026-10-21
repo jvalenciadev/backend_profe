@@ -687,7 +687,7 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
 
     const includeOptions = {
       evaluador: { select: { id: true, nombre: true, apellidos: true, correo: true, imagen: true } },
-      evaluado: { select: { id: true, nombre: true, apellidos: true, correo: true, imagen: true, ci: true } },
+      evaluado: { select: { id: true, nombre: true, apellidos: true, correo: true, imagen: true, ci: true, sedes: { include: { sede: true } } } },
       cargo: true,
       cuestionario: {
         include: {
@@ -821,7 +821,7 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
       where,
       include: {
         evaluador: { select: { id: true, nombre: true, apellidos: true, correo: true } },
-        evaluado: { select: { id: true, nombre: true, apellidos: true, correo: true, ci: true } },
+        evaluado: { select: { id: true, nombre: true, apellidos: true, correo: true, ci: true, sedes: { include: { sede: true } } } },
         cargo: true,
         cuestionario: true,
         periodo: true,
@@ -1118,18 +1118,164 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
 
   // ── CONSOLIDADO Y COMPATIBILIDAD ──────────────────────────────────────────
 
-  async findByVerificationCode(code: string): Promise<EvaluacionAdmin | null> {
-    const record = await this.db.evaluacionAdmins.findFirst({
-      where: { codigoVerificacion: code, estado: { not: 'eliminado' } },
+  async findByVerificationCode(code: string): Promise<any | null> {
+    const cleanCode = (code || '').trim();
+    if (!cleanCode) return null;
+
+    // 1. Buscar directamente por código de verificación en las asignaciones
+    let record = await this.db.evaluacionAdmins.findFirst({
+      where: { codigoVerificacion: cleanCode, estado: { not: 'eliminado' } },
       include: {
-        evaluador: { select: { nombre: true, apellidos: true, username: true } },
-        evaluado: { select: { nombre: true, apellidos: true, username: true } },
+        evaluador: { select: { id: true, nombre: true, apellidos: true, username: true } },
+        evaluado: { select: { id: true, nombre: true, apellidos: true, username: true, ci: true, imagen: true, tenant: true, cargoPostulacion: true } },
         periodo: true,
         cuestionario: true,
         intentos: { include: { respuestas: true } },
       },
     });
-    return record ? this.mapAsignacion(record) : null;
+
+    let evaluadoId: string | null = record?.evaluadoId || null;
+    let targetPeriodoId: string | null = record?.periodoId || null;
+
+    // 2. Si no se encontró por código asignado, buscar por 601-CI, CI directo, username o ID
+    if (!evaluadoId) {
+      const cleanCi = cleanCode.replace(/^601-/, '').replace(/^EVAL-/, '').trim();
+      const isDigitsOnly = /^\d+$/.test(cleanCi);
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cleanCode);
+
+      const user = await this.db.user.findFirst({
+        where: {
+          OR: [
+            ...(isDigitsOnly ? [{ ci: BigInt(cleanCi) }] : []),
+            { username: cleanCi },
+            ...(isUuid ? [{ id: cleanCode }] : []),
+          ],
+          estado: { not: 'eliminado' },
+        },
+        select: { id: true, nombre: true, apellidos: true, username: true, ci: true, imagen: true, tenant: true, cargoPostulacion: true },
+      });
+
+      if (user) {
+        evaluadoId = user.id;
+      }
+    }
+
+    if (!evaluadoId) return null;
+
+    // 3. Obtener todas las asignaciones del evaluado en el periodo
+    const allUserAsignaciones = await this.db.evaluacionAdmins.findMany({
+      where: {
+        evaluadoId,
+        ...(targetPeriodoId ? { periodoId: targetPeriodoId } : {}),
+        estado: { not: 'eliminado' },
+      },
+      include: {
+        evaluador: { select: { id: true, nombre: true, apellidos: true, username: true } },
+        evaluado: { select: { id: true, nombre: true, apellidos: true, username: true, ci: true, imagen: true, tenant: true, cargoPostulacion: true } },
+        periodo: true,
+        cuestionario: true,
+        intentos: { include: { respuestas: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (allUserAsignaciones.length === 0) return null;
+
+    const userObj = allUserAsignaciones[0].evaluado;
+    const periodoObj = allUserAsignaciones[0].periodo;
+
+    // 4. Calcular los 4 pilares oficiales del PROFE (15%, 30%, 10%, 45%)
+    const autoAsig = allUserAsignaciones.find(
+      (a: any) => a.tipoEvaluacion === 'AUTOEVALUACION' || a.evaluadorId === a.evaluadoId
+    );
+    const intentosExamen = autoAsig?.intentos || [];
+    const ultimoIntento = intentosExamen[0];
+    const isExamenCompleted = autoAsig?.estadoEvaluacion === 'COMPLETADO';
+    const notaExamen = autoAsig?.puntajeFinal !== null && autoAsig?.puntajeFinal !== undefined
+      ? Number(autoAsig.puntajeFinal)
+      : ultimoIntento?.puntajeObtenido !== null && ultimoIntento?.puntajeObtenido !== undefined
+        ? Number(ultimoIntento.puntajeObtenido)
+        : null;
+
+    const supervisorAsigs = allUserAsignaciones.filter(
+      (a: any) => a.tipoEvaluacion !== 'AUTOEVALUACION' && a.evaluadorId !== a.evaluadoId && a.tipoEvaluacion !== 'PAR'
+    );
+    const supervisoresCompletados = supervisorAsigs.filter((s: any) => s.estadoEvaluacion === 'COMPLETADO');
+    const notasSupervisores = supervisoresCompletados
+      .map((s: any) => Number(s.puntajeFinal))
+      .filter((n: any) => !isNaN(n) && n !== null);
+    const promedioSupervisores = notasSupervisores.length > 0
+      ? Math.round((notasSupervisores.reduce((a: any, b: any) => a + b, 0) / notasSupervisores.length) * 100) / 100
+      : null;
+
+    const parAsigs = allUserAsignaciones.filter((a: any) => a.tipoEvaluacion === 'PAR');
+    const paresCompletados = parAsigs.filter((s: any) => s.estadoEvaluacion === 'COMPLETADO');
+    const notasPares = paresCompletados
+      .map((s: any) => Number(s.puntajeFinal))
+      .filter((n: any) => !isNaN(n) && n !== null);
+    const promedioPares = notasPares.length > 0
+      ? Math.round((notasPares.reduce((a: any, b: any) => a + b, 0) / notasPares.length) * 100) / 100
+      : null;
+
+    const c1 = promedioSupervisores !== null ? promedioSupervisores : 0;
+    const c2 = notaExamen !== null ? notaExamen : 0;
+    const c3 = (promedioPares !== null ? promedioPares : promedioSupervisores) || 0;
+    const c4 = promedioSupervisores !== null ? promedioSupervisores : 0;
+
+    const a1 = Math.round(((c1 * 15) / 100) * 100) / 100;
+    const a2 = Math.round(((c2 * 30) / 100) * 100) / 100;
+    const a3 = Math.round(((c3 * 10) / 100) * 100) / 100;
+    const a4 = Math.round(((c4 * 45) / 100) * 100) / 100;
+
+    const puntajeTotal = Math.round((a1 + a2 + a3 + a4) * 100) / 100;
+
+    return {
+      valid: true,
+      evaluation: {
+        user: {
+          nombre: userObj?.nombre || '',
+          apellidos: userObj?.apellidos || '',
+          username: userObj?.ci ? String(userObj.ci) : userObj?.username || '',
+          imagen: userObj?.imagen || null,
+        },
+        puntajeTotal,
+        periodoEval: {
+          periodo: periodoObj?.periodo ? `${periodoObj.gestion || '2026'} - ${periodoObj.periodo}` : 'GESTIÓN 2026 - 1RA. FASE',
+          gestion: periodoObj?.gestion || '2026',
+        },
+        puntajes: [
+          {
+            criterio: {
+              nombre: 'Evaluación del inmediato superior y dependientes.',
+              puntajeMaximo: 15,
+            },
+            puntaje: a1,
+          },
+          {
+            criterio: {
+              nombre: 'Evaluación de Factores Asociados al Desempeño Profesional del Personal del PROFE.',
+              puntajeMaximo: 30,
+            },
+            puntaje: a2,
+          },
+          {
+            criterio: {
+              nombre: 'Evaluación comunitaria.',
+              puntajeMaximo: 10,
+            },
+            puntaje: a3,
+          },
+          {
+            criterio: {
+              nombre: 'Recolección y verificación de evidencias.',
+              puntajeMaximo: 45,
+            },
+            puntaje: a4,
+          },
+        ],
+        createdAt: allUserAsignaciones[0].createdAt,
+      },
+    };
   }
 
   async findUsersToEvaluate(tenantId?: string, periodoId?: string): Promise<any[]> {

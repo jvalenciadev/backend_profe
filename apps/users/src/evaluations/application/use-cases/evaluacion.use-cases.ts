@@ -93,7 +93,7 @@ export class VerifyEvaluacionCodeUseCase {
     private readonly repository: IEvaluacionRepository,
   ) {}
 
-  async execute(code: string): Promise<EvaluacionAdmin> {
+  async execute(code: string): Promise<any> {
     const evaluacion = await this.repository.findByVerificationCode(code);
     if (!evaluacion) throw new NotFoundException('Evaluación no encontrada o código inválido');
     return evaluacion;

@@ -127,7 +127,7 @@ export interface IEvaluacionRepository {
   }>;
 
   // ── Verificación y PDF ──
-  findByVerificationCode(code: string): Promise<EvaluacionAdmin | null>;
+  findByVerificationCode(code: string): Promise<any | null>;
   findUsersToEvaluate(tenantId?: string, periodoId?: string): Promise<any[]>;
   getConsolidadoEvaluado(evaluadoId: string, periodoId: string): Promise<{
     evaluado: any;
