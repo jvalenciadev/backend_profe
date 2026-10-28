@@ -163,6 +163,105 @@ export class EventViewsController {
     return result.filter(Boolean);
   }
 
+  @Get(':eventoId/cupos-mesas')
+  async getCuposMesas(
+    @Param('eventoId') eventoId: string,
+    @Query('ci') ci?: string,
+  ) {
+    const ECE_ID_MESA = 'a51efab3-3776-4548-8722-40e0ab18536b';
+    const ECE_ID_INSTITUCION = '211f76be-1dba-4b26-b4d8-ae6720a5c4c3';
+
+    try {
+      const rowsGlobal: any = await this.prisma.$queryRaw`
+        SELECT 
+          ecer_mesa.ecer_valor AS mesa,
+          COUNT(*)::int AS total
+        FROM evento_campo_extra_respuesta ecer_mesa
+        INNER JOIN evento_inscripcion_v2 ei 
+          ON ei.eve_ins_id = ecer_mesa.eve_ins_id
+        WHERE ecer_mesa.ece_id = ${ECE_ID_MESA}::uuid
+          AND ei.deleted_at IS NULL
+          AND ei.eve_id = ${eventoId}::uuid
+        GROUP BY ecer_mesa.ecer_valor;
+      `;
+
+      const cuposGlobales: Record<string, number> = {};
+      if (Array.isArray(rowsGlobal)) {
+        for (const row of rowsGlobal) {
+          if (row.mesa) {
+            cuposGlobales[String(row.mesa).trim()] = Number(row.total) || 0;
+          }
+        }
+      }
+
+      const rowsInst: any = await this.prisma.$queryRaw`
+        SELECT 
+          ecer_mesa.ecer_valor AS mesa,
+          ecer_inst.ecer_valor AS institucion,
+          COUNT(*)::int AS total
+        FROM evento_campo_extra_respuesta ecer_mesa
+        INNER JOIN evento_campo_extra_respuesta ecer_inst 
+          ON ecer_inst.eve_ins_id = ecer_mesa.eve_ins_id
+        INNER JOIN evento_inscripcion_v2 ei 
+          ON ei.eve_ins_id = ecer_mesa.eve_ins_id
+        WHERE ecer_mesa.ece_id = ${ECE_ID_MESA}::uuid
+          AND ecer_inst.ece_id = ${ECE_ID_INSTITUCION}::uuid
+          AND ei.deleted_at IS NULL
+          AND ei.eve_id = ${eventoId}::uuid
+        GROUP BY ecer_mesa.ecer_valor, ecer_inst.ecer_valor;
+      `;
+
+      const cuposInstitucion: Record<string, Record<string, number>> = {};
+      if (Array.isArray(rowsInst)) {
+        for (const row of rowsInst) {
+          const inst = String(row.institucion || '').trim();
+          const mesa = String(row.mesa || '').trim();
+          if (!cuposInstitucion[inst]) {
+            cuposInstitucion[inst] = {};
+          }
+          cuposInstitucion[inst][mesa] = Number(row.total) || 0;
+        }
+      }
+
+      const respuestas: Record<string, string> = {};
+      if (ci) {
+        const cleanCi = this.parseCi(ci);
+        if (cleanCi > BigInt(0)) {
+          const rowsResp: any = await this.prisma.$queryRaw`
+            SELECT ecer.ece_id, ecer.ecer_valor 
+            FROM evento_campo_extra_respuesta ecer
+            INNER JOIN evento_inscripcion_v2 ei ON ei.eve_ins_id = ecer.eve_ins_id
+            INNER JOIN evento_personas ep ON ep.eve_per_id = ei.eve_per_id
+            WHERE ep.eve_per_ci = ${cleanCi}
+              AND ei.eve_id = ${eventoId}::uuid
+              AND ei.deleted_at IS NULL
+            ORDER BY ecer.created_at DESC;
+          `;
+          if (Array.isArray(rowsResp)) {
+            for (const row of rowsResp) {
+              respuestas[String(row.ece_id)] = String(row.ecer_valor);
+            }
+          }
+        }
+      }
+
+      return {
+        success: true,
+        cuposGlobales,
+        cuposInstitucion,
+        respuestas,
+      };
+    } catch (e: any) {
+      return {
+        success: false,
+        error: e.message,
+        cuposGlobales: {},
+        cuposInstitucion: {},
+        respuestas: {},
+      };
+    }
+  }
+
   @Get(':codigo')
   async getEvento(@Param('codigo') codigo: string) {
     const isUuid =
