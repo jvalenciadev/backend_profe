@@ -645,10 +645,11 @@ export class EventViewsController {
   @Post(':eventoId/asistencia-facilitador')
   async registrarAsistenciaFacilitador(
     @Param('eventoId') eventoId: string,
-    @Body() body: { ci: string; codigoAsistencia: string },
+    @Body() body: { ci?: string; barcodeOrCi?: string; inscripcionId?: string; codigoAsistencia?: string },
   ) {
+    const rawCi = (body.ci || body.barcodeOrCi || '').toString().trim();
     const evento = await this.prisma.evento.findFirst({
-      where: { id: eventoId, estado: 'activo' },
+      where: { id: eventoId, estado: { in: ['activo', 'vista'] } },
     });
 
     if (!evento) throw new NotFoundException('Evento no encontrado o inactivo');
@@ -668,23 +669,64 @@ export class EventViewsController {
     )
       throw new ForbiddenException('Código de asistencia del evento incorrecto');
 
-    const cleanCi = parseInt(body.ci.replace(/\D/g, ''), 10);
-    if (isNaN(cleanCi))
-      throw new NotFoundException('C.I. inválido');
+    const ciBigInt = this.parseCi(rawCi);
 
-    const persona = await this.prisma.eventoPersona.findFirst({
-      where: { ci: cleanCi, deletedAt: null },
-    });
+    // 1. Si viene inscripcionId, buscar directamente por inscripcionId
+    let inscripcion: any = null;
+    if (body.inscripcionId) {
+      inscripcion = await this.prisma.eventoInscripcion.findFirst({
+        where: { id: body.inscripcionId, eventoId, deletedAt: null },
+        include: { persona: true },
+      });
+    }
 
-    if (!persona)
-      throw new NotFoundException('Participante no registrado en el sistema');
+    // 2. Si no se encontró por inscripcionId, buscar por C.I. a través de la relación persona
+    if (!inscripcion && ciBigInt > BigInt(0)) {
+      inscripcion = await this.prisma.eventoInscripcion.findFirst({
+        where: {
+          eventoId,
+          deletedAt: null,
+          persona: {
+            ci: ciBigInt,
+            deletedAt: null,
+          },
+        },
+        include: { persona: true },
+      });
+    }
 
-    const inscripcion = await this.prisma.eventoInscripcion.findFirst({
-      where: { personaId: persona.id, eventoId, deletedAt: null },
-    });
+    // 3. Fallback: buscar todas las personas con ese C.I. y ver si alguna está inscrita en este evento
+    if (!inscripcion && ciBigInt > BigInt(0)) {
+      const personas = await this.prisma.eventoPersona.findMany({
+        where: { ci: ciBigInt, deletedAt: null },
+      });
+      if (personas.length > 0) {
+        const personaIds = personas.map(p => p.id);
+        inscripcion = await this.prisma.eventoInscripcion.findFirst({
+          where: {
+            eventoId,
+            personaId: { in: personaIds },
+            deletedAt: null,
+          },
+          include: { persona: true },
+        });
+      }
+    }
 
-    if (!inscripcion)
+    if (!inscripcion) {
+      const personaExiste = ciBigInt > BigInt(0)
+        ? await this.prisma.eventoPersona.findFirst({
+            where: { ci: ciBigInt, deletedAt: null },
+          })
+        : null;
+
+      if (!personaExiste) {
+        throw new NotFoundException('Participante no registrado en el sistema');
+      }
       throw new NotFoundException('El participante no está inscrito en este evento');
+    }
+
+    const persona = inscripcion.persona;
 
     if (inscripcion.asistencia) {
       return {
