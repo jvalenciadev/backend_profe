@@ -43,13 +43,52 @@ export class CorrespondenciaService {
       if (dep?.abreviacion) siglaTerritorial = dep.abreviacion.toUpperCase();
     }
 
-    const ultimoDocCite = await tx.corDocumento.findFirst({
-      where: { tipo, gestion, tenantId },
-      orderBy: { correlativo: 'desc' },
-    });
-    const correlativo = (ultimoDocCite?.correlativo ?? 0) + 1;
     const prefijo = PREFIJOS[tipo];
-    const cite = `${prefijo}/PROFE/${siglaTerritorial} Nro. ${correlativo}/${gestion}`;
+
+    // Bloqueo consultivo a nivel de transacción (PostgreSQL) para serializar la generación concurrente
+    const lockKey = `cor_cite_${tipo}_${gestion}_${siglaTerritorial}`;
+    try {
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${lockKey})::bigint)`;
+    } catch {
+      // Fallback si el motor no admite advisory locks
+    }
+
+    // Buscar correlativo más alto por tenantId
+    const ultimoDocCiteTenant = await tx.corDocumento.findFirst({
+      where: { tipo, gestion, tenantId: tenantId ?? null },
+      orderBy: { correlativo: 'desc' },
+      select: { correlativo: true },
+    });
+
+    // Y buscar correlativo más alto por coincidencia de patrón en CITE (para unificar con registros globales)
+    const patronCite = `${prefijo}/PROFE/${siglaTerritorial} Nro.`;
+    const ultimoDocCiteSigla = await tx.corDocumento.findFirst({
+      where: {
+        gestion,
+        cite: { startsWith: patronCite },
+      },
+      orderBy: { correlativo: 'desc' },
+      select: { correlativo: true },
+    });
+
+    let correlativo =
+      Math.max(
+        ultimoDocCiteTenant?.correlativo ?? 0,
+        ultimoDocCiteSigla?.correlativo ?? 0,
+      ) + 1;
+
+    let cite = `${prefijo}/PROFE/${siglaTerritorial} Nro. ${correlativo}/${gestion}`;
+
+    // Salvaguarda contra colisiones previas o registros soft-deleted/desfasados
+    while (
+      await tx.corDocumento.findFirst({
+        where: { cite },
+        select: { id: true },
+      })
+    ) {
+      correlativo++;
+      cite = `${prefijo}/PROFE/${siglaTerritorial} Nro. ${correlativo}/${gestion}`;
+    }
 
     // 2. Lógica HOJA DE RUTA (Global y Universal)
     let hr = '';
@@ -64,16 +103,25 @@ export class CorrespondenciaService {
     }
 
     if (!hr) {
-      const todosDocsHR = await tx.corDocumento.findMany({
+      const hrLockKey = `cor_hr_${gestion}`;
+      try {
+        await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext(${hrLockKey})::bigint)`;
+      } catch {
+        // Fallback silencioso
+      }
+
+      const ultimosDocsHR = await tx.corDocumento.findMany({
         where: {
           gestion,
           hr: { not: null },
         },
+        orderBy: { createdAt: 'desc' },
+        take: 100,
         select: { hr: true },
       });
 
       let maxHR = 0;
-      for (const doc of todosDocsHR) {
+      for (const doc of ultimosDocsHR) {
         if (doc.hr) {
           const num = parseInt(doc.hr.split('/')[0], 10);
           if (!isNaN(num) && num > maxHR) {
@@ -82,8 +130,30 @@ export class CorrespondenciaService {
         }
       }
 
-      const proximoHR = maxHR + 1;
+      if (maxHR === 0) {
+        const topHR = await tx.corDocumento.findFirst({
+          where: { gestion, hr: { not: null } },
+          orderBy: { hr: 'desc' },
+          select: { hr: true },
+        });
+        if (topHR?.hr) {
+          const num = parseInt(topHR.hr.split('/')[0], 10);
+          if (!isNaN(num)) maxHR = num;
+        }
+      }
+
+      let proximoHR = maxHR + 1;
       hr = `${proximoHR.toString().padStart(4, '0')}/${gestion}`;
+
+      while (
+        await tx.corDocumento.findFirst({
+          where: { hr, gestion },
+          select: { id: true },
+        })
+      ) {
+        proximoHR++;
+        hr = `${proximoHR.toString().padStart(4, '0')}/${gestion}`;
+      }
     }
 
     return { cite, hr, correlativo, gestion };
@@ -99,113 +169,148 @@ export class CorrespondenciaService {
         'No puede agregarse a sí mismo como destinatario o vía',
       );
     }
-    return this.prisma.$transaction(async (tx) => {
-      // 1. Obtener tenantId y contexto del creador
-      const user = await tx.user.findUnique({
-        where: { id: creatorId },
-        select: { tenantId: true },
-      });
 
-      const tenantId = user?.tenantId;
-      const { cite, hr, correlativo, gestion } = await this.generarCite(
-        tx,
-        dto.tipo,
-        tenantId,
-        dto.documentoPadreId,
-      );
+    const MAX_RETRIES = 3;
+    let attempt = 0;
 
-      // Calcular fecha límite si hay plazoDias
-      let fechaLimite: Date | null = null;
-      if (dto.plazoDias && dto.plazoDias > 0) {
-        fechaLimite = new Date();
-        fechaLimite.setDate(fechaLimite.getDate() + dto.plazoDias);
-      }
+    while (attempt < MAX_RETRIES) {
+      try {
+        return await this.prisma.$transaction(
+          async (tx) => {
+            // 1. Obtener tenantId y contexto del creador
+            const user = await tx.user.findUnique({
+              where: { id: creatorId },
+              select: { tenantId: true },
+            });
 
-      // Evaluar estado del plazo si se está respondiendo a un documento padre
-      let estadoPlazo: string | null = null;
-      if (dto.documentoPadreId) {
-        const docPadre = await tx.corDocumento.findUnique({
-          where: { id: dto.documentoPadreId },
-          select: { fechaLimite: true, createdAt: true },
-        });
-        if (docPadre) {
-          const limite = docPadre.fechaLimite;
-          if (limite) {
-            estadoPlazo = new Date() <= new Date(limite) ? 'EN_PLAZO' : 'FUERA_DE_PLAZO';
-          } else {
-            estadoPlazo = 'EN_PLAZO';
-          }
-        }
-      }
+            const tenantId = user?.tenantId;
+            const { cite, hr, correlativo, gestion } = await this.generarCite(
+              tx,
+              dto.tipo,
+              tenantId,
+              dto.documentoPadreId,
+            );
 
-      const participantes = [
-        ...dto.destinatarios.map((p) => ({
-          userId: p.userId,
-          cargoLiteral: p.cargoLiteral,
-          rol: 'DESTINATARIO',
-        })),
-        ...(dto.vias ?? []).map((p) => ({
-          userId: p.userId,
-          cargoLiteral: p.cargoLiteral,
-          rol: 'VIA',
-        })),
-        ...dto.remitentes.map((p) => ({
-          userId: p.userId,
-          cargoLiteral: p.cargoLiteral,
-          rol: 'REMITENTE',
-        })),
-      ];
+            // Calcular fecha límite si hay plazoDias
+            let fechaLimite: Date | null = null;
+            if (dto.plazoDias && dto.plazoDias > 0) {
+              fechaLimite = new Date();
+              fechaLimite.setDate(fechaLimite.getDate() + dto.plazoDias);
+            }
 
-      const accionSeguimiento = dto.documentoPadreId ? 'RESPUESTA' : 'CREACION';
-      const detalleSeguimiento = dto.documentoPadreId
-        ? `Respuesta a H.R. registrada con nuevo CITE: ${cite}`
-        : `Documento elaborado. CITE asignado: ${cite}`;
+            // Evaluar estado del plazo si se está respondiendo a un documento padre
+            let estadoPlazo: string | null = null;
+            if (dto.documentoPadreId) {
+              const docPadre = await tx.corDocumento.findUnique({
+                where: { id: dto.documentoPadreId },
+                select: { fechaLimite: true, createdAt: true },
+              });
+              if (docPadre) {
+                const limite = docPadre.fechaLimite;
+                if (limite) {
+                  estadoPlazo =
+                    new Date() <= new Date(limite)
+                      ? 'EN_PLAZO'
+                      : 'FUERA_DE_PLAZO';
+                } else {
+                  estadoPlazo = 'EN_PLAZO';
+                }
+              }
+            }
 
-      return (tx.corDocumento as any).create({
-        data: {
-          tipo: dto.tipo,
-          cite,
-          hr, // HR heredada o nueva
-          correlativo,
-          gestion,
-          tenantId, // Vinculamos el documento al departamento del creador
-          referencia: dto.referencia,
-          contenido: dto.contenido,
-          plazoDias: dto.plazoDias ?? null,
-          fechaLimite,
-          documentoPadreId: dto.documentoPadreId ?? null,
-          estado: 'ELABORACION',
-          participantes: { create: participantes },
-          seguimientos: {
-            create: {
-              accion: accionSeguimiento,
-              detalle: detalleSeguimiento,
-              usuarioId: creatorId,
-              estadoPlazo,
-            },
-          },
-        },
-        include: {
-          participantes: {
-            include: {
-              usuario: {
-                select: {
-                  id: true,
-                  nombre: true,
-                  apellidos: true,
-                  cargoStr: true,
+            const participantes = [
+              ...dto.destinatarios.map((p) => ({
+                userId: p.userId,
+                cargoLiteral: p.cargoLiteral,
+                rol: 'DESTINATARIO',
+              })),
+              ...(dto.vias ?? []).map((p) => ({
+                userId: p.userId,
+                cargoLiteral: p.cargoLiteral,
+                rol: 'VIA',
+              })),
+              ...dto.remitentes.map((p) => ({
+                userId: p.userId,
+                cargoLiteral: p.cargoLiteral,
+                rol: 'REMITENTE',
+              })),
+            ];
+
+            const accionSeguimiento = dto.documentoPadreId
+              ? 'RESPUESTA'
+              : 'CREACION';
+            const detalleSeguimiento = dto.documentoPadreId
+              ? `Respuesta a H.R. registrada con nuevo CITE: ${cite}`
+              : `Documento elaborado. CITE asignado: ${cite}`;
+
+            return (tx.corDocumento as any).create({
+              data: {
+                tipo: dto.tipo,
+                cite,
+                hr, // HR heredada o nueva
+                correlativo,
+                gestion,
+                tenantId, // Vinculamos el documento al departamento del creador
+                referencia: dto.referencia,
+                contenido: dto.contenido,
+                plazoDias: dto.plazoDias ?? null,
+                fechaLimite,
+                documentoPadreId: dto.documentoPadreId ?? null,
+                estado: 'ELABORACION',
+                participantes: { create: participantes },
+                seguimientos: {
+                  create: {
+                    accion: accionSeguimiento,
+                    detalle: detalleSeguimiento,
+                    usuarioId: creatorId,
+                    estadoPlazo,
+                  },
                 },
               },
-            },
+              include: {
+                participantes: {
+                  include: {
+                    usuario: {
+                      select: {
+                        id: true,
+                        nombre: true,
+                        apellidos: true,
+                        cargoStr: true,
+                      },
+                    },
+                  },
+                },
+                seguimientos: {
+                  include: {
+                    usuario: {
+                      select: { id: true, nombre: true, apellidos: true },
+                    },
+                  },
+                },
+              },
+            });
           },
-          seguimientos: {
-            include: {
-              usuario: { select: { id: true, nombre: true, apellidos: true } },
-            },
+          {
+            maxWait: 5000,
+            timeout: 15000,
           },
-        },
-      });
-    });
+        );
+      } catch (error: any) {
+        attempt++;
+        const isConstraintError =
+          error?.code === 'P2002' &&
+          (JSON.stringify(error?.meta || {}).includes('cor_cite') ||
+            JSON.stringify(error?.meta || {}).includes('cor_hr'));
+
+        if (isConstraintError && attempt < MAX_RETRIES) {
+          await new Promise((resolve) =>
+            setTimeout(resolve, 50 * attempt + Math.floor(Math.random() * 50)),
+          );
+          continue;
+        }
+        throw error;
+      }
+    }
   }
 
   /**
