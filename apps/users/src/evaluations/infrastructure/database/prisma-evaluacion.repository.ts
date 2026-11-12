@@ -161,8 +161,12 @@ export class PrismaEvaluacionRepository implements IEvaluacionRepository {
             critId = createdCrit.id;
           }
 
-          // Sincronizar subcriterios preservando preguntas existentes
-          if (c.subcriterios && Array.isArray(c.subcriterios)) {
+          // Sincronizar subcriterios SOLO si el criterio NO tiene cuestionarios vinculados
+          // Si tiene cuestionarios, sus subcriterios son las preguntas del cuestionario y no deben tocarse
+          const critConCuestionarios = currentDbCriterios.find((cc: any) => cc.id === critId);
+          const tieneCuestionariosVinculados = critConCuestionarios?.cuestionarios && critConCuestionarios.cuestionarios.length > 0;
+
+          if (!tieneCuestionariosVinculados && c.subcriterios && Array.isArray(c.subcriterios) && c.subcriterios.length > 0) {
             const currentSubcrits = await tx.evaluacionSubcriterio.findMany({
               where: { criterioId: critId },
             });
