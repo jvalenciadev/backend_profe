@@ -9,6 +9,7 @@ import { TerritorialModule } from '../../territorial/src/territorial.module';
 import { UsersModule } from '../../users/src/users.module';
 import { AcademicModule } from '../../academic/src/academic.module';
 import { AuditModule } from '../../audit/src/audit.module';
+import { SftpModule } from './sftp/sftp.module';
 import { DatabaseModule } from '@app/database';
 import { APP_GUARD, APP_INTERCEPTOR, Reflector } from '@nestjs/core';
 import {
@@ -34,6 +35,7 @@ import { UploadConfigController } from '@app/common/upload/upload-config.control
     UsersModule,
     AcademicModule,
     AuditModule,
+    SftpModule,
     UploadModule,
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'uploads'),

@@ -12,7 +12,12 @@ export class AuditService {
 
     const where: any = {};
     if (tenantId) where.tenantId = tenantId;
-    if (action && action !== 'ALL') where.action = action.toUpperCase();
+    if (action && action !== 'ALL') {
+      where.action =
+        action.toUpperCase() === 'SFTP'
+          ? { startsWith: 'SFTP' }
+          : action.toUpperCase();
+    }
     if (search) {
       where.OR = [
         { resource: { contains: search, mode: 'insensitive' } },
