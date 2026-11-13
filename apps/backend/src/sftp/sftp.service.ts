@@ -8,6 +8,10 @@ import { PrismaService } from '@app/database';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
+import type { Response } from 'express';
+
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const createArchive = require('archiver') as (format: string, options?: object) => import('archiver').Archiver;
 
 export interface SftpItem {
   nombre: string;
@@ -203,7 +207,7 @@ export class SftpService {
           try {
             const childs = await fs.promises.readdir(itemPath);
             childCount = childs.length;
-          } catch {}
+          } catch { }
 
           carpetas.push({
             nombre: entry.name,
@@ -299,5 +303,63 @@ export class SftpService {
       nombre,
       pesoBytes: stats.size,
     };
+  }
+
+  /**
+   * Comprime una carpeta completa como ZIP y hace streaming a la respuesta HTTP
+   */
+  async descargarCarpetaComoZip(
+    rutaCarpeta: string,
+    user: any,
+    contexto: ContextoForense,
+    res: Response,
+  ): Promise<void> {
+    const dirFisico = this.resolverRutaSegura(rutaCarpeta);
+
+    if (!fs.existsSync(dirFisico)) {
+      throw new NotFoundException(`La carpeta solicitada no existe`);
+    }
+
+    const stats = await fs.promises.stat(dirFisico);
+    if (!stats.isDirectory()) {
+      throw new BadRequestException('La ruta especificada no es una carpeta');
+    }
+
+    const nombreCarpeta = path.basename(dirFisico) || 'documentos';
+    const nombreZip = `${nombreCarpeta}.zip`;
+
+    // Cabeceras para descarga ZIP
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="${nombreZip}"`);
+    res.setHeader('Cache-Control', 'no-store');
+    res.setHeader('Transfer-Encoding', 'chunked');
+
+    // Crear el archivo ZIP en streaming
+    const archivo = createArchive('zip', {
+      zlib: { level: 6 },
+    });
+
+    // Pipe directo al response HTTP (no guarda en disco)
+    archivo.pipe(res as any);
+
+    // Agregar toda la carpeta recursivamente
+    archivo.directory(dirFisico, nombreCarpeta);
+
+    // Registrar en audit_logs
+    await this.registrarAuditoriaForense({
+      action: 'SFTP_DOWNLOAD_FOLDER',
+      resourceId: rutaCarpeta || '/',
+      user,
+      contexto,
+      detallesOperacion: {
+        nombreCarpeta,
+        rutaRelativa: rutaCarpeta,
+        nombreZip,
+        fechaModificacion: stats.mtime,
+      },
+    });
+
+    // Finalizar el archivo (dispara el streaming)
+    await archivo.finalize();
   }
 }

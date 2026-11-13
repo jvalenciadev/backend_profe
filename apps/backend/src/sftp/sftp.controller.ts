@@ -127,4 +127,27 @@ export class SftpController {
 
     res.download(filePath, nombre);
   }
+
+  /**
+   * Descarga una carpeta completa como archivo ZIP con streaming
+   */
+  @Get('documentos/download-folder')
+  async descargarCarpeta(
+    @Query('folderpath') folderpath: string,
+    @Req() req: any,
+    @Res() res: Response,
+  ) {
+    this.validarRolSftp(req.user);
+    if (!folderpath && folderpath !== '') {
+      throw new BadRequestException('El parámetro folderpath es obligatorio');
+    }
+
+    const contexto = this.extraerContextoForense(req);
+    await this.sftpService.descargarCarpetaComoZip(
+      folderpath || '',
+      req.user,
+      contexto,
+      res,
+    );
+  }
 }
