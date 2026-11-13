@@ -9,12 +9,15 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
 
-export interface SftpDocumentItem {
+export interface SftpItem {
   nombre: string;
-  pesoBytes: number;
-  pesoFormateado: string;
+  rutaRelativa: string;
+  tipo: 'CARPETA' | 'ARCHIVO';
+  pesoBytes?: number;
+  pesoFormateado?: string;
   fechaModificacion: Date;
-  extension: string;
+  extension?: string;
+  totalElementos?: number;
 }
 
 export interface ContextoForense {
@@ -57,24 +60,24 @@ export class SftpService {
   }
 
   /**
-   * Resuelve la ruta del archivo asegurando prevención absoluta de Directory/Path Traversal
+   * Resuelve cualquier ruta relativa garantizando que NUNCA salga de this.baseDir (Anti-Path-Traversal)
    */
-  private resolverRutaSegura(filename?: string): string {
+  private resolverRutaSegura(rutaRelativa: string = ''): string {
     const root = path.resolve(this.baseDir);
-    if (!filename) return root;
+    if (!rutaRelativa || rutaRelativa.trim() === '') return root;
 
-    const sanitized = path.basename(filename.trim());
-    if (!sanitized || sanitized === '.' || sanitized === '..') {
-      throw new BadRequestException('Nombre de archivo inválido');
+    // Sanitizar separadores y eliminar intentos de retroceso
+    const normalizada = path
+      .normalize(rutaRelativa.replace(/^(\/|\\)+/, ''))
+      .replace(/^(\.\.(\/|\\|$))+/, '');
+
+    const resuelta = path.resolve(root, normalizada);
+
+    if (!resuelta.startsWith(root)) {
+      throw new ForbiddenException('Intento de navegación no autorizado fuera del repositorio');
     }
 
-    const resolved = path.resolve(root, sanitized);
-
-    if (!resolved.startsWith(root)) {
-      throw new ForbiddenException('Acceso fuera del directorio autorizado no permitido');
-    }
-
-    return resolved;
+    return resuelta;
   }
 
   private formatearBytes(bytes: number): string {
@@ -85,9 +88,6 @@ export class SftpService {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   }
 
-  /**
-   * Calcula el hash criptográfico SHA-256 para integridad forense
-   */
   private calcularSha256(filePath: string): string {
     try {
       const buffer = fs.readFileSync(filePath);
@@ -98,7 +98,7 @@ export class SftpService {
   }
 
   /**
-   * Registra bitácora forense de máxima cobertura en audit_logs
+   * Registra bitácora forense de auditoría en audit_logs
    */
   private async registrarAuditoriaForense(params: {
     action: string;
@@ -158,178 +158,146 @@ export class SftpService {
   }
 
   /**
-   * Lista los documentos disponibles con registro de auditoría
+   * Explora el directorio o subdirectorio tipo Google Drive (Carpetas y Archivos)
    */
-  async listarDocumentos(
+  async explorarDirectorio(
+    subpath: string = '',
     user: any,
     contexto: ContextoForense,
-  ): Promise<SftpDocumentItem[]> {
+  ): Promise<{
+    rutaActual: string;
+    carpetas: SftpItem[];
+    archivos: SftpItem[];
+    totalCarpetas: number;
+    totalArchivos: number;
+  }> {
     this.asegurarDirectorioBase();
-    const root = this.resolverRutaSegura();
+    const dirFisico = this.resolverRutaSegura(subpath);
 
-    if (!fs.existsSync(root)) {
-      return [];
+    if (!fs.existsSync(dirFisico)) {
+      throw new NotFoundException(`La carpeta "${subpath}" no existe en el repositorio`);
     }
 
-    const entries = await fs.promises.readdir(root, { withFileTypes: true });
-    const items: SftpDocumentItem[] = [];
+    const stat = await fs.promises.stat(dirFisico);
+    if (!stat.isDirectory()) {
+      throw new BadRequestException('La ruta especificada no es un directorio');
+    }
+
+    const entries = await fs.promises.readdir(dirFisico, { withFileTypes: true });
+    const carpetas: SftpItem[] = [];
+    const archivos: SftpItem[] = [];
+
+    const rutaRelativaLimpia = subpath.replace(/^(\/|\\)+/, '').replace(/\\/g, '/');
 
     for (const entry of entries) {
-      if (entry.isFile()) {
-        try {
-          const filePath = path.join(root, entry.name);
-          const stats = await fs.promises.stat(filePath);
+      try {
+        const itemPath = path.join(dirFisico, entry.name);
+        const itemStat = await fs.promises.stat(itemPath);
+        const itemRelPath = rutaRelativaLimpia
+          ? `${rutaRelativaLimpia}/${entry.name}`
+          : entry.name;
+
+        if (entry.isDirectory()) {
+          // Contar elementos hijos de la carpeta
+          let childCount = 0;
+          try {
+            const childs = await fs.promises.readdir(itemPath);
+            childCount = childs.length;
+          } catch {}
+
+          carpetas.push({
+            nombre: entry.name,
+            rutaRelativa: itemRelPath,
+            tipo: 'CARPETA',
+            fechaModificacion: itemStat.mtime,
+            totalElementos: childCount,
+          });
+        } else if (entry.isFile()) {
           const ext = path.extname(entry.name).replace('.', '').toUpperCase();
 
-          items.push({
+          archivos.push({
             nombre: entry.name,
-            pesoBytes: stats.size,
-            pesoFormateado: this.formatearBytes(stats.size),
-            fechaModificacion: stats.mtime,
+            rutaRelativa: itemRelPath,
+            tipo: 'ARCHIVO',
+            pesoBytes: itemStat.size,
+            pesoFormateado: this.formatearBytes(itemStat.size),
+            fechaModificacion: itemStat.mtime,
             extension: ext || 'FILE',
           });
-        } catch {
-          // Ignorar archivos no legibles
         }
+      } catch {
+        // Ignorar archivos con error de lectura
       }
     }
 
-    items.sort(
-      (a, b) => b.fechaModificacion.getTime() - a.fechaModificacion.getTime(),
-    );
+    // Ordenar: carpetas alfabéticamente, archivos por nombre
+    carpetas.sort((a, b) => a.nombre.localeCompare(b.nombre));
+    archivos.sort((a, b) => a.nombre.localeCompare(b.nombre));
 
-    // Auditoría exhaustiva de consulta de lista
+    // Registro de navegación en bitácora
     await this.registrarAuditoriaForense({
-      action: 'SFTP_LIST_DOCUMENTS',
+      action: 'SFTP_BROWSE_DIRECTORY',
+      resourceId: rutaRelativaLimpia || '/',
       user,
       contexto,
       detallesOperacion: {
-        totalArchivosEncontrados: items.length,
-        directorioOrigen: this.baseDir,
-        archivosListados: items.map((i) => ({ nombre: i.nombre, peso: i.pesoFormateado })),
+        carpetaConsultada: rutaRelativaLimpia || '/',
+        totalCarpetas: carpetas.length,
+        totalArchivos: archivos.length,
       },
     });
 
-    return items;
+    return {
+      rutaActual: rutaRelativaLimpia,
+      carpetas,
+      archivos,
+      totalCarpetas: carpetas.length,
+      totalArchivos: archivos.length,
+    };
   }
 
   /**
-   * Obtiene la ruta física del archivo para descarga e incrusta hash criptográfico SHA-256
+   * Obtiene un archivo dentro de cualquier subcarpeta para descarga
    */
   async obtenerParaDescarga(
-    filename: string,
+    rutaArchivo: string,
     user: any,
     contexto: ContextoForense,
   ): Promise<{ filePath: string; nombre: string; pesoBytes: number }> {
-    const filePath = this.resolverRutaSegura(filename);
+    const filePath = this.resolverRutaSegura(rutaArchivo);
 
     if (!fs.existsSync(filePath)) {
-      throw new NotFoundException(`El documento "${filename}" no existe en el repositorio`);
+      throw new NotFoundException(`El documento solicitado no existe`);
     }
 
     const stats = await fs.promises.stat(filePath);
-    const sha256 = this.calcularSha256(filePath);
+    if (stats.isDirectory()) {
+      throw new BadRequestException('No es posible descargar una carpeta directamente');
+    }
 
-    // Auditoría forense exhaustiva de descarga
+    const sha256 = this.calcularSha256(filePath);
+    const nombre = path.basename(filePath);
+
+    // Registro forense con hash SHA-256
     await this.registrarAuditoriaForense({
       action: 'SFTP_DOWNLOAD_DOCUMENT',
-      resourceId: filename,
+      resourceId: rutaArchivo,
       user,
       contexto,
       detallesOperacion: {
-        nombre: filename,
-        rutaServidor: filePath,
+        nombre,
+        rutaRelativa: rutaArchivo,
         pesoBytes: stats.size,
         pesoFormateado: this.formatearBytes(stats.size),
-        extension: path.extname(filename).replace('.', '').toUpperCase(),
         sha256Criptografico: sha256,
-        fechaModificacionArchivo: stats.mtime,
+        fechaModificacion: stats.mtime,
       },
     });
 
     return {
       filePath,
-      nombre: path.basename(filePath),
+      nombre,
       pesoBytes: stats.size,
     };
-  }
-
-  /**
-   * Sube un documento al repositorio con registro forense y hash
-   */
-  async subirDocumento(
-    file: any,
-    user: any,
-    contexto: ContextoForense,
-  ): Promise<SftpDocumentItem> {
-    if (!file) {
-      throw new BadRequestException('No se envió ningún archivo para adjuntar');
-    }
-
-    const safeName = path.basename(file.originalname).replace(/[^a-zA-Z0-9._-]/g, '_');
-    const targetPath = this.resolverRutaSegura(safeName);
-
-    await fs.promises.writeFile(targetPath, file.buffer);
-    const stats = await fs.promises.stat(targetPath);
-    const sha256 = crypto.createHash('sha256').update(file.buffer).digest('hex');
-
-    // Auditoría forense exhaustiva de subida
-    await this.registrarAuditoriaForense({
-      action: 'SFTP_UPLOAD_DOCUMENT',
-      resourceId: safeName,
-      user,
-      contexto,
-      detallesOperacion: {
-        nombreOriginal: file.originalname,
-        nombreGuardado: safeName,
-        pesoBytes: stats.size,
-        pesoFormateado: this.formatearBytes(stats.size),
-        mimeType: file.mimetype,
-        sha256Criptografico: sha256,
-      },
-    });
-
-    return {
-      nombre: safeName,
-      pesoBytes: stats.size,
-      pesoFormateado: this.formatearBytes(stats.size),
-      fechaModificacion: stats.mtime,
-      extension: path.extname(safeName).replace('.', '').toUpperCase() || 'FILE',
-    };
-  }
-
-  /**
-   * Elimina un documento con registro forense
-   */
-  async eliminarDocumento(
-    filename: string,
-    user: any,
-    contexto: ContextoForense,
-  ): Promise<{ success: boolean; message: string }> {
-    const filePath = this.resolverRutaSegura(filename);
-
-    if (!fs.existsSync(filePath)) {
-      throw new NotFoundException(`El documento "${filename}" no existe`);
-    }
-
-    const stats = await fs.promises.stat(filePath);
-    const sha256 = this.calcularSha256(filePath);
-
-    await fs.promises.unlink(filePath);
-
-    // Auditoría forense de eliminación
-    await this.registrarAuditoriaForense({
-      action: 'SFTP_DELETE_DOCUMENT',
-      resourceId: filename,
-      user,
-      contexto,
-      detallesOperacion: {
-        nombreEliminado: filename,
-        pesoPrevioBytes: stats.size,
-        sha256Previo: sha256,
-      },
-    });
-
-    return { success: true, message: `Documento ${filename} eliminado del repositorio SFTP` };
   }
 }

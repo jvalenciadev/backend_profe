@@ -1,20 +1,16 @@
 import {
   Controller,
   Get,
-  Post,
-  Delete,
-  Param,
+  Query,
   UseGuards,
   Req,
   Res,
-  UseInterceptors,
-  UploadedFile,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from '@app/common';
 import { SftpService, ContextoForense } from './sftp.service';
 import type { Response } from 'express';
-import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('sftp')
 @UseGuards(JwtAuthGuard)
@@ -25,7 +21,6 @@ export class SftpController {
    * Extrae la huella digital y contexto forense completo de la petición HTTP
    */
   private extraerContextoForense(req: any): ContextoForense {
-    // 1. Detección de IP Real a través de Proxies Inversos (Nginx / Cloudflare / Docker)
     const xForwardedFor = req.headers['x-forwarded-for'];
     const ipReal =
       (typeof xForwardedFor === 'string'
@@ -41,7 +36,6 @@ export class SftpController {
 
     const userAgent = req.headers['user-agent'] || 'UNKNOWN';
 
-    // 2. Parser ligero de Sistema Operativo y Navegador
     let sistemaOperativo = 'Desconocido';
     if (/windows phone/i.test(userAgent)) sistemaOperativo = 'Windows Phone';
     else if (/win(dows|98|me|nt|xp|7|8|10|11)/i.test(userAgent)) sistemaOperativo = 'Windows';
@@ -75,9 +69,6 @@ export class SftpController {
     };
   }
 
-  /**
-   * Valida que el usuario autenticado posea el rol 'sftp' o sea Administrador
-   */
   private validarRolSftp(user: any) {
     const roles: string[] = (user?.roles || []).map((r: any) =>
       (typeof r === 'string' ? r : r.name || '').toLowerCase(),
@@ -94,48 +85,40 @@ export class SftpController {
     }
   }
 
+  /**
+   * Explora carpetas y archivos en la ruta especificada (Estilo Google Drive)
+   */
   @Get('documentos')
-  async listar(@Req() req: any) {
+  async listar(
+    @Query('subpath') subpath: string = '',
+    @Req() req: any,
+  ) {
     this.validarRolSftp(req.user);
     const contexto = this.extraerContextoForense(req);
-    return this.sftpService.listarDocumentos(req.user, contexto);
+    return this.sftpService.explorarDirectorio(subpath || '', req.user, contexto);
   }
 
-  @Get('documentos/:filename/download')
+  /**
+   * Descarga un archivo de cualquier carpeta o subcarpeta
+   */
+  @Get('documentos/download')
   async descargar(
-    @Param('filename') filename: string,
+    @Query('filepath') filepath: string,
     @Req() req: any,
     @Res() res: Response,
   ) {
     this.validarRolSftp(req.user);
-    const contexto = this.extraerContextoForense(req);
+    if (!filepath || filepath.trim() === '') {
+      throw new BadRequestException('El parámetro filepath es obligatorio');
+    }
 
+    const contexto = this.extraerContextoForense(req);
     const { filePath, nombre } = await this.sftpService.obtenerParaDescarga(
-      filename,
+      filepath,
       req.user,
       contexto,
     );
 
     res.download(filePath, nombre);
-  }
-
-  @Post('documentos/upload')
-  @UseInterceptors(FileInterceptor('file'))
-  async subir(
-    @UploadedFile() file: any,
-    @Req() req: any,
-  ) {
-    this.validarRolSftp(req.user);
-    const contexto = this.extraerContextoForense(req);
-
-    return this.sftpService.subirDocumento(file, req.user, contexto);
-  }
-
-  @Delete('documentos/:filename')
-  async eliminar(@Param('filename') filename: string, @Req() req: any) {
-    this.validarRolSftp(req.user);
-    const contexto = this.extraerContextoForense(req);
-
-    return this.sftpService.eliminarDocumento(filename, req.user, contexto);
   }
 }
