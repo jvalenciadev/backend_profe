@@ -92,7 +92,14 @@ export class SftpController {
   async listar(
     @Query('subpath') subpath: string = '',
     @Req() req: any,
+    @Res({ passthrough: true }) res: Response,
   ) {
+    // Prohibir caché en proxies y navegador (datos en tiempo real)
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+
     this.validarRolSftp(req.user);
     const contexto = this.extraerContextoForense(req);
     return this.sftpService.explorarDirectorio(subpath || '', req.user, contexto);
