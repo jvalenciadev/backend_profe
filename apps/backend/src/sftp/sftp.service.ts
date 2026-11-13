@@ -225,8 +225,8 @@ export class SftpService {
             extension: ext || 'FILE',
           });
         }
-      } catch {
-        // Ignorar archivos con error de lectura
+      } catch (err) {
+        console.error(`[SftpService] Error al leer "${entry.name}":`, err);
       }
     }
 
