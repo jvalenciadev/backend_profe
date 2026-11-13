@@ -11,7 +11,7 @@ import * as crypto from 'crypto';
 import type { Response } from 'express';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
-const createArchive = require('archiver') as (format: string, options?: object) => import('archiver').Archiver;
+const createArchive = require('archiver');
 
 export interface SftpItem {
   nombre: string;
