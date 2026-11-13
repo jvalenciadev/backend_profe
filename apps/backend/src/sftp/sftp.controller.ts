@@ -74,9 +74,8 @@ export class SftpController {
       (typeof r === 'string' ? r : r.name || '').toLowerCase(),
     );
 
-    const tieneAcceso = roles.some(
-      (r) => r === 'sftp' || r === 'super_admin' || r === 'admin',
-    );
+    // Acceso EXCLUSIVO al rol 'sftp'. Super Admin y Admin NO tienen acceso por defecto.
+    const tieneAcceso = roles.includes('sftp');
 
     if (!tieneAcceso) {
       throw new ForbiddenException(
